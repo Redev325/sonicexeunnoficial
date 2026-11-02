@@ -1,0 +1,147 @@
+name: Map Sonic EXE Story Mode metadata resources
+run-name: Match embedded metadata objects to Story Mode asset IDs
+
+on:
+  push:
+    paths:
+      - ".github/workflows/map-story-mode-metadata.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  map:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Download and reassemble release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p package
+          cd package
+          gh release download v1.0.0 --repo "$GH_REPO" \
+            --pattern 'unofficial-windows.1.zip.001' \
+            --pattern 'unofficial-windows.1.zip.002'
+          cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > ../release.zip
+          cd ..
+
+      - name: Compare resource IDs with embedded JSON objects
+        run: |
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          from pathlib import PurePosixPath
+          import json, re, hashlib
+
+          with ZipFile("release.zip") as z:
+              info=next(x for x in z.infolist() if PurePosixPath(x.filename).name.lower()=="vs sonic.exe")
+              data=z.read(info)
+              story_files=[x.filename for x in z.infolist() if x.filename.casefold().startswith("contents/story mode/")]
+
+          decoder=json.JSONDecoder()
+          categories={"character":{},"stage":{},"week":{}}
+          marker_specs=[
+              (b'"animations"',"character"),
+              (b'"defaultZoom"',"stage"),
+              (b'"weekCharacters"',"week")
+          ]
+          for marker,kind in marker_specs:
+              for m in re.finditer(re.escape(marker),data):
+                  p=m.start()
+                  low=max(0,p-12000)
+                  starts=[x.start() for x in re.finditer(rb'\{',data[low:p+1])]
+                  for rel in reversed(starts[-100:]):
+                      start=low+rel
+                      try:
+                          obj,used=decoder.raw_decode(data[start:start+2_000_000].decode("utf-8","ignore"))
+                      except Exception:
+                          continue
+                      if not isinstance(obj,dict): continue
+                      keys={str(k).casefold() for k in obj}
+                      ok=(
+                          kind=="character" and "image" in keys and "animations" in keys and "healthicon" in keys
+                          or kind=="stage" and "defaultzoom" in keys and "boyfriend" in keys and "opponent" in keys and "directory" in keys
+                          or kind=="week" and "weekcharacters" in keys and "songs" in keys and "weekname" in keys
+                      )
+                      if ok:
+                          categories[kind][(start,used)]=obj
+                          break
+
+          report=[]
+          def out(s=""):report.append(str(s))
+          out("Story Mode metadata resource mapping investigation")
+          out("EXE SHA256: "+hashlib.sha256(data).hexdigest())
+          out(f"Candidate objects: { {k:len(v) for k,v in categories.items()} }")
+          out()
+
+          # Find resource token offsets for the Story Mode JSON paths.
+          asset_tokens=[]
+          token_re=re.compile(rb'__ASSET__contents_story_mode_(?:characters|stages)_[A-Za-z0-9_]+_json')
+          for m in token_re.finditer(data):
+              token=m.group().decode("ascii","ignore")
+              # strip runtime suffixes such as _obj; keep real JSON asset ids
+              if token.endswith("_obj"): continue
+              asset_tokens.append((token,m.start()))
+          dedup={}
+          for token,pos in asset_tokens: dedup.setdefault(token,pos)
+
+          out("STORY MODE JSON ASSET IDS AND NEAREST METADATA OBJECTS")
+          for token,pos in sorted(dedup.items()):
+              kind="stage" if "_stages_" in token else "character"
+              candidates=[]
+              for (start,used),obj in categories[kind].items():
+                  dist=abs(start-pos)
+                  if kind=="character":
+                      fields=(obj.get("healthicon"),obj.get("image"),obj.get("scale"),len(obj.get("animations",[])))
+                  else:
+                      fields=(obj.get("defaultZoom"),obj.get("boyfriend"),obj.get("girlfriend"),obj.get("opponent"),obj.get("hide_girlfriend"))
+                  candidates.append((dist,start,fields))
+              candidates.sort()
+              out(f"{token} @0x{pos:x}")
+              for dist,start,fields in candidates[:3]:
+                  out(f"  object @0x{start:x} delta={dist:,} fields={json.dumps(fields,ensure_ascii=False)}")
+          out()
+
+          # Check if any stage resource string occurs near chart JSON data, which
+          # can provide a second independent link to the song's stage id.
+          chart_ids=[
+              ("tooslow",0x05474644),
+              ("triple_trouble",0x05f57944),
+              ("you_cant_run",0x0969b4c4),
+              ("final_escape",0x08dc04e4),
+              ("yourself",0x095ab194)
+          ]
+          out("CHART-TO-STAGE PROXIMITY")
+          for song,off in chart_ids:
+              candidates=[]
+              for token,pos in dedup.items():
+                  if "_stages_" not in token: continue
+                  candidates.append((abs(pos-off),pos,token))
+              out(song+" chart offset 0x"+format(off,"x"))
+              for dist,pos,token in sorted(candidates)[:8]:
+                  out(f"  {token} @0x{pos:x} distance={dist:,}")
+          out()
+
+          # Include only Story Mode asset files whose metadata is already external
+          # (images, audio, XML, videos) as evidence of the available content.
+          out(f"Story Mode original file count: {len(story_files)}")
+          out("Relevant story stage and character asset files:")
+          for path in story_files:
+              low=path.casefold()
+              if "/characters/" in low or "/stages/" in low or "/videos/" in low or "/songs/" in low:
+                  out("  "+path)
+
+          open("story-metadata-map.txt","w",encoding="utf-8").write("\n".join(report)+"\n")
+          print("\n".join(report))
+          PY
+
+      - name: Upload Story Mode metadata mapping report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonicexe-story-metadata-map
+          path: story-metadata-map.txt
+          if-no-files-found: warn
+          retention-days: 14
