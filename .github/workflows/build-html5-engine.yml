@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - ".github/workflows/build-html5-engine.yml"
+      - "patches/apply_main_menu.py"
   workflow_dispatch:
 
 permissions:
@@ -218,6 +219,10 @@ jobs:
 
           print("Browser compatibility patches applied.")
           PY
+
+      - name: Apply original browser main menu layout
+        run: |
+          python3 patches/apply_main_menu.py engine/source/states/MainMenuState.hx
 
       - name: Compile browser target
         working-directory: engine
