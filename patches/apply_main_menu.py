@@ -283,29 +283,14 @@ def main() -> None:
 \t\tyellowSeamSprite.scrollFactor.set(0, 0);
 \t\tadd(yellowSeamSprite);
 
-\t\t// Small original emblem treatment; the source game's logo art is not reused.
-\t\tvar emblem = new Shape();
-\t\temblem.graphics.lineStyle(5, 0xFF251721, 1);
-\t\temblem.graphics.beginFill(0xB814111A, 1);
-\t\temblem.graphics.drawCircle(FlxG.width * 0.135, FlxG.height * 0.145, FlxG.height * 0.082);
-\t\temblem.graphics.endFill();
-\t\tvar emblemBitmap = new BitmapData(Std.int(FlxG.width * 0.28), Std.int(FlxG.height * 0.30), true, 0x00000000);
-\t\temblemBitmap.draw(emblem);
-\t\tvar emblemSprite = new FlxSprite().loadGraphic(emblemBitmap);
-\t\temblemSprite.scrollFactor.set(0, 0);
-\t\tadd(emblemSprite);
-
-\t\tvar versus = new FlxText(FlxG.width * 0.075, FlxG.height * 0.085, FlxG.width * 0.12, "VS", Std.int(FlxG.height * 0.045));
-\t\tversus.scrollFactor.set(0, 0);
-\t\tversus.alignment = CENTER;
-\t\tversus.setFormat("VCR OSD Mono", Std.int(FlxG.height * 0.045), 0xFFFFD8E2, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-\t\tadd(versus);
-
-\t\tvar emblemTitle = new FlxText(FlxG.width * 0.035, FlxG.height * 0.17, FlxG.width * 0.20, "SONIC.EXE", Std.int(FlxG.height * 0.043));
-\t\temblemTitle.scrollFactor.set(0, 0);
-\t\temblemTitle.alignment = CENTER;
-\t\temblemTitle.setFormat("VCR OSD Mono", Std.int(FlxG.height * 0.043), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, 0xFF24111A);
-\t\tadd(emblemTitle);
+\t\t// Use the actual Sonic.EXE Unofficial main-menu logo from the game package.
+\t\tvar menuLogo = new FlxSprite(FlxG.width * 0.035, FlxG.height * 0.09);
+\t\tmenuLogo.loadGraphic(Paths.image('sonicexe-logo'));
+\t\tmenuLogo.setGraphicSize(Std.int(FlxG.width * 0.36));
+\t\tmenuLogo.updateHitbox();
+\t\tmenuLogo.antialiasing = ClientPrefs.data.antialiasing;
+\t\tmenuLogo.scrollFactor.set(0, 0);
+\t\tadd(menuLogo);
 \t}
 
 """
@@ -327,10 +312,11 @@ def main() -> None:
 \t\t// Scroll the repeating red cloud field behind the fixed zig-zag divider.
 \t\tif (movingRedBackdrop != null && backdropTileWidth > 0)
 \t\t{
-\t\t\tbackdropTravel += elapsed * 22;
+\t\t\tbackdropTravel += elapsed * 42;
 \t\t\twhile (backdropTravel >= backdropTileWidth)
 \t\t\t\tbackdropTravel -= backdropTileWidth;
 \t\t\tmovingRedBackdrop.x = -backdropTileWidth + backdropTravel;
+\t\t\tmovingRedBackdrop.y = Math.sin((backdropTravel / backdropTileWidth) * Math.PI * 2) * 8;
 \t\t}
 
 \t\tif (FlxG.sound.music.volume < 0.8)""",

@@ -223,6 +223,41 @@ jobs:
           print("Browser compatibility patches applied.")
           PY
 
+      - name: Fetch the original Sonic.EXE menu logo
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p package engine/assets/images
+          cd package
+          gh release download v1.0.0 --repo "$GH_REPO" \
+            --pattern 'unofficial-windows.1.zip.001' \
+            --pattern 'unofficial-windows.1.zip.002'
+          cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > release.zip
+          rm -f unofficial-windows.1.zip.001 unofficial-windows.1.zip.002
+          cd ..
+          python3 -m pip install --user pillow
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          from PIL import Image
+          import shutil
+
+          archive = Path("package/release.zip")
+          extracted = Path("package/menu-logo.webp")
+          with ZipFile(archive) as z:
+              with z.open("assets/exe/mainmenu/logo.webp") as source, extracted.open("wb") as target:
+                  shutil.copyfileobj(source, target)
+
+          output = Path("engine/assets/images/sonicexe-logo.png")
+          with Image.open(extracted) as logo:
+              logo.convert("RGBA").save(output, optimize=True)
+          if not output.is_file() or output.stat().st_size == 0:
+              raise SystemExit("The original menu logo was not copied into the HTML5 engine.")
+          print(f"Prepared original menu logo: {output} ({output.stat().st_size:,} bytes)")
+          PY
+          rm -rf package
+
       - name: Apply original browser main menu layout
         run: |
           python3 patches/apply_main_menu.py engine/source/states/MainMenuState.hx
