@@ -28,65 +28,38 @@ jobs:
           cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > ../release.zip
           cd ..
 
-      - name: Extract charts using the original game manifest paths
+      - name: Extract charts and create browser-engine compatible JSON
         run: |
           python3 - <<'PY'
           from zipfile import ZipFile
           from pathlib import PurePosixPath, Path
+          from urllib.parse import unquote
           import json, re, hashlib, csv
 
           def canonical(value):
               return ''.join(ch for ch in value.casefold() if ch.isalnum())
 
+          def psych_song_path(value):
+              value = value.replace(' ', '-')
+              value = re.sub(r'[~&\\;:<>#]', '-', value)
+              value = re.sub(r'[.,\'"%?!]', '', value)
+              return value.lower()
+
           with ZipFile("release.zip") as z:
-              infos = z.infolist()
-              exe_info = next(i for i in infos if PurePosixPath(i.filename).name.lower() == "vs sonic.exe")
+              exe_info = next(i for i in z.infolist() if PurePosixPath(i.filename).name.lower() == "vs sonic.exe")
               data = z.read(exe_info)
 
-              from urllib.parse import unquote
-              manifest = json.loads(z.read("manifest/default.json").decode("utf-8-sig"))
-              manifest_paths = set()
-              manifest_debug = []
-              manifest_string_count = 0
+          # Custom asset paths are embedded as URL-encoded strings inside the
+          # native executable; the external default manifest is not the source
+          # of the per-mod chart paths.
+          path_pattern = rb"contents(?:%2[fF]|/)[^\x00\s\x22'<>|*?:]{1,500}?\.json"
+          chart_paths = set()
+          for match in re.finditer(path_pattern, data, re.I):
+              candidate = unquote(match.group().decode("ascii", "ignore")).replace("\\\\", "/")
+              if re.fullmatch(r"contents/[^/]+/data/[^/]+/[^/]+\.json", candidate, re.I):
+                  chart_paths.add(candidate)
 
-              def collect_paths(value):
-                  global manifest_string_count
-                  if isinstance(value, dict):
-                      for child in value.values():
-                          collect_paths(child)
-                  elif isinstance(value, list):
-                      for child in value:
-                          collect_paths(child)
-                  elif isinstance(value, str):
-                      decoded = unquote(value).replace("\\\\", "/")
-                      if "contents/" in decoded.casefold():
-                          manifest_string_count += 1
-                          if len(manifest_debug) < 80:
-                              manifest_debug.append(decoded[:500])
-                          # Asset paths may be URL-encoded or embedded in an asset ID.
-                          for match in re.finditer(r"contents/", decoded, re.I):
-                              tail = decoded[match.start():]
-                              end = tail.casefold().find(".json")
-                              if end >= 0:
-                                  candidate = tail[:end + 5].strip()
-                                  if "/data/" in candidate.casefold() and re.search(r"/data/[^/]+/[^/]+\.json$", candidate, re.I):
-                                      manifest_paths.add(candidate)
-
-              collect_paths(manifest)
-              chart_paths = sorted(manifest_paths)
-              debug_text = [
-                  "manifest/default.json inspection",
-                  f"Root type: {type(manifest).__name__}",
-                  f"Root keys: {list(manifest.keys()) if isinstance(manifest, dict) else 'not a dict'}",
-                  f"Strings containing contents/: {manifest_string_count}",
-                  f"Chart data paths discovered: {len(chart_paths)}",
-                  "Discovered paths:",
-                  *chart_paths,
-                  "Sample containing strings:",
-                  *manifest_debug
-              ]
-              Path("manifest-debug.txt").write_text("\\n".join(debug_text) + "\\n", encoding="utf-8")
-
+          chart_paths = sorted(chart_paths)
           decoder = json.JSONDecoder()
           format_positions = [m.start() for m in re.finditer(b'psych_v1_convert', data)]
           charts = []
@@ -94,7 +67,8 @@ jobs:
           failures = 0
           unmatched = []
           output_root = Path("embedded-charts")
-          output_root.mkdir(exist_ok=True)
+          original_root = output_root / "original"
+          engine_root = output_root / "psych-engine" / "assets" / "shared" / "data"
 
           for fmt_pos in format_positions:
               lower = max(0, fmt_pos - 20_000_000)
@@ -133,36 +107,38 @@ jobs:
               )
 
               song_id = canonical(title)
-              matches = []
-              for path in chart_paths:
-                  folder = PurePosixPath(path).parent.name
-                  filename_stem = PurePosixPath(path).stem
-                  if canonical(folder) == song_id or canonical(filename_stem) == song_id:
-                      matches.append(path)
+              matches = [
+                  path for path in chart_paths
+                  if canonical(PurePosixPath(path).parent.name) == song_id
+                  and canonical(PurePosixPath(path).stem) == song_id
+              ]
 
               if len(matches) == 1:
                   original_path = matches[0]
-                  relative_path = Path(*PurePosixPath(original_path).parts)
-                  group = PurePosixPath(original_path).parts[1] if len(PurePosixPath(original_path).parts) > 1 else "_UNKNOWN_"
               elif matches:
-                  # Prefer the entry whose folder and basename both match the title.
-                  exact = [
-                      p for p in matches
-                      if canonical(PurePosixPath(p).parent.name) == song_id
-                      and canonical(PurePosixPath(p).stem) == song_id
-                  ]
-                  original_path = exact[0] if len(exact) == 1 else sorted(matches)[0]
-                  relative_path = Path(*PurePosixPath(original_path).parts)
-                  group = PurePosixPath(original_path).parts[1] if len(PurePosixPath(original_path).parts) > 1 else "_UNKNOWN_"
+                  original_path = sorted(matches)[0]
               else:
+                  original_path = ""
                   unmatched.append(title)
-                  song_slug = re.sub(r'-+', '-', re.sub(r'[^a-z0-9]+', '-', title.lower())).strip('-')
-                  group = "_UNMATCHED_"
-                  relative_path = Path("contents") / group / "data" / song_slug / f"{song_slug}.json"
 
-              target = output_root / relative_path
-              target.parent.mkdir(parents=True, exist_ok=True)
-              target.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+              # Keep the exact original top-level chart structure for reference.
+              if original_path:
+                  original_target = original_root / Path(*PurePosixPath(original_path).parts)
+              else:
+                  fallback_slug = re.sub(r'-+', '-', re.sub(r'[^a-z0-9]+', '-', title.lower())).strip('-')
+                  original_target = original_root / "unmatched" / "data" / fallback_slug / f"{fallback_slug}.json"
+              original_target.parent.mkdir(parents=True, exist_ok=True)
+              original_target.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+              # Psych Engine's Song.parseJSONshit reads Json.parse(rawJson).song.
+              # Wrap the original chart object once, without altering its notes.
+              engine_slug = psych_song_path(title)
+              engine_target = engine_root / engine_slug / f"{engine_slug}.json"
+              engine_target.parent.mkdir(parents=True, exist_ok=True)
+              engine_target.write_text(
+                  json.dumps({"song": obj}, ensure_ascii=False, indent=2) + "\n",
+                  encoding="utf-8"
+              )
 
               charts.append({
                   "song": title,
@@ -173,7 +149,8 @@ jobs:
                   "player2": obj.get("player2"),
                   "stage": obj.get("stage"),
                   "format": obj.get("format"),
-                  "original_game_path": str(relative_path).replace("\\", "/"),
+                  "original_game_path": original_path or "UNMATCHED",
+                  "psych_engine_path": str(engine_target).replace("\\\\", "/"),
                   "executable_offset": f"0x{start:x}",
                   "source_bytes": consumed
               })
@@ -188,25 +165,21 @@ jobs:
               writer.writeheader()
               writer.writerows(charts)
 
-          total_notes = sum(c["notes"] for c in charts)
           print(f"Executable SHA256: {hashlib.sha256(data).hexdigest()}")
-          print(f"Manifest chart paths found: {len(chart_paths)}")
+          print(f"Embedded chart asset paths found: {len(chart_paths)}")
           print(f"psych_v1_convert markers: {len(format_positions)}")
           print(f"Complete chart files extracted: {len(charts)}")
-          print(f"Total note events: {total_notes:,}")
+          print(f"Total note events: {sum(c['notes'] for c in charts):,}")
           print(f"Parse failures: {failures}")
-          print(f"Charts without original manifest path: {unmatched}")
-          print("Extracted chart paths:")
+          print(f"Charts without exact embedded path match: {unmatched}")
           for c in charts:
-              print(f"  {c['song']}: {c['notes']} notes -> {c['original_game_path']}")
+              print(f"  {c['song']}: {c['notes']} notes | {c['original_game_path']} | {c['psych_engine_path']}")
           PY
 
-      - name: Upload extracted chart files
+      - name: Upload extracted and adapted chart files
         uses: actions/upload-artifact@v4
         with:
           name: sonicexe-extracted-charts
-          path: |
-            embedded-charts/
-            manifest-debug.txt
+          path: embedded-charts/
           if-no-files-found: error
           retention-days: 14
