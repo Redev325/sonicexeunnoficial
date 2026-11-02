@@ -1,0 +1,56 @@
+name: Inspect exact Story Mode asset paths
+run-name: Check Story Mode character and stage asset paths
+
+on:
+  push:
+    paths:
+      - ".github/workflows/inspect-story-mode-asset-names.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Download and reassemble release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p package
+          cd package
+          gh release download v1.0.0 --repo "$GH_REPO" \
+            --pattern 'unofficial-windows.1.zip.001' \
+            --pattern 'unofficial-windows.1.zip.002'
+          cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > ../release.zip
+          cd ..
+
+      - name: List paths referenced by Xenophanes characters and stages
+        run: |
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          from pathlib import PurePosixPath
+          import json, re
+
+          queries = [
+              "xenoycr", "atlasxeno", "luis", "TalesDead", "lookAlike mirror",
+              "dark gf", "xenott", "xenom", "xenointro", "tooslow",
+              "triple-trouble", "you-cant-run", "final-escape", "yourself",
+              "bf-intro", "xeno-intro", "mirror_look2", "sonic_exe"
+          ]
+          with ZipFile("release.zip") as z:
+              names=[x.filename for x in z.infolist() if not x.is_dir()]
+              story=[n for n in names if n.casefold().startswith("contents/story mode/")]
+              print("STORY MODE exact matches:")
+              for q in queries:
+                  hits=[n for n in story if q.casefold() in n.casefold()]
+                  print(f"\n{q}: {len(hits)}")
+                  for n in hits[:80]: print(" ",n)
+              print("\nALL STORY MODE SONG FOLDERS:")
+              for n in story:
+                  if "/songs/" in n.casefold() or "/data/" in n.casefold() or "/stages/" in n.casefold():
+                      print(" ",n)
+          PY
