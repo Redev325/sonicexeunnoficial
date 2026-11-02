@@ -1,0 +1,118 @@
+name: Extract embedded Sonic EXE chart index
+run-name: Locate embedded song charts inside Windows executable
+
+on:
+  push:
+    paths:
+      - ".github/workflows/extract-embedded-charts.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Download and reassemble release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p package
+          cd package
+          gh release download v1.0.0 --repo "$GH_REPO" \
+            --pattern 'unofficial-windows.1.zip.001' \
+            --pattern 'unofficial-windows.1.zip.002'
+          cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > ../release.zip
+          cd ..
+
+      - name: Search executable for complete chart JSON
+        run: |
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          from pathlib import PurePosixPath
+          import json, re, hashlib
+
+          with ZipFile("release.zip") as z:
+              exe_info = next(i for i in z.infolist() if PurePosixPath(i.filename).name.lower() == "vs sonic.exe")
+              data = z.read(exe_info)
+
+          report = []
+          def out(s=""): report.append(str(s))
+          out("SONIC.EXE UNOFFICIAL 1.0.0 - EMBEDDED CHART EXTRACTION CHECK")
+          out(f"Executable size: {len(data):,} bytes")
+          out("SHA256: "+hashlib.sha256(data).hexdigest())
+          out()
+
+          markers = [b'mustHitSection', b'sectionNotes', b'"bpm"', b'"notes"', b'"song":']
+          for m in markers:
+              positions = [x.start() for x in re.finditer(re.escape(m), data, re.I)]
+              out(f"{m.decode('ascii')}: {len(positions)} occurrences")
+              for p in positions[:4]:
+                  out(f"  offset 0x{p:x}: {data[max(0,p-100):p+240]!r}")
+          out()
+
+          # Attempt to parse JSON objects that begin with the usual Psych Engine
+          # chart root: { "song": { ... } }. Only metadata is written to the report.
+          starts = [m.start() for m in re.finditer(rb'\\{\\s*"song"\\s*:', data)]
+          out(f"Potential chart JSON root starts: {len(starts)}")
+          decoder = json.JSONDecoder()
+          charts = []
+          for start in starts:
+              segment = data[start:start+30_000_000].decode("utf-8", "strict") if data[start:start+30_000_000].isascii() else data[start:start+30_000_000].decode("utf-8", "ignore")
+              try:
+                  obj, consumed = decoder.raw_decode(segment)
+              except Exception:
+                  continue
+              if not isinstance(obj, dict):
+                  continue
+              song_obj = obj.get("song")
+              if not isinstance(song_obj, dict):
+                  continue
+              notes = song_obj.get("notes")
+              if not isinstance(notes, list):
+                  continue
+              note_count = 0
+              for section in notes:
+                  if isinstance(section, dict) and isinstance(section.get("sectionNotes"), list):
+                      note_count += len(section["sectionNotes"])
+              title = song_obj.get("song") or song_obj.get("songName") or "unknown"
+              charts.append({
+                  "offset": start,
+                  "bytes": consumed,
+                  "song": str(title)[:120],
+                  "bpm": song_obj.get("bpm"),
+                  "sections": len(notes),
+                  "notes": note_count
+              })
+          out(f"Complete chart JSON objects parsed: {len(charts)}")
+          for c in charts[:1000]:
+              out("  "+json.dumps(c, ensure_ascii=False))
+          if not charts:
+              out("No complete chart JSON was parsed using the standard Psych Engine chart layout.")
+          out()
+          # Look for JSON-like roots and chart strings around markers if direct parsing
+          # fails, to determine whether the binary uses a packed/encoded representation.
+          for term in (b'mustHitSection', b'sectionNotes'):
+              positions = [m.start() for m in re.finditer(re.escape(term), data)]
+              if positions:
+                  p = positions[0]
+                  lo = max(0, p-2048)
+                  hi = min(len(data), p+4096)
+                  out(f"First {term.decode()} context ({lo:#x}-{hi:#x}):")
+                  out(repr(data[lo:hi]))
+          out()
+          open("embedded-chart-index.txt","w",encoding="utf-8").write("\n".join(report)+"\n")
+          print("\n".join(report))
+          PY
+
+      - name: Upload embedded chart index
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonicexe-embedded-chart-index
+          path: embedded-chart-index.txt
+          if-no-files-found: warn
+          retention-days: 14
