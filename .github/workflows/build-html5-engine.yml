@@ -69,13 +69,13 @@ jobs:
           # a transparent placeholder instead of relying on that removed debug asset.
           patch_file("source/states/editors/CharacterEditorState.hx", [
               (
-                  "import flixel.system.debug.interaction.tools.Pointer.GraphicCursorCross;\\n",
+                  "import flixel.system.debug.interaction.tools.Pointer.GraphicCursorCross;\n",
                   "",
                   "removed GraphicCursorCross import"
               ),
               (
                   "cameraFollowPointer = new FlxSprite().loadGraphic(FlxGraphic.fromClass(GraphicCursorCross));",
-                  "cameraFollowPointer = new FlxSprite();\\n\\t\\tcameraFollowPointer.makeGraphic(40, 40, 0x00000000);",
+                  "cameraFollowPointer = new FlxSprite();\n\t\tcameraFollowPointer.makeGraphic(40, 40, 0x00000000);",
                   "replaced removed GraphicCursorCross asset"
               )
           ])
@@ -99,12 +99,12 @@ jobs:
           patch_file("source/backend/Paths.hx", [
               (
                   "spriteJson = File.getContent(spriteJson);",
-                  "#if sys\\n\\t\\t\\tspriteJson = sys.io.File.getContent(spriteJson);\\n\\t\\t\\t#else\\n\\t\\t\\tspriteJson = OpenFlAssets.getText(spriteJson);\\n\\t\\t\\t#end",
+                  "#if sys\n\t\t\tspriteJson = sys.io.File.getContent(spriteJson);\n\t\t\t#else\n\t\t\tspriteJson = OpenFlAssets.getText(spriteJson);\n\t\t\t#end",
                   "made sprite JSON loading web-compatible"
               ),
               (
                   "animationJson = File.getContent(animationJson);",
-                  "#if sys\\n\\t\\t\\tanimationJson = sys.io.File.getContent(animationJson);\\n\\t\\t\\t#else\\n\\t\\t\\tanimationJson = OpenFlAssets.getText(animationJson);\\n\\t\\t\\t#end",
+                  "#if sys\n\t\t\tanimationJson = sys.io.File.getContent(animationJson);\n\t\t\t#else\n\t\t\tanimationJson = OpenFlAssets.getText(animationJson);\n\t\t\t#end",
                   "made animation JSON loading web-compatible"
               )
           ])
@@ -114,12 +114,12 @@ jobs:
           patch_file(".haxelib/flxanimate/git/flxanimate/FlxAnimate.hx", [
               (
                   "if(trimmed == '.json') myJson = sys.io.File.getContent(myJson); //is a path",
-                  "if(trimmed == '.json') {\\n\\t\\t\\t#if sys\\n\\t\\t\\tmyJson = sys.io.File.getContent(myJson);\\n\\t\\t\\t#else\\n\\t\\t\\tmyJson = openfl.Assets.getText(myJson);\\n\\t\\t\\t#end\\n\\t\\t}",
+                  "if(trimmed == '.json') {\n\t\t\t#if sys\n\t\t\tmyJson = sys.io.File.getContent(myJson);\n\t\t\t#else\n\t\t\tmyJson = openfl.Assets.getText(myJson);\n\t\t\t#end\n\t\t}",
                   "guarded FlxAnimate JSON filesystem access"
               ),
               (
                   "myData = sys.io.File.getContent(pathOrStr);",
-                  "#if sys\\n\\t\\t\\tmyData = sys.io.File.getContent(pathOrStr);\\n\\t\\t\\t#else\\n\\t\\t\\tmyData = openfl.Assets.getText(pathOrStr);\\n\\t\\t\\t#end",
+                  "#if sys\n\t\t\tmyData = sys.io.File.getContent(pathOrStr);\n\t\t\t#else\n\t\t\tmyData = openfl.Assets.getText(pathOrStr);\n\t\t\t#end",
                   "guarded FlxAnimate data filesystem access"
               )
           ])
