@@ -40,8 +40,46 @@ jobs:
         working-directory: engine
         run: |
           haxelib setup "$HOME/haxelib"
-          haxelib install hxcpp --quiet
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("hmm.json")
+          data = json.loads(path.read_text())
+
+          # This engine source snapshot is from early 2024. Do not let HMM
+          # silently install much newer APIs that this source was not written for.
+          pinned = {
+              "lime": "8.1.1",
+              "openfl": "9.3.2",
+              "flixel": "5.5.0",
+              "flixel-addons": "3.2.2",
+              "flixel-ui": "2.5.0",
+          }
+          html5_unused = {
+              "flixel-tools", "hxCodec", "SScript",
+              "hxdiscord_rpc", "linc_luajit",
+          }
+
+          kept = []
+          for dependency in data["dependencies"]:
+              name = dependency["name"]
+              if name in html5_unused:
+                  continue
+              if name in pinned:
+                  dependency["version"] = pinned[name]
+              kept.append(dependency)
+
+          data["dependencies"] = kept
+          path.write_text(json.dumps(data, indent=2) + "\n")
+          print("Pinned HTML5 dependencies:")
+          for name, version in pinned.items():
+              print(f"  {name} {version}")
+          print("Skipped desktop-only libraries:", ", ".join(sorted(html5_unused)))
+          PY
+          haxelib install hxcpp 4.3.2 --quiet
           haxe -cp ./setup -D analyzer-optimize -main Main --interp
+          haxelib list
 
       - name: Patch browser compatibility in Psych Engine
         working-directory: engine
@@ -66,33 +104,22 @@ jobs:
               path.write_text(source)
               print(f"Patched {path}")
 
-          # HaxeFlixel 6 moved the crosshair graphic out of this internal package.
-          # The Character Editor is not needed for normal browser gameplay, so use
-          # a transparent placeholder instead of relying on that removed debug asset.
+          # The Character Editor's directory scan is only supported on sys targets.
+          # In the browser build the built-in character list remains available.
           patch_file("source/states/editors/CharacterEditorState.hx", [
               (
-                  "import flixel.system.debug.interaction.tools.Pointer.GraphicCursorCross;\n",
-                  "",
-                  "removed GraphicCursorCross import"
-              ),
-              (
-                  "cameraFollowPointer = new FlxSprite().loadGraphic(FlxGraphic.fromClass(GraphicCursorCross));",
-                  "cameraFollowPointer = new FlxSprite();\n\t\tcameraFollowPointer.makeGraphic(40, 40, 0x00000000);",
-                  "replaced removed GraphicCursorCross asset"
+                  "var foldersToCheck:Array<String> = Mods.directoriesWithFile(Paths.getSharedPath(), 'characters/');\\n\\t\\tfor (folder in foldersToCheck)\\n\\t\\t\\tfor (file in FileSystem.readDirectory(folder))\\n\\t\\t\\t\\tif(file.toLowerCase().endsWith('.json'))\\n\\t\\t\\t\\t{\\n\\t\\t\\t\\t\\tvar charToCheck:String = file.substr(0, file.length - 5);\\n\\t\\t\\t\\t\\tif(!characterList.contains(charToCheck))\\n\\t\\t\\t\\t\\t\\tcharacterList.push(charToCheck);\\n\\t\\t\\t\\t}",
+                  "#if sys\\n\\t\\tvar foldersToCheck:Array<String> = Mods.directoriesWithFile(Paths.getSharedPath(), 'characters/');\\n\\t\\tfor (folder in foldersToCheck)\\n\\t\\t\\tfor (file in FileSystem.readDirectory(folder))\\n\\t\\t\\t\\tif(file.toLowerCase().endsWith('.json'))\\n\\t\\t\\t\\t{\\n\\t\\t\\t\\t\\tvar charToCheck:String = file.substr(0, file.length - 5);\\n\\t\\t\\t\\t\\tif(!characterList.contains(charToCheck))\\n\\t\\t\\t\\t\\t\\tcharacterList.push(charToCheck);\\n\\t\\t\\t\\t}\\n\\t\\t#end",
+                  "guarded editor filesystem scan for HTML5"
               )
           ])
 
-          # Newer FlxInputText border enum variants need explicit switch cases.
-          patch_file("source/flixel/addons/ui/FlxInputText.hx", [
+          # FlxG.error is not available in the web target; the logger is.
+          patch_file("source/backend/CoolUtil.hx", [
               (
-                  "case SHADOW:",
-                  "case SHADOW, SHADOW_XY:",
-                  "handled SHADOW_XY border style"
-              ),
-              (
-                  "case OUTLINE_FAST, OUTLINE:",
-                  "case OUTLINE_CARDINAL, OUTLINE_FAST, OUTLINE:",
-                  "handled OUTLINE_CARDINAL border style"
+                  "FlxG.error(\\"Platform is not supported for CoolUtil.openFolder\\");",
+                  "FlxG.log.error(\\"Platform is not supported for CoolUtil.openFolder\\");",
+                  "used cross-target FlxG logger"
               )
           ])
 
@@ -147,6 +174,29 @@ jobs:
                   "import flixel.system.FlxSound;",
                   "import flixel.sound.FlxSound;",
                   "updated FlxAnim FlxSound import"
+              )
+          ])
+
+          # The FlxAnimate button event also imports FlxSound from the old package.
+          patch_file(".haxelib/flxanimate/git/flxanimate/animate/ButtonEvent.hx", [
+              (
+                  "import flixel.system.FlxSound;",
+                  "import flixel.sound.FlxSound;",
+                  "updated ButtonEvent FlxSound import"
+              )
+          ])
+
+          # The HTML5 filter renderer uses Lime's internal canvas bridge.
+          patch_file(".haxelib/flxanimate/git/flxanimate/display/FlxAnimateFilterRenderer.hx", [
+              (
+                  "import flixel.FlxG;",
+                  "import flixel.FlxG;\\nimport lime._internal.graphics.ImageCanvasUtil;",
+                  "imported Lime ImageCanvasUtil"
+              ),
+              (
+                  "@:access(openfl.display.CairoRenderer)",
+                  "@:access(openfl.display.CairoRenderer)\\n@:access(lime.graphics.ImageBuffer)",
+                  "granted access to the Lime canvas context"
               )
           ])
 
