@@ -1,0 +1,128 @@
+name: Inspect Sonic EXE game assets
+run-name: Inventory custom characters stages scripts and media
+
+on:
+  push:
+    paths:
+      - ".github/workflows/inspect-game-assets.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Download and reassemble release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p package
+          cd package
+          gh release download v1.0.0 --repo "$GH_REPO" \
+            --pattern 'unofficial-windows.1.zip.001' \
+            --pattern 'unofficial-windows.1.zip.002'
+          cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > ../release.zip
+          cd ..
+
+      - name: Inventory game content folders
+        run: |
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          from pathlib import PurePosixPath
+          from collections import Counter, defaultdict
+          import json, re
+
+          report = []
+          def out(value=""): report.append(str(value))
+
+          with ZipFile("release.zip") as z:
+              files = [x for x in z.infolist() if not x.is_dir()]
+              contents = [x for x in files if x.filename.lower().startswith("contents/")]
+              out("SONIC.EXE UNOFFICIAL 1.0.0 - GAME CONTENT INVENTORY")
+              out(f"Archive files: {len(files):,}")
+              out(f"Content files: {len(contents):,}")
+              out(f"Content bytes: {sum(x.file_size for x in contents):,}")
+              out()
+
+              groups = defaultdict(list)
+              for info in contents:
+                  parts = PurePosixPath(info.filename).parts
+                  if len(parts) > 1:
+                      groups[parts[1]].append(info)
+
+              out(f"CONTENT GROUPS: {len(groups)}")
+              for group, entries in sorted(groups.items(), key=lambda kv: sum(x.file_size for x in kv[1]), reverse=True):
+                  ext = Counter(PurePosixPath(x.filename).suffix.lower() or "[none]" for x in entries)
+                  size = sum(x.file_size for x in entries)
+                  out(f"GROUP {group!r}: files={len(entries):,} bytes={size:,} extensions={dict(ext.most_common(15))}")
+                  topdirs = Counter("/".join(PurePosixPath(x.filename).parts[2:4]) for x in entries if len(PurePosixPath(x.filename).parts) > 3)
+                  for directory, n in topdirs.most_common(18):
+                      out(f"  DIR {directory}: {n} files")
+              out()
+
+              # Distinguish the asset types needed for a faithful game port.
+              categories = {
+                  "charts": re.compile(r"/data/[^/]+/[^/]+\.json$", re.I),
+                  "characters": re.compile(r"/characters/.*\.json$", re.I),
+                  "stages": re.compile(r"/stages/.*\.json$", re.I),
+                  "weeks": re.compile(r"/weeks/.*\.json$", re.I),
+                  "scripts": re.compile(r"\.(lua|hx|hscript|hxc)$", re.I),
+                  "events": re.compile(r"/custom_events/|/custom_notetypes/", re.I),
+                  "videos": re.compile(r"\.(mp4|webm|m4v)$", re.I),
+                  "audio": re.compile(r"\.(ogg|mp3|wav|flac)$", re.I),
+                  "image": re.compile(r"\.(png|webp|jpg|jpeg|gif)$", re.I),
+                  "atlases": re.compile(r"\.(xml|txt)$", re.I),
+                  "shaders": re.compile(r"\.(frag|vert|glsl)$", re.I)
+              }
+              out("CATEGORY TOTALS:")
+              for name, pattern in categories.items():
+                  matches = [x for x in contents if pattern.search(x.filename)]
+                  out(f"  {name}: {len(matches):,} files, {sum(x.file_size for x in matches):,} bytes")
+                  for x in sorted(matches, key=lambda x:x.file_size, reverse=True)[:12]:
+                      out(f"    {x.file_size:>12,} {x.filename}")
+              out()
+
+              # List all character/stage/week metadata paths and script/event paths.
+              for name, pattern in (
+                  ("CHARACTER JSON", categories["characters"]),
+                  ("STAGE JSON", categories["stages"]),
+                  ("WEEK JSON", categories["weeks"]),
+                  ("LUA/HX SCRIPTS", categories["scripts"]),
+                  ("CUSTOM EVENTS/NOTETYPES", categories["events"])
+              ):
+                  out(name)
+                  matches = [x for x in contents if pattern.search(x.filename)]
+                  for x in matches[:2500]:
+                      out(f"  {x.file_size:>12,} {x.filename}")
+                  out(f"Total: {len(matches)}")
+                  out()
+
+              # Extract useful menu/week/song registry data without exporting assets.
+              candidate_files = [
+                  x for x in contents
+                  if re.search(r"(weeklist\.txt|weeks/.*\.json|manifest.*\.json|freeplay.*\.json|story.*\.json)$",x.filename,re.I)
+              ]
+              out("WEEK/MENU REGISTRY SAMPLES:")
+              for x in candidate_files[:100]:
+                  raw = z.read(x)
+                  out(f"FILE {x.filename} ({x.file_size} bytes)")
+                  if x.file_size <= 50000:
+                      out(raw.decode("utf-8","replace")[:2500])
+                  out()
+
+          open("game-asset-inventory.txt","w",encoding="utf-8").write("\n".join(report)+"\n")
+          print("\n".join(report))
+          PY
+
+      - name: Upload game asset inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonicexe-game-asset-inventory
+          path: game-asset-inventory.txt
+          if-no-files-found: warn
+          retention-days: 14
