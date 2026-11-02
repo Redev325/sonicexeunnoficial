@@ -160,19 +160,21 @@ jobs:
 
           prefixes = (
               "assets/exe/mainmenu/",
-              "assets/exe/title/logo/",
+              "assets/exe/title/",
           )
           exact = {
-              "assets/exe/title/titleEnterNEW.webp",
-              "assets/exe/title/spikesdown.webp",
               "assets/exe/backButton.webp",
               "assets/shared/images/menuDesat.webp",
           }
+          allowed = {".webp", ".xml", ".json", ".txt"}
           output = Path("original-menu-assets")
           copied = []
           with ZipFile("release.zip") as z:
               for name in z.namelist():
+                  suffix = Path(name).suffix.casefold()
                   if name.endswith("/") or not (name.startswith(prefixes) or name in exact):
+                      continue
+                  if suffix not in allowed:
                       continue
                   relative = Path(name)
                   target = output / relative
