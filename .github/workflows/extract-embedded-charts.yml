@@ -66,7 +66,7 @@ jobs:
 
           collect_strings(manifest)
           chart_paths = set()
-          path_pattern = r"contents/[^\\\"'<>|*?:]{1,500}?\\.json"
+          path_pattern = r"contents/[^\"'<>|*?:]{1,500}?\.json"
           for value in manifest_strings:
               for match in re.finditer(path_pattern, value, re.I):
                   candidate = match.group()
