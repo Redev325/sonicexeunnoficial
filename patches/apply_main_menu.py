@@ -177,13 +177,7 @@ def main() -> None:
 \t\t\t\t\t\t\t\tmenuItems.members[i].kill();
 \t\t\t\t\t\t\t}
 \t\t\t\t\t\t});""",
-        """\t\t\t\t\t\tFlxTween.tween(menuItems.members[i], {alpha: 0}, 0.4, {
-\t\t\t\t\t\t\tease: FlxEase.quadOut,
-\t\t\t\t\t\t\tonComplete: function(twn:FlxTween)
-\t\t\t\t\t\t\t{
-\t\t\t\t\t\t\t\tmenuItems.members[i].kill();
-\t\t\t\t\t\t\t}
-\t\t\t\t\t\t});""",
+
         """\t\t\t\t\t\tFlxTween.tween(menuItems.members[i], {alpha: 0}, 0.4, {
 \t\t\t\t\t\t\tease: FlxEase.quadOut,
 \t\t\t\t\t\t\tonComplete: function(twn:FlxTween)
