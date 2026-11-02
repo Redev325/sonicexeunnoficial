@@ -66,10 +66,11 @@ jobs:
               lower = max(0, fmt_pos - 20_000_000)
               p1 = data.rfind(b'"player1"', lower, fmt_pos)
               p2 = data.rfind(b'"player2"', lower, fmt_pos)
-              player_pos = max(p1, p2)
-              if player_pos < 0:
+              player_fields = [p for p in (p1, p2) if p >= 0]
+              if not player_fields:
                   failures += 1
                   continue
+              player_pos = min(player_fields)
 
               # The opening brace is immediately before the first root field.
               start = data.rfind(b'{', max(0, player_pos - 64), player_pos)
