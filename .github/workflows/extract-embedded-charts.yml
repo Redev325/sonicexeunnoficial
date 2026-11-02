@@ -28,33 +28,49 @@ jobs:
           cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > ../release.zip
           cd ..
 
-      - name: Extract complete charts and build index
+      - name: Extract charts using the original game manifest paths
         run: |
           python3 - <<'PY'
           from zipfile import ZipFile
           from pathlib import PurePosixPath, Path
           import json, re, hashlib, csv
 
-          def slug(value):
-              return re.sub(r'-+', '-', re.sub(r'[^a-z0-9]+', '-', value.lower())).strip('-')
+          def canonical(value):
+              return ''.join(ch for ch in value.casefold() if ch.isalnum())
 
           with ZipFile("release.zip") as z:
               infos = z.infolist()
               exe_info = next(i for i in infos if PurePosixPath(i.filename).name.lower() == "vs sonic.exe")
               data = z.read(exe_info)
 
-              # Match a chart title to its original content group using the song audio path.
-              audio_dirs = {}
-              for info in infos:
-                  m = re.fullmatch(r'contents/([^/]+)/songs/([^/]+)/inst\.ogg', info.filename, re.I)
-                  if m:
-                      audio_dirs[slug(m.group(2))] = m.group(1)
+              manifest = json.loads(z.read("manifest/default.json").decode("utf-8-sig"))
+              manifest_paths = set()
+
+              def collect_paths(value):
+                  if isinstance(value, dict):
+                      for key, child in value.items():
+                          if isinstance(child, str) and child.casefold().startswith("contents/"):
+                              if "/data/" in child.casefold() and child.casefold().endswith(".json"):
+                                  manifest_paths.add(child.replace("\\", "/"))
+                          collect_paths(child)
+                  elif isinstance(value, list):
+                      for child in value:
+                          collect_paths(child)
+
+              collect_paths(manifest)
+              # Also handle manifests that store the virtual asset paths in IDs
+              # and path strings inside the same JSON record.
+              chart_paths = sorted(
+                  path for path in manifest_paths
+                  if re.search(r"/data/[^/]+/[^/]+\.json$", path, re.I)
+              )
 
           decoder = json.JSONDecoder()
           format_positions = [m.start() for m in re.finditer(b'psych_v1_convert', data)]
           charts = []
           seen_starts = set()
           failures = 0
+          unmatched = []
           output_root = Path("embedded-charts")
           output_root.mkdir(exist_ok=True)
 
@@ -87,19 +103,43 @@ jobs:
               if not isinstance(notes, list) or not isinstance(title, str):
                   failures += 1
                   continue
+
               note_count = sum(
                   len(section.get("sectionNotes", []))
                   for section in notes
                   if isinstance(section, dict) and isinstance(section.get("sectionNotes", []), list)
               )
 
-              song_slug = slug(title)
-              group = audio_dirs.get(song_slug, "_EXTRACTED_")
-              relative_path = Path("contents") / group / "data" / song_slug / f"{song_slug}.json"
+              song_id = canonical(title)
+              matches = []
+              for path in chart_paths:
+                  folder = PurePosixPath(path).parent.name
+                  filename_stem = PurePosixPath(path).stem
+                  if canonical(folder) == song_id or canonical(filename_stem) == song_id:
+                      matches.append(path)
+
+              if len(matches) == 1:
+                  original_path = matches[0]
+                  relative_path = Path(*PurePosixPath(original_path).parts)
+                  group = PurePosixPath(original_path).parts[1] if len(PurePosixPath(original_path).parts) > 1 else "_UNKNOWN_"
+              elif matches:
+                  # Prefer the entry whose folder and basename both match the title.
+                  exact = [
+                      p for p in matches
+                      if canonical(PurePosixPath(p).parent.name) == song_id
+                      and canonical(PurePosixPath(p).stem) == song_id
+                  ]
+                  original_path = exact[0] if len(exact) == 1 else sorted(matches)[0]
+                  relative_path = Path(*PurePosixPath(original_path).parts)
+                  group = PurePosixPath(original_path).parts[1] if len(PurePosixPath(original_path).parts) > 1 else "_UNKNOWN_"
+              else:
+                  unmatched.append(title)
+                  song_slug = re.sub(r'-+', '-', re.sub(r'[^a-z0-9]+', '-', title.lower())).strip('-')
+                  group = "_UNMATCHED_"
+                  relative_path = Path("contents") / group / "data" / song_slug / f"{song_slug}.json"
+
               target = output_root / relative_path
               target.parent.mkdir(parents=True, exist_ok=True)
-              if target.exists():
-                  target = target.with_name(target.stem + f"-{len(charts)+1}" + target.suffix)
               target.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
               charts.append({
@@ -111,9 +151,9 @@ jobs:
                   "player2": obj.get("player2"),
                   "stage": obj.get("stage"),
                   "format": obj.get("format"),
+                  "original_game_path": str(relative_path).replace("\\", "/"),
                   "executable_offset": f"0x{start:x}",
-                  "source_bytes": consumed,
-                  "output_file": str(target).replace("embedded-charts/", "")
+                  "source_bytes": consumed
               })
 
           charts.sort(key=lambda c: c["song"].casefold())
@@ -128,13 +168,15 @@ jobs:
 
           total_notes = sum(c["notes"] for c in charts)
           print(f"Executable SHA256: {hashlib.sha256(data).hexdigest()}")
+          print(f"Manifest chart paths found: {len(chart_paths)}")
           print(f"psych_v1_convert markers: {len(format_positions)}")
           print(f"Complete chart files extracted: {len(charts)}")
           print(f"Total note events: {total_notes:,}")
           print(f"Parse failures: {failures}")
-          print("Extracted files:")
+          print(f"Charts without original manifest path: {unmatched}")
+          print("Extracted chart paths:")
           for c in charts:
-              print(f"  {c['song']}: {c['notes']} notes -> {c['output_file']}")
+              print(f"  {c['song']}: {c['notes']} notes -> {c['original_game_path']}")
           PY
 
       - name: Upload extracted chart files
