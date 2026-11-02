@@ -221,14 +221,16 @@ def main() -> None:
 \t\t\t\t\t\t\t\tmenuPlates.members[i].kill();
 \t\t\t\t\t\t\t}
 \t\t\t\t\t\t});
-\t\t\t\t\t\tFlxTween.tween(menuHighlights.members[i], {alpha: 0}, 0.4, {
-\t\t\t\t\t\t\tease: FlxEase.quadOut,
-\t\t\t\t\t\t\tonComplete: function(twn:FlxTween)
-\t\t\t\t\t\t\t{
-\t\t\t\t\t\t\t\tmenuHighlights.members[i].kill();
-\t\t\t\t\t\t\t}
-\t\t\t\t\t\t});""",
+""",
         "fade original menu option sprites on transition",
+    )
+
+    // The moving hover shadow is a single sprite, so fade it once at the start of the exit loop.
+    source = replace_once(
+        source,
+        "if (i == curSelected)\n\t\t\t\t\t\t\tcontinue;",
+        "if (i == 0)\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\tFlxTween.tween(menuHighlights.members[0], {alpha: 0}, 0.4, {\n\t\t\t\t\t\t\t\tease: FlxEase.quadOut,\n\t\t\t\t\t\t\t\tonComplete: function(twn:FlxTween)\n\t\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\t\tmenuHighlights.members[0].kill();\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t});\n\t\t\t\t\t\t}\n\t\t\t\t\t\tif (i == curSelected)\n\t\t\t\t\t\t\tcontinue;",
+        "fade the shared yellow hover sprite once on menu exit",
     )
 
     helper_methods = """\tfunction menuLabel(index:Int):String
