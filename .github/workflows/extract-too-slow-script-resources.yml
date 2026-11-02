@@ -1,0 +1,105 @@
+name: Extract Too-Slow scene and event script clues
+run-name: Inspect embedded Too-Slow custom scripts
+
+on:
+  push:
+    paths:
+      - ".github/workflows/extract-too-slow-script-resources.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Download and reassemble release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p package
+          cd package
+          gh release download v1.0.0 --repo "$GH_REPO" \
+            --pattern 'unofficial-windows.1.zip.001' \
+            --pattern 'unofficial-windows.1.zip.002'
+          cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > ../release.zip
+          cd ..
+
+      - name: Inspect script strings and embedded resources
+        run: |
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          from pathlib import PurePosixPath
+          from collections import Counter
+          import re, hashlib
+
+          with ZipFile("release.zip") as z:
+              exe=next(i for i in z.infolist() if PurePosixPath(i.filename).name.lower()=="vs sonic.exe")
+              data=z.read(exe)
+
+          report=[]
+          def out(x=""): report.append(str(x))
+          out("TOO-SLOW SCRIPT RESOURCE INSPECTION")
+          out(f"Executable bytes: {len(data):,}")
+          out("SHA256: "+hashlib.sha256(data).hexdigest())
+
+          markers = [
+              b"contents_story_mode_stages_tooslow_hx",
+              b"contents_story_mode_stages_tooslow_json",
+              b"contents_story_mode_custom_events_tooslowevents_txt",
+              b"contents_story_mode_custom_events_tooslowstatic_lua",
+              b"contents_story_mode_custom_events_tooslowstatic_txt",
+              b"contents_story_mode_data_too_slow_too_slow_json",
+              b"contents_story_mode_images_characters_luis_xml",
+              b"contents_story_mode_images_characters_luis_webp"
+          ]
+          for marker in markers:
+              positions=[m.start() for m in re.finditer(re.escape(marker),data,re.I)]
+              out(f"\nMARKER {marker.decode()}: {len(positions)}")
+              for pos in positions[:5]:
+                  out(f"  offset=0x{pos:x}")
+                  lo=max(0,pos-2048); hi=min(len(data),pos+8192)
+                  region=data[lo:hi]
+                  strings=[]
+                  for m in re.finditer(rb"[ -~]{6,}",region):
+                      value=m.group().decode("ascii","ignore")
+                      if value not in strings:
+                          strings.append(value)
+                  for value in strings[:80]:
+                      if any(ch.isalpha() for ch in value):
+                          out("    "+value[:240])
+
+          out("\nPOTENTIAL HXSCRIPT/LUA SOURCE STRINGS")
+          terms=[
+              "onCreate", "onUpdate", "onBeatHit", "makeLuaSprite", "addLuaSprite",
+              "makeAnimatedLuaSprite", "setScrollFactor", "setProperty", "startVideo",
+              "FlxSprite", "FlxBackdrop", "FlxTween", "tooslow", "static note",
+              "Static Note", "Alt Animation", "Phantom Note", "Ring Note",
+              "setObjectCamera", "addBehindGF", "addBehindDad", "addBehindBF"
+          ]
+          counts={}
+          for term in terms:
+              matches=[m.start() for m in re.finditer(re.escape(term.encode()),data,re.I)]
+              counts[term]=len(matches)
+              if matches:
+                  out(f"  {term}: {len(matches)} matches")
+                  for pos in matches[:5]:
+                      region=data[max(0,pos-100):min(len(data),pos+300)]
+                      printable=re.sub(rb"[^ -~\t\r\n]",b".",region)
+                      out("    @0x%x %s"%(pos,printable.decode("ascii","ignore").replace("\n"," ")[:380]))
+          out("\nCOUNTS: "+repr(counts))
+
+          open("too-slow-script-report.txt","w",encoding="utf-8").write("\n".join(report)+"\n")
+          print("\n".join(report))
+          PY
+
+      - name: Upload Too-Slow script inspection report
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonicexe-too-slow-script-report
+          path: too-slow-script-report.txt
+          if-no-files-found: error
+          retention-days: 14
