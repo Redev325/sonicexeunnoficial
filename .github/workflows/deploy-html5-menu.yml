@@ -13,6 +13,16 @@ on:
         description: "Successful Build HTML5 engine base run ID"
         required: true
         type: string
+  # A workflow_run event can be skipped by GitHub's condition evaluation; this
+  # push path lets a deploy-only workflow edit republish the latest successful build.
+  push:
+    paths:
+      - ".github/workflows/deploy-html5-menu.yml"
+    inputs:
+      run_id:
+        description: "Successful Build HTML5 engine base run ID"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -26,7 +36,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -38,6 +48,11 @@ jobs:
           GH_REPO: ${{ github.repository }}
           SOURCE_RUN_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.run_id || github.event.workflow_run.id }}
         run: |
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            SOURCE_RUN_ID="$(gh run list --repo "$GH_REPO" --workflow "Build HTML5 engine base" --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          fi
+          test -n "$SOURCE_RUN_ID"
+          echo "Deploying successful HTML5 build run: $SOURCE_RUN_ID"
           mkdir -p site
           gh run download "$SOURCE_RUN_ID" --repo "$GH_REPO" \
             --name psych-engine-html5-base --dir site
