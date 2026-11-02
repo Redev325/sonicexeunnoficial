@@ -1,4 +1,5 @@
 name: Inspect Sonic EXE release package
+run-name: Inspect Sonic EXE v1.0.0
 
 on:
   push:
@@ -46,7 +47,7 @@ jobs:
                   extensions = Counter(PurePosixPath(i.filename).suffix.lower() or "[no extension]" for i in files)
                   total_size = sum(i.file_size for i in files)
                   report += [
-                      f"ZIP opened successfully: yes",
+                      "ZIP opened successfully: yes",
                       f"Entries: {len(infos)}",
                       f"Files: {len(files)}",
                       f"Total uncompressed size: {total_size:,} bytes",
@@ -69,10 +70,10 @@ jobs:
           except Exception as exc:
               report += [f"Inspection error: {type(exc).__name__}: {exc}"]
 
-          text = "\n".join(report) + "\n"
-          print(text)
+          output = "\n".join(report) + "\n"
+          print(output)
           with open("inspection-report.txt", "w", encoding="utf-8") as f:
-              f.write(text)
+              f.write(output)
           PY
 
       - name: Upload inspection report
