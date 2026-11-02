@@ -75,7 +75,7 @@ def main() -> None:
     source = replace_once(
         source,
         "\t\tadd(magenta);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
-        "\t\tadd(magenta);\n\n\t\tvar menuLogo:FlxSprite = new FlxSprite(FlxG.width * 0.045, FlxG.height * 0.17);\n\t\tmenuLogo.loadGraphic(Paths.image('sonicexe-logo'));\n\t\tmenuLogo.setGraphicSize(Std.int(FlxG.width * 0.37));\n\t\tmenuLogo.updateHitbox();\n\t\tmenuLogo.antialiasing = ClientPrefs.data.antialiasing;\n\t\tmenuLogo.scrollFactor.set(0, 0);\n\t\tadd(menuLogo);\n\n\t\tmenuPlates = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuPlates);\n\n\t\tmenuHighlights = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHighlights);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
+        "\t\tadd(magenta);\n\n\t\tvar menuLogo:FlxSprite = new FlxSprite(FlxG.width * 0.045, FlxG.height * 0.17);\n\t\tmenuLogo.loadGraphic(Paths.image('sonicexe-logo'));\n\t\tmenuLogo.setGraphicSize(Std.int(FlxG.width * 0.37));\n\t\tmenuLogo.updateHitbox();\n\t\tmenuLogo.antialiasing = ClientPrefs.data.antialiasing;\n\t\tmenuLogo.scrollFactor.set(0, 0);\n\t\tadd(menuLogo);\n\n\t\tmenuHighlights = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHighlights);\n\n\t\tmenuPlates = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuPlates);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
         "menu plates behind menu labels",
     )
 
@@ -98,22 +98,22 @@ def main() -> None:
 \t\t}"""
     new_loop = """\t\tvar buttonX:Int = Std.int(FlxG.width * 0.505);
 \t\tvar buttonWidth:Int = Std.int(FlxG.width * 0.47);
-\t\tvar buttonHeight:Int = Std.int(FlxG.height * 0.145);
+\t\tvar buttonHeight:Int = Std.int(buttonWidth * (322.0 / 1673.0));
 \t\tvar labelSize:Int = Std.int(FlxG.height * 0.065);
 \t\tfor (i in 0...optionShit.length)
 \t\t{
 \t\t\tvar buttonY:Int = Std.int(FlxG.height * (0.06 + i * 0.18));
 
 \t\t\tvar highlight:FlxSprite = new FlxSprite(buttonX + 7, buttonY + 9);
-\t\t\thighlight.loadGraphic(Paths.image('sonicexe-menu/options/shadow'));
-\t\t\thighlight.setGraphicSize(buttonWidth - 14, buttonHeight - 18);
+\t\t\thighlight.loadGraphic(Paths.image('sonicexe-menu/options/shadow'));\n\t\t\thighlight.antialiasing = false;
+\t\t\thighlight.setGraphicSize(buttonWidth - 18, Std.int((buttonWidth - 18) * (324.0 / 1833.0)));
 \t\t\thighlight.updateHitbox();
 \t\t\thighlight.scrollFactor.set(0, 0);
 \t\t\thighlight.visible = (i == curSelected);
 \t\t\tmenuHighlights.add(highlight);
 
 \t\t\tvar plate:FlxSprite = new FlxSprite(buttonX, buttonY);
-\t\t\tplate.loadGraphic(Paths.image('sonicexe-menu/options/box'));
+\t\t\tplate.loadGraphic(Paths.image('sonicexe-menu/options/box'));\n\t\t\tplate.antialiasing = false;
 \t\t\tplate.setGraphicSize(buttonWidth, buttonHeight);
 \t\t\tplate.updateHitbox();
 \t\t\tplate.scrollFactor.set(0, 0);
@@ -122,7 +122,7 @@ def main() -> None:
 \t\t\tvar label:FlxText = new FlxText(buttonX + 24, buttonY + 8, buttonWidth - 48, menuLabel(i), labelSize);
 \t\t\tlabel.antialiasing = false;
 \t\t\tlabel.scrollFactor.set(0, 0);
-\t\t\tlabel.setFormat("VCR OSD Mono", labelSize, FlxColor.GRAY, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\t\tlabel.setFormat(Paths.font('vcr.ttf'), labelSize, FlxColor.GRAY, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\t\tlabel.y = buttonY + (buttonHeight - label.height) * 0.5 - 2;
 \t\t\tmenuItems.add(label);
 \t\t}"""

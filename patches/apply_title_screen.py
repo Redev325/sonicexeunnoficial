@@ -79,7 +79,33 @@ def replace_visuals(source: str) -> str:
 \t\tnewTitle = true;
 \t\t
 """
-    return source[:start] + replacement + source[end:]
+    patched = source[:start] + replacement + source[end:]
+    patched = patched.replace("Paths.music('freakyMenu')", "Paths.music('menu')")
+
+    credit_start = patched.find("\t\tcredGroup = new FlxGroup();")
+    clear_memory = patched.find("\t\tPaths.clearUnusedMemory();", credit_start)
+    if credit_start < 0 or clear_memory < 0:
+        raise SystemExit("TitleState patch stopped: could not locate the generic credit splash.")
+    patched = (
+        patched[:credit_start]
+        + "\t\tcredGroup = new FlxGroup();\n"
+        + "\t\ttextGroup = new FlxGroup();\n"
+        + "\t\tinitialized = true;\n"
+        + "\t\tskippedIntro = true;\n"
+        + "\t\tclosedState = true;\n\n"
+        + patched[clear_memory:]
+    )
+
+    beat_start = patched.find("\toverride function beatHit()")
+    beat_end = patched.find("\n\tvar skippedIntro:Bool", beat_start)
+    if beat_start < 0 or beat_end < 0:
+        raise SystemExit("TitleState patch stopped: could not locate generic intro beat sequence.")
+    patched = (
+        patched[:beat_start]
+        + "\toverride function beatHit()\n\t{\n\t\tsuper.beatHit();\n\t}\n"
+        + patched[beat_end:]
+    )
+    return patched
 
 
 def main() -> None:

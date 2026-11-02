@@ -249,6 +249,8 @@ jobs:
               "assets/exe/mainmenu/logo.webp": Path("engine/assets/shared/images/sonicexe-logo.png"),
               "assets/exe/mainmenu/options/box.webp": Path("engine/assets/shared/images/sonicexe-menu/options/box.png"),
               "assets/exe/mainmenu/options/shadow.webp": Path("engine/assets/shared/images/sonicexe-menu/options/shadow.png"),
+              "assets/exe/mainmenu/options/hitbox.webp": Path("engine/assets/shared/images/sonicexe-menu/options/hitbox.png"),
+              "assets/exe/backButton.webp": Path("engine/assets/shared/images/sonicexe-back-button.png"),
           }
           with ZipFile(archive) as z:
               for source_name, output in images.items():
@@ -276,6 +278,25 @@ jobs:
                       with z.open(name) as source, destination.open("wb") as target:
                           shutil.copyfileobj(source, target)
                   print(f"Prepared original title asset: {destination} ({destination.stat().st_size:,} bytes)")
+
+              font_files = (
+                  "vcr.ttf", "pixel-latin.ttf", "NiseSega.ttf", "NiseSegaSonic.TTF",
+                  "SonicFont.ttf", "SonicCD.ttf", "sonic4.ttf", "sonichud.ttf",
+                  "Plaza Regular.ttf", "fps.ttf",
+              )
+              font_dir = Path("engine/assets/fonts")
+              font_dir.mkdir(parents=True, exist_ok=True)
+              for font_name in font_files:
+                  output = font_dir / font_name
+                  with z.open("assets/fonts/" + font_name) as source, output.open("wb") as target:
+                      shutil.copyfileobj(source, target)
+                  print(f"Installed original game font: {output} ({output.stat().st_size:,} bytes)")
+
+              music_output = Path("engine/assets/music/menu.ogg")
+              music_output.parent.mkdir(parents=True, exist_ok=True)
+              with z.open("assets/exe/music/menu.ogg") as source, music_output.open("wb") as target:
+                  shutil.copyfileobj(source, target)
+              print(f"Installed original menu music ({music_output.stat().st_size:,} bytes)")
 
               video_output = Path("engine/sonicexe-menu.mp4")
               with z.open("assets/exe/mainmenu/menu.mp4") as source, video_output.open("wb") as target:
@@ -316,14 +337,14 @@ jobs:
 
           head_markup = """
           <style id="sonicexe-menu-video-style">
-            html, body { position: relative; background: #000; }
+            html, body { position: relative; width: 100%; height: 100%; background: #000; }
             #sonicexe-menu-bg {
-              position: fixed; inset: 0; width: 100vw; height: 100vh;
-              object-fit: contain; display: none; z-index: 2;
-              pointer-events: none; mix-blend-mode: screen;
+              position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+              object-fit: fill; display: none; z-index: 0; pointer-events: none;
             }
             #openfl-content {
-              position: relative; z-index: 1; background: transparent !important;
+              position: relative; z-index: 1; width: 100%; height: 100%;
+              background: transparent !important;
             }
             #openfl-content canvas { background: transparent !important; }
           </style>
@@ -349,11 +370,12 @@ jobs:
 
           if "sonicexe-menu-bg" in html:
               raise SystemExit("The Sonic.EXE menu video was already injected.")
-          head = re.search(r"<head\b[^>]*>", html, re.IGNORECASE)
+          head_end = html.lower().rfind("</head>")
           body = re.search(r"<body\b[^>]*>", html, re.IGNORECASE)
-          if not head or not body:
+          if head_end < 0 or not body:
               raise SystemExit("Unexpected generated HTML5 index.html structure.")
-          html = html[:head.end()] + "\n" + head_markup + html[head.end():]
+          # Apply these overrides after OpenFL's own stylesheet.
+          html = html[:head_end] + "\n" + head_markup + "\n" + html[head_end:]
           body = re.search(r"<body\b[^>]*>", html, re.IGNORECASE)
           if not body:
               raise SystemExit("Generated HTML5 page has no body tag after head injection.")
