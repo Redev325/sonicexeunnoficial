@@ -284,6 +284,7 @@ jobs:
           cp engine/sonicexe-menu.mp4 "$output/sonicexe-menu.mp4"
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           page = Path("engine/export/release/html5/bin/index.html")
           html = page.read_text(encoding="utf-8")
@@ -322,11 +323,11 @@ jobs:
 
           if "sonicexe-menu-bg" in html:
               raise SystemExit("The Sonic.EXE menu video was already injected.")
-          head = re.search(r"<head\\b[^>]*>", html, re.IGNORECASE)
-          body = re.search(r"<body\\b[^>]*>", html, re.IGNORECASE)
+          head = re.search(r"<head\b[^>]*>", html, re.IGNORECASE)
+          body = re.search(r"<body\b[^>]*>", html, re.IGNORECASE)
           if not head or not body:
               raise SystemExit("Unexpected generated HTML5 index.html structure.")
-          html = html[:head.end()] + "\\n" + head_markup + html[head.end():]
+          html = html[:head.end()] + "\n" + head_markup + html[head.end():]
           body = re.search(r"<body\\b[^>]*>", html, re.IGNORECASE)
           html = html[:body.end()] + "\\n" + body_markup + html[body.end():]
           page.write_text(html, encoding="utf-8")
