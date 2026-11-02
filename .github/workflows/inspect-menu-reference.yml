@@ -104,6 +104,15 @@ jobs:
                           pass
                   add(f"  {x.file_size:>10,} bytes{dims}  {x.filename}")
 
+              postintro_files = [
+                  x.filename for x in infos
+                  if re.search(r"post[ _-]?intro|postintro", x.filename, re.I)
+              ]
+              add()
+              add(f"POSTINTRO FILE PATHS: {len(postintro_files)}")
+              for name in postintro_files:
+                  add("  " + name)
+
               add()
               add(f"Menu-keyword file matches across content packs: {len(matches)}")
               add("MENU-RELATED PATHS:")
@@ -128,10 +137,26 @@ jobs:
                       (s for s in strings if keywords.search(s) and len(s) <= 180),
                       key=str.casefold
                   )
+                  font_refs = sorted(
+                      (s for s in strings if re.search(r"font|\\.ttf|\\.otf|vcr|nise|sonicfont|pixel-latin|soniccd|sonichud", s, re.I) and len(s) <= 240),
+                      key=str.casefold
+                  )
+                  postintro_refs = sorted(
+                      (s for s in strings if re.search(r"post[ _-]?intro|postintro|postIntro|post intro", s, re.I) and len(s) <= 240),
+                      key=str.casefold
+                  )
                   add()
                   add(f"Executable: {exe.file_size:,} bytes")
                   add("MENU/STATE-RELATED EXECUTABLE STRINGS:")
                   for s in relevant[:500]:
+                      add("  " + s)
+                  add()
+                  add("FONT-RELATED EXECUTABLE STRINGS:")
+                  for s in font_refs:
+                      add("  " + s)
+                  add()
+                  add("POSTINTRO-RELATED EXECUTABLE STRINGS:")
+                  for s in postintro_refs:
                       add("  " + s)
 
               add()
