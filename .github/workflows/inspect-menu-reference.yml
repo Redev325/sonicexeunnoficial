@@ -151,23 +151,46 @@ jobs:
           print(output)
           PY
 
-      - name: Extract the original game main-menu logo
+      - name: Extract original main-menu and title-screen artwork
         run: |
           python3 - <<'PY'
+          from pathlib import Path
           from zipfile import ZipFile
+          import shutil
+
+          prefixes = (
+              "assets/exe/mainmenu/",
+              "assets/exe/title/logo/",
+          )
+          exact = {
+              "assets/exe/title/titleEnterNEW.webp",
+              "assets/exe/title/spikesdown.webp",
+              "assets/exe/backButton.webp",
+              "assets/shared/images/menuDesat.webp",
+          }
+          output = Path("original-menu-assets")
+          copied = []
           with ZipFile("release.zip") as z:
-              logo = z.read("assets/exe/mainmenu/logo.webp")
-          with open("official-menu-logo.webp", "wb") as f:
-              f.write(logo)
-          print(f"Extracted original main-menu logo: {len(logo):,} bytes")
+              for name in z.namelist():
+                  if name.endswith("/") or not (name.startswith(prefixes) or name in exact):
+                      continue
+                  relative = Path(name)
+                  target = output / relative
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  with z.open(name) as source, target.open("wb") as dest:
+                      shutil.copyfileobj(source, dest)
+                  copied.append((name, target.stat().st_size))
+          for name, size in copied:
+              print(f"{size:>10,} bytes  {name}")
+          print(f"Extracted {len(copied)} original UI assets.")
           PY
 
-      - name: Upload menu report and original logo
+      - name: Upload original menu artwork
         uses: actions/upload-artifact@v4
         with:
-          name: sonicexe-menu-reference-assets
+          name: sonicexe-original-menu-artwork
           path: |
             menu-reference-report.txt
-            official-menu-logo.webp
+            original-menu-assets/
           if-no-files-found: error
           retention-days: 7
