@@ -288,7 +288,7 @@ jobs:
           page = Path("engine/export/release/html5/bin/index.html")
           html = page.read_text(encoding="utf-8")
 
-          style = """
+          head_markup = """
           <style id="sonicexe-menu-video-style">
             html, body { position: relative; background: #000; }
             #sonicexe-menu-bg {
@@ -300,34 +300,35 @@ jobs:
             }
             #openfl-content canvas { background: transparent !important; }
           </style>
-          """
-          markup = """
-          <video id="sonicexe-menu-bg" muted loop playsinline preload="auto" aria-hidden="true">
-            <source src="sonicexe-menu.mp4" type="video/mp4">
-          </video>
           <script>
             window.setSonicEXEMenuVideo = function(show) {
               var video = document.getElementById("sonicexe-menu-bg");
               if (!video) return;
               video.style.display = show ? "block" : "none";
               if (show) {
-                if (video.paused) {
-                  var playPromise = video.play();
-                  if (playPromise && playPromise.catch) playPromise.catch(function() {});
-                }
+                var playPromise = video.play();
+                if (playPromise && playPromise.catch) playPromise.catch(function() {});
               } else {
                 video.pause();
               }
             };
           </script>
           """
+          body_markup = """
+          <video id="sonicexe-menu-bg" muted loop playsinline preload="auto" aria-hidden="true">
+            <source src="sonicexe-menu.mp4" type="video/mp4">
+          </video>
+          """
 
-          if "</head>" not in html or "</body>" not in html:
-              raise SystemExit("Unexpected generated HTML5 index.html structure.")
           if "sonicexe-menu-bg" in html:
               raise SystemExit("The Sonic.EXE menu video was already injected.")
-          html = html.replace("</head>", style + "\n</head>", 1)
-          html = html.replace("</body>", markup + "\n</body>", 1)
+          head = re.search(r"<head\\b[^>]*>", html, re.IGNORECASE)
+          body = re.search(r"<body\\b[^>]*>", html, re.IGNORECASE)
+          if not head or not body:
+              raise SystemExit("Unexpected generated HTML5 index.html structure.")
+          html = html[:head.end()] + "\\n" + head_markup + html[head.end():]
+          body = re.search(r"<body\\b[^>]*>", html, re.IGNORECASE)
+          html = html[:body.end()] + "\\n" + body_markup + html[body.end():]
           page.write_text(html, encoding="utf-8")
           print("Installed the original menu MP4 behind the transparent game canvas.")
           PY
