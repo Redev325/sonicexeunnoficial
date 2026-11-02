@@ -1,5 +1,5 @@
-name: Extract embedded Sonic EXE chart index
-run-name: Locate embedded song charts inside Windows executable
+name: Extract embedded Sonic EXE charts
+run-name: Extract recovered song charts from Windows executable
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  extract:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -28,39 +28,35 @@ jobs:
           cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > ../release.zip
           cd ..
 
-      - name: Extract embedded chart metadata
+      - name: Extract complete charts and build index
         run: |
           python3 - <<'PY'
           from zipfile import ZipFile
-          from pathlib import PurePosixPath
-          import json, re, hashlib
+          from pathlib import PurePosixPath, Path
+          import json, re, hashlib, csv
+
+          def slug(value):
+              return re.sub(r'-+', '-', re.sub(r'[^a-z0-9]+', '-', value.lower())).strip('-')
 
           with ZipFile("release.zip") as z:
-              exe_info = next(i for i in z.infolist() if PurePosixPath(i.filename).name.lower() == "vs sonic.exe")
+              infos = z.infolist()
+              exe_info = next(i for i in infos if PurePosixPath(i.filename).name.lower() == "vs sonic.exe")
               data = z.read(exe_info)
 
-          report = []
-          def out(s=""): report.append(str(s))
-          out("SONIC.EXE UNOFFICIAL 1.0.0 - EMBEDDED CHART INDEX")
-          out(f"Executable size: {len(data):,} bytes")
-          out("SHA256: "+hashlib.sha256(data).hexdigest())
-          out()
+              # Match a chart title to its original content group using the song audio path.
+              audio_dirs = {}
+              for info in infos:
+                  m = re.fullmatch(r'contents/([^/]+)/songs/([^/]+)/inst\.ogg', info.filename, re.I)
+                  if m:
+                      audio_dirs[slug(m.group(2))] = m.group(1)
 
-          for marker in (b'mustHitSection', b'sectionNotes', b'"bpm"', b'"notes"', b'"song":', b'psych_v1_convert'):
-              positions = [m.start() for m in re.finditer(re.escape(marker), data)]
-              out(f"{marker.decode('ascii')}: {len(positions)} occurrences")
-              for pos in positions[:2]:
-                  out(f"  offset 0x{pos:x}: {data[max(0,pos-80):pos+180]!r}")
-          out()
-
-          # This build stores Psych Engine v1 charts as top-level objects:
-          # { "player1": ..., "player2": ..., "notes": [...], "song": "...", ... }
-          # Locate each format marker, then parse backward from the player fields.
-          format_positions = [m.start() for m in re.finditer(b'psych_v1_convert', data)]
           decoder = json.JSONDecoder()
+          format_positions = [m.start() for m in re.finditer(b'psych_v1_convert', data)]
           charts = []
           seen_starts = set()
           failures = 0
+          output_root = Path("embedded-charts")
+          output_root.mkdir(exist_ok=True)
 
           for fmt_pos in format_positions:
               lower = max(0, fmt_pos - 20_000_000)
@@ -71,8 +67,6 @@ jobs:
                   failures += 1
                   continue
               player_pos = min(player_fields)
-
-              # The opening brace is immediately before the first root field.
               start = data.rfind(b'{', max(0, player_pos - 64), player_pos)
               if start < 0 or start in seen_starts:
                   continue
@@ -98,47 +92,55 @@ jobs:
                   for section in notes
                   if isinstance(section, dict) and isinstance(section.get("sectionNotes", []), list)
               )
+
+              song_slug = slug(title)
+              group = audio_dirs.get(song_slug, "_EXTRACTED_")
+              relative_path = Path("contents") / group / "data" / song_slug / f"{song_slug}.json"
+              target = output_root / relative_path
+              target.parent.mkdir(parents=True, exist_ok=True)
+              if target.exists():
+                  target = target.with_name(target.stem + f"-{len(charts)+1}" + target.suffix)
+              target.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
               charts.append({
-                  "offset": f"0x{start:x}",
-                  "bytes": consumed,
-                  "song": title[:160],
+                  "song": title,
                   "bpm": obj.get("bpm"),
-                  "format": obj.get("format"),
                   "sections": len(notes),
                   "notes": note_count,
                   "player1": obj.get("player1"),
                   "player2": obj.get("player2"),
-                  "stage": obj.get("stage")
+                  "stage": obj.get("stage"),
+                  "format": obj.get("format"),
+                  "executable_offset": f"0x{start:x}",
+                  "source_bytes": consumed,
+                  "output_file": str(target).replace("embedded-charts/", "")
               })
 
-          charts.sort(key=lambda x: int(x["offset"], 16))
-          out(f"psych_v1_convert markers: {len(format_positions)}")
-          out(f"Complete chart objects parsed: {len(charts)}")
-          out(f"Candidate parse failures/skips: {failures}")
-          out()
-          for chart in charts:
-              out(json.dumps(chart, ensure_ascii=False))
-          if not charts:
-              out("No complete top-level chart object was recovered with the first-pass parser.")
-          out()
+          charts.sort(key=lambda c: c["song"].casefold())
+          (output_root / "chart-index.json").write_text(
+              json.dumps(charts, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8"
+          )
+          with (output_root / "chart-index.csv").open("w", newline="", encoding="utf-8") as f:
+              writer = csv.DictWriter(f, fieldnames=list(charts[0].keys()) if charts else ["song"])
+              writer.writeheader()
+              writer.writerows(charts)
 
-          # Include context around a parsed chart start to confirm the source layout.
-          if charts:
-              start = int(charts[0]["offset"], 16)
-              out("First parsed chart opening:")
-              out(repr(data[start:start+1200]))
-              out("First parsed chart ending:")
-              out(repr(data[start+charts[0]["bytes"]-500:start+charts[0]["bytes"]+80]))
-
-          open("embedded-chart-index.txt","w",encoding="utf-8").write("\n".join(report)+"\n")
-          print("\n".join(report))
+          total_notes = sum(c["notes"] for c in charts)
+          print(f"Executable SHA256: {hashlib.sha256(data).hexdigest()}")
+          print(f"psych_v1_convert markers: {len(format_positions)}")
+          print(f"Complete chart files extracted: {len(charts)}")
+          print(f"Total note events: {total_notes:,}")
+          print(f"Parse failures: {failures}")
+          print("Extracted files:")
+          for c in charts:
+              print(f"  {c['song']}: {c['notes']} notes -> {c['output_file']}")
           PY
 
-      - name: Upload embedded chart index
-        if: always()
+      - name: Upload extracted chart files
         uses: actions/upload-artifact@v4
         with:
-          name: sonicexe-embedded-chart-index
-          path: embedded-chart-index.txt
-          if-no-files-found: warn
+          name: sonicexe-extracted-charts
+          path: embedded-charts/
+          if-no-files-found: error
           retention-days: 14
