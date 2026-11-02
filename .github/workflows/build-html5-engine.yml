@@ -328,8 +328,10 @@ jobs:
           if not head or not body:
               raise SystemExit("Unexpected generated HTML5 index.html structure.")
           html = html[:head.end()] + "\n" + head_markup + html[head.end():]
-          body = re.search(r"<body\\b[^>]*>", html, re.IGNORECASE)
-          html = html[:body.end()] + "\\n" + body_markup + html[body.end():]
+          body = re.search(r"<body\b[^>]*>", html, re.IGNORECASE)
+          if not body:
+              raise SystemExit("Generated HTML5 page has no body tag after head injection.")
+          html = html[:body.end()] + "\n" + body_markup + html[body.end():]
           page.write_text(html, encoding="utf-8")
           print("Installed the original menu MP4 behind the transparent game canvas.")
           PY
