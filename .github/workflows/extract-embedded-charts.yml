@@ -56,7 +56,7 @@ jobs:
 
           # Attempt to parse JSON objects that begin with the usual Psych Engine
           # chart root: { "song": { ... } }. Only metadata is written to the report.
-          starts = [m.start() for m in re.finditer(rb'\\{\\s*"song"\\s*:', data)]
+          starts = [m.start() for m in re.finditer(rb'\{\s*"song"\s*:', data)]
           out(f"Potential chart JSON root starts: {len(starts)}")
           decoder = json.JSONDecoder()
           charts = []
