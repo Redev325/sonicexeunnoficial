@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   extract:
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
