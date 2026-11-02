@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   inspect:
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
