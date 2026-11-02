@@ -132,7 +132,7 @@ def main() -> None:
 			var label:FlxText = new FlxText(buttonX + 24, buttonY + 8, buttonWidth - 48, menuLabel(i), labelSize);
 			label.antialiasing = false;
 			label.scrollFactor.set(0, 0);
-			label.setFormat(Paths.font('vcr.ttf'), labelSize, FlxColor.GRAY, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			label.setFormat(Paths.font('sonichud.ttf'), labelSize, FlxColor.GRAY, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			label.y = buttonY + (buttonHeight - label.height) * 0.5 - 2;
 			menuItems.add(label);
 
@@ -163,7 +163,7 @@ def main() -> None:
     source = replace_once(
         source,
         "psychVer.setFormat(\"VCR OSD Mono\", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
-        "psychVer.setFormat(Paths.font('vcr.ttf'), 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
+        "psychVer.setFormat(Paths.font('sonichud.ttf'), 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
         "small engine version text",
     )
     source = replace_once(
@@ -175,7 +175,7 @@ def main() -> None:
     source = replace_once(
         source,
         "fnfVer.setFormat(\"VCR OSD Mono\", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
-        "fnfVer.setFormat(Paths.font('vcr.ttf'), 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
+        "fnfVer.setFormat(Paths.font('sonichud.ttf'), 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
         "small game version text",
     )
 
