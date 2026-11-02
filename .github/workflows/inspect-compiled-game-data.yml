@@ -1,5 +1,5 @@
-name: Inspect Sonic EXE compiled game data
-run-name: Recover embedded character stage and week metadata
+name: Extract Sonic EXE compiled metadata
+run-name: Extract character stage and week definitions
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  extract:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -28,125 +28,134 @@ jobs:
           cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > ../release.zip
           cd ..
 
-      - name: Inspect embedded resource objects and Story Mode files
+      - name: Extract complete JSON objects from executable
         run: |
           python3 - <<'PY'
           from zipfile import ZipFile
-          from pathlib import PurePosixPath
-          from collections import Counter
+          from pathlib import PurePosixPath, Path
           import json, re, hashlib
 
-          report=[]
-          def out(v=""): report.append(str(v))
+          def slug(v):
+              v = str(v or "unnamed").casefold()
+              return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", v)).strip("-") or "unnamed"
 
           with ZipFile("release.zip") as z:
-              infos=[x for x in z.infolist() if not x.is_dir()]
-              exe_info=next(x for x in infos if PurePosixPath(x.filename).name.lower()=="vs sonic.exe")
-              data=z.read(exe_info)
-              story=[x for x in infos if x.filename.casefold().startswith("contents/story mode/")]
+              info = next(x for x in z.infolist() if PurePosixPath(x.filename).name.lower() == "vs sonic.exe")
+              data = z.read(info)
 
-              out("SONIC.EXE UNOFFICIAL - COMPILED GAME DATA INSPECTION")
-              out(f"EXE bytes: {len(data):,}")
-              out("EXE SHA256: "+hashlib.sha256(data).hexdigest())
-              out(f"Story Mode files: {len(story)}")
-              out(f"Story Mode bytes: {sum(x.file_size for x in story):,}")
-              out("Story Mode extensions: "+repr(dict(Counter(PurePosixPath(x.filename).suffix.lower() for x in story))))
-              out("STORY MODE FILES:")
-              for x in sorted(story,key=lambda x:x.filename.casefold()):
-                  out(f"  {x.file_size:>12,} {x.filename}")
-              out()
-
-          # Recover any plain JSON objects embedded in the executable.
-          dec=json.JSONDecoder()
-          markers=[
-              b'"animations"',b'"healthicon"',b'"sing_duration"',b'"flip_x"',
-              b'"defaultZoom"',b'"isPixelStage"',b'"weekCharacters"',
-              b'"weekName"',b'"storyName"',b'"weekBefore"',b'"freeplayColor"',
-              b'"psych_v1_convert"'
+          decoder = json.JSONDecoder()
+          markers = [
+              b'"animations"', b'"healthicon"', b'"sing_duration"', b'"flip_x"',
+              b'"defaultZoom"', b'"isPixelStage"', b'"weekCharacters"',
+              b'"weekName"', b'"storyName"', b'"weekBefore"', b'"freeplayColor"'
           ]
-          candidates={"character":{},"stage":{},"week":{},"chart":{}}
-          marker_counts={}
+          objects = {"character": {}, "stage": {}, "week": {}}
+          marker_counts = {}
+
           for marker in markers:
-              poslist=[m.start() for m in re.finditer(re.escape(marker),data)]
-              marker_counts[marker.decode("ascii")]=len(poslist)
-              for p in poslist:
-                  low=max(0,p-12000)
-                  # Try brace candidates from nearest to farthest, allowing JSON fields in any order.
-                  starts=[m.start() for m in re.finditer(rb'\{',data[low:p+1])]
-                  found=False
+              positions = [m.start() for m in re.finditer(re.escape(marker), data)]
+              marker_counts[marker.decode("ascii")] = len(positions)
+              for pos in positions:
+                  lower = max(0, pos - 12000)
+                  starts = [m.start() for m in re.finditer(rb'\{', data[lower:pos+1])]
                   for rel in reversed(starts[-100:]):
-                      start=low+rel
-                      segment=data[start:min(len(data),start+2_000_000)].decode("utf-8","ignore")
+                      start = lower + rel
+                      segment = data[start:min(len(data), start + 2_000_000)].decode("utf-8", "ignore")
                       try:
-                          obj,used=dec.raw_decode(segment)
+                          obj, used = decoder.raw_decode(segment)
                       except Exception:
                           continue
-                      if not isinstance(obj,dict):
+                      if not isinstance(obj, dict):
                           continue
-                      keys={str(k).casefold() for k in obj}
-                      kind=None
-                      if "animations" in keys and "image" in keys and ({"healthicon","sing_duration","flip_x"} & keys):
-                          kind="character"
-                      elif {"defaultzoom","ispixelstage","boyfriend","opponent","girlfriend"} & keys:
-                          kind="stage"
-                      elif {"weekcharacters","weekname","storyname","weekbefore"} & keys:
-                          kind="week"
-                      elif "format" in keys and "psych_v1_convert" in str(obj.get("format","")) and "notes" in keys:
-                          kind="chart"
+                      keys = {str(k).casefold() for k in obj}
+                      kind = None
+                      if "animations" in keys and "image" in keys and ({"healthicon", "sing_duration", "flip_x"} & keys):
+                          kind = "character"
+                      elif "defaultzoom" in keys and "boyfriend" in keys and "opponent" in keys and "directory" in keys:
+                          kind = "stage"
+                      elif "weekcharacters" in keys and "songs" in keys and ("weekname" in keys or "storyname" in keys):
+                          kind = "week"
                       if kind:
-                          signature=(start,used)
-                          candidates[kind][signature]=obj
-                          found=True
+                          objects[kind][(start, used)] = obj
                           break
-                  if found:
-                      continue
 
-          out("EMBEDDED JSON MARKER COUNTS:")
-          for k,v in marker_counts.items(): out(f"  {k}: {v}")
-          out()
+          out = Path("recovered-metadata")
+          for kind in objects:
+              (out / kind).mkdir(parents=True, exist_ok=True)
 
-          for kind,objects in candidates.items():
-              out(f"RECOVERED {kind.upper()} OBJECTS: {len(objects)}")
-              for (start,used),obj in sorted(objects.items(),key=lambda kv:kv[0][0])[:500]:
-                  if kind=="character":
-                      name=obj.get("healthicon") or obj.get("image") or obj.get("name")
-                      summary={"name":name,"image":obj.get("image"),"healthicon":obj.get("healthicon"),
-                               "animations":len(obj.get("animations",[])) if isinstance(obj.get("animations"),list) else None,
-                               "flip_x":obj.get("flip_x"),"scale":obj.get("scale"),"position":obj.get("position"),
-                               "camera_position":obj.get("camera_position")}
-                  elif kind=="stage":
-                      summary={k:obj.get(k) for k in ("directory","defaultZoom","isPixelStage","boyfriend","girlfriend","opponent","hide_girlfriend")}
-                  elif kind=="week":
-                      summary={k:obj.get(k) for k in ("weekName","storyName","weekBefore","weekCharacters","songs","difficulties","hideStoryMode","hideFreeplay")}
+          index = []
+          for kind, entries in objects.items():
+              for (start, used), obj in sorted(entries.items()):
+                  if kind == "character":
+                      display = obj.get("name") or obj.get("healthicon") or obj.get("image")
+                      filename = f"{slug(display)}-{start:08x}.json"
+                  elif kind == "stage":
+                      # The original stage filename is stored in the asset table;
+                      # keep a stable offset name until that resource ID is mapped.
+                      filename = f"stage-{start:08x}.json"
                   else:
-                      summary={"song":obj.get("song"),"bpm":obj.get("bpm"),"sections":len(obj.get("notes",[]))}
-                  out(f"  offset=0x{start:x} bytes={used} {json.dumps(summary,ensure_ascii=False)}")
-              out()
+                      display = obj.get("storyName") or obj.get("weekName") or "week"
+                      filename = f"{slug(display)}-{start:08x}.json"
 
-          # Useful string-table scan, in both common encodings.
-          for label,pattern in (("ASCII",rb"[ -~]{4,}"),("UTF16LE",rb"(?:[ -~]\x00){4,}")):
-              values=[]
-              for m in re.finditer(pattern,data):
-                  raw=m.group()
-                  try:
-                      value=raw.decode("ascii" if label=="ASCII" else "utf-16le","ignore")
-                  except Exception:
-                      continue
-                  if re.search(r"week|story|character|stage|lua|hscript|script|cutscene|song|event|note.?type|dialogue",value,re.I):
-                      values.append(value[:250])
-              out(f"{label} GAME-RELATED STRINGS: {len(values)}")
-              for value in values[:800]: out("  "+value)
-              out()
+                  target = out / kind / filename
+                  target.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                  record = {
+                      "type": kind, "offset": f"0x{start:x}", "bytes": used,
+                      "file": str(target).replace("\\\\", "/")
+                  }
+                  if kind == "character":
+                      record.update({
+                          "name": obj.get("name"), "healthicon": obj.get("healthicon"),
+                          "image": obj.get("image"), "animation_count": len(obj.get("animations", []))
+                      })
+                  elif kind == "stage":
+                      record.update({
+                          "defaultZoom": obj.get("defaultZoom"), "directory": obj.get("directory"),
+                          "boyfriend": obj.get("boyfriend"), "girlfriend": obj.get("girlfriend"),
+                          "opponent": obj.get("opponent"), "hide_girlfriend": obj.get("hide_girlfriend")
+                      })
+                  else:
+                      record.update({
+                          "weekName": obj.get("weekName"), "storyName": obj.get("storyName"),
+                          "weekBefore": obj.get("weekBefore"), "songs": obj.get("songs"),
+                          "hideStoryMode": obj.get("hideStoryMode"), "hideFreeplay": obj.get("hideFreeplay")
+                      })
+                  index.append(record)
 
-          open("compiled-game-data-report.txt","w",encoding="utf-8").write("\n".join(report)+"\n")
-          print("\n".join(report))
+          # Resource IDs reveal original virtual asset paths and are needed to
+          # match recovered JSON bodies back to their contents/<GROUP>/ paths.
+          asset_ids = sorted(set(
+              m.group().decode("ascii", "ignore")
+              for m in re.finditer(rb'__ASSET__contents_[A-Za-z0-9_]+', data)
+          ))
+          (out / "asset-resource-ids.txt").write_text("\n".join(asset_ids) + "\n", encoding="utf-8")
+          (out / "metadata-index.json").write_text(json.dumps({
+              "executable_sha256": hashlib.sha256(data).hexdigest(),
+              "marker_counts": marker_counts,
+              "counts": {k: len(v) for k, v in objects.items()},
+              "asset_resource_id_count": len(asset_ids),
+              "objects": index
+          }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+          # The Xenophanes week is the five-song Story Mode route.
+          xenophanes = next((obj for obj in objects["week"].values() if obj.get("weekName") == "Xenophanes"), None)
+          if xenophanes:
+              (out / "xenophanes-week.json").write_text(json.dumps(xenophanes, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+          print("Executable SHA256:", hashlib.sha256(data).hexdigest())
+          print("Embedded JSON markers:", marker_counts)
+          print("Recovered complete objects:", {k: len(v) for k, v in objects.items()})
+          print("Asset resource IDs:", len(asset_ids))
+          print("Story Mode week:", json.dumps(xenophanes, ensure_ascii=False))
+          print("Character files:", len(list((out / "character").glob("*.json"))))
+          print("Stage files:", len(list((out / "stage").glob("*.json"))))
+          print("Week files:", len(list((out / "week").glob("*.json"))))
           PY
 
-      - name: Upload compiled game data report
-        if: always()
+      - name: Upload recovered game metadata
         uses: actions/upload-artifact@v4
         with:
-          name: sonicexe-compiled-game-data
-          path: compiled-game-data-report.txt
-          if-no-files-found: warn
+          name: sonicexe-recovered-metadata
+          path: recovered-metadata/
+          if-no-files-found: error
           retention-days: 14
