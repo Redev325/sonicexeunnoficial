@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   build-html5:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha == '56bbad0bee674b645d221389b267ac53ae48be8d' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -267,7 +268,7 @@ jobs:
 
           patch_file("source/backend/StageData.hx", [
               (
-                  "public static function getStageFile(stage:String):StageFile {\\n\\t\\tvar rawJson:String = null;\\n\\t\\tvar path:String = Paths.getSharedPath('stages/' + stage + '.json');\\n\\n\\t\\t#if MODS_ALLOWED\\n\\t\\tvar modPath:String = Paths.modFolders('stages/' + stage + '.json');\\n\\t\\tif(FileSystem.exists(modPath)) {\\n\\t\\t\\trawJson = File.getContent(modPath);\\n\\t\\t} else if(FileSystem.exists(path)) {\\n\\t\\t\\t rawJson = File.getContent(path);\\n\\t\\t}\\n\\t\\t#else\\n\\t\\tif(Assets.exists(path)) {\\n\\t\\t\\trawJson = Assets.getText(path);\\n\\t\\t}\\n\\t\\t#end\\n\\t\\telse\\n\\t\\t{\\n\\t\\t\\treturn null;\\n\\t\\t}\\n\\t\\treturn cast tjson.TJSON.parse(rawJson);\\n\\t}",
+                  "public static function getStageFile(stage:String):StageFile {\\n\\t\\tvar rawJson:String = null;\\n\\t\\tvar path:String = Paths.getSharedPath('stages/' + stage + '.json');\\n\\n\\t\\t#if MODS_ALLOWED\\n\\t\\tvar modPath:String = Paths.modFolders('stages/' + stage + '.json');\\n\\t\\tif(FileSystem.exists(modPath)) {\\n\\t\\t\\trawJson = File.getContent(modPath);\\n\\t\\t} else if(FileSystem.exists(path)) {\\n\\t\\t\\trawJson = File.getContent(path);\\n\\t\\t}\\n\\t\\t#else\\n\\t\\tif(Assets.exists(path)) {\\n\\t\\t\\trawJson = Assets.getText(path);\\n\\t\\t}\\n\\t\\t#end\\n\\t\\telse\\n\\t\\t{\\n\\t\\t\\treturn null;\\n\\t\\t}\\n\\t\\treturn cast tjson.TJSON.parse(rawJson);\\n\\t}",
                   "public static function getStageFile(stage:String):StageFile {\\n\\t\\tvar rawJson:String = null;\\n\\t\\tvar path:String = Paths.getSharedPath('stages/' + stage + '.json');\\n\\n\\t\\t#if MODS_ALLOWED\\n\\t\\tvar modPath:String = Paths.modFolders('stages/' + stage + '.json');\\n\\t\\tif (FileSystem.exists(modPath)) rawJson = File.getContent(modPath);\\n\\t\\telse if (FileSystem.exists(path)) rawJson = File.getContent(path);\\n\\t\\t#elseif web\\n\\t\\tvar modPath:String = 'mods/' + Mods.currentModDirectory + '/stages/' + stage + '.json';\\n\\t\\tif (Assets.exists(modPath)) rawJson = Assets.getText(modPath);\\n\\t\\telse if (Assets.exists(path)) rawJson = Assets.getText(path);\\n\\t\\t#else\\n\\t\\tif (Assets.exists(path)) rawJson = Assets.getText(path);\\n\\t\\t#end\\n\\n\\t\\tif (rawJson == null || rawJson.length == 0) return null;\\n\\t\\treturn cast tjson.TJSON.parse(rawJson);\\n\\t}",
                   "loaded Story Mode stage JSON through embedded browser assets"
               )
