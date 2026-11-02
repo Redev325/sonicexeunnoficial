@@ -1,0 +1,317 @@
+name: Prepare Sonic EXE Story Mode browser assets
+run-name: Package Xenophanes Story Mode content for HTML5
+
+on:
+  push:
+    paths:
+      - ".github/workflows/prepare-story-mode-assets.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Install media conversion tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg python3-pil
+
+      - name: Download original release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p package
+          cd package
+          gh release download v1.0.0 --repo "$GH_REPO" \
+            --pattern 'unofficial-windows.1.zip.001' \
+            --pattern 'unofficial-windows.1.zip.002'
+          cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > ../release.zip
+          cd ..
+
+      - name: Download recovered chart and metadata artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p recovered-charts recovered-metadata
+          gh run download 41385079334 --repo "$GH_REPO" \
+            --name sonicexe-extracted-charts --dir recovered-charts
+          gh run download 41385912448 --repo "$GH_REPO" \
+            --name sonicexe-recovered-metadata --dir recovered-metadata
+          test -f recovered-charts/chart-index.json
+          test -f recovered-metadata/metadata-index.json
+          test -f recovered-metadata/xenophanes-week.json
+
+      - name: Convert Story Mode media and assemble engine asset tree
+        run: |
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          from pathlib import PurePosixPath, Path
+          from PIL import Image
+          import io, subprocess, tempfile, json, shutil, os, re
+
+          root = Path("story-mode-package")
+          mod = root / "assets" / "mods" / "STORY MODE"
+          manifest = []
+          skipped_videos = []
+          failures = []
+
+          with ZipFile("release.zip") as z:
+              infos = [x for x in z.infolist() if not x.is_dir() and x.filename.startswith("contents/STORY MODE/")]
+              print(f"Original Story Mode files: {len(infos)}")
+
+              for info in infos:
+                  rel = PurePosixPath(info.filename).relative_to("contents/STORY MODE")
+                  suffix = rel.suffix.lower()
+                  if suffix in {".mp4", ".webm", ".m4v"}:
+                      skipped_videos.append(str(rel))
+                      continue
+
+                  raw = z.read(info)
+                  if suffix == ".webp":
+                      target = (mod / rel).with_suffix(".png")
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      with Image.open(io.BytesIO(raw)) as img:
+                          img.convert("RGBA").save(target, format="PNG", optimize=True)
+                      out_type = "webp->png"
+                  elif suffix == ".ogg":
+                      target = (mod / rel).with_suffix(".mp3")
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
+                          tmp.write(raw)
+                          tmp_path = tmp.name
+                      try:
+                          subprocess.run([
+                              "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                              "-i", tmp_path, "-vn", "-codec:a", "libmp3lame", "-q:a", "3",
+                              str(target)
+                          ], check=True)
+                      finally:
+                          os.unlink(tmp_path)
+                      out_type = "ogg->mp3"
+                  else:
+                      target = mod / Path(*rel.parts)
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      target.write_bytes(raw)
+                      out_type = "copied"
+
+                  manifest.append({
+                      "source": info.filename,
+                      "output": str(target.relative_to(root)),
+                      "original_bytes": info.file_size,
+                      "output_bytes": target.stat().st_size,
+                      "conversion": out_type
+                  })
+
+          (root / "story-mode-media-index.json").write_text(
+              json.dumps({"files": manifest, "skipped_videos": skipped_videos}, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8"
+          )
+          (root / "SKIPPED-CUTSCENES.txt").write_text(
+              "The following original MP4 videos were retained out of the first HTML5 package.\n"
+              "The current base engine build does not yet include a browser video playback path.\n\n" +
+              "\n".join(skipped_videos) + "\n",
+              encoding="utf-8"
+          )
+
+          print(f"Converted/copied files: {len(manifest)}")
+          print(f"Skipped video files: {len(skipped_videos)}")
+          print(f"Converted output bytes: {sum(x['output_bytes'] for x in manifest):,}")
+          PY
+
+      - name: Add recovered charts, character files, stages, and Xenophanes week
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, shutil, re
+
+          root = Path("story-mode-package")
+          mod = root / "assets/mods/STORY MODE"
+          chart_root = Path("recovered-charts")
+          metadata = Path("recovered-metadata")
+
+          chart_index = json.loads((chart_root / "chart-index.json").read_text())
+          story_songs = {"too-slow", "you-cant-run", "triple-trouble", "final-escape", "yourself"}
+          charts_out = []
+
+          for entry in chart_index:
+              slug = re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", entry["song"].lower())).strip("-")
+              if slug not in story_songs:
+                  continue
+              src = chart_root / entry["psych_engine_path"]
+              if not src.is_file():
+                  raise SystemExit(f"Recovered chart missing: {src}")
+              dst = mod / "data" / slug / f"{slug}.json"
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(src, dst)
+              charts_out.append({
+                  "song": entry["song"], "bpm": entry["bpm"], "notes": entry["notes"],
+                  "stage": entry["stage"], "source": entry["original_game_path"],
+                  "output": str(dst.relative_to(root))
+              })
+
+          if len(charts_out) != 5:
+              raise SystemExit(f"Expected 5 Xenophanes charts, found {len(charts_out)}")
+
+          # First-pass character aliases. Each source is a full recovered character
+          # JSON object from the native executable. Multiple aliases accommodate
+          # the original display IDs and Psych Engine's path naming conventions.
+          character_sources = {
+              "sonicexe-0311dca4.json": [
+                  "sonic.exe", "sonic_exe", "sonicexe"
+              ],
+              "xeno-p2-0901c524.json": [
+                  "sonic.exe 2", "sonic_exe_2", "sonic-exe-2",
+                  "xeno_fe2", "XENO-P2"
+              ],
+              "xeno-p3-0456ebc4.json": [
+                  "xeno_fe3", "XENO-P3"
+              ],
+              "xeno-p4-083469d4.json": [
+                  "xeno_fefinale", "XENO-P4"
+              ],
+              "xeno-p4-0562cfe4.json": [
+                  "xeno_fegrand"
+              ],
+              "xeno-p4-08c3e004.json": [
+                  "xeno_handfe"
+              ],
+              "xeno-p4back-058c4cc4.json": [
+                  "xeno_intro", "xeno-intro"
+              ],
+              "minilook-08df3664.json": [
+                  "mirror look2", "mirror_look2", "mirror-look2", "minilook"
+              ],
+              "minilook-05bbed24.json": [
+                  "mirror_lookbg", "mirror-lookbg"
+              ],
+              "tails-05df3bb4.json": [
+                  "tails"
+              ]
+          }
+
+          char_map = []
+          for source_name, aliases in character_sources.items():
+              src = metadata / "character" / source_name
+              if not src.is_file():
+                  raise SystemExit(f"Recovered character definition missing: {src}")
+              obj = json.loads(src.read_text())
+              image_key = obj.get("image", "")
+              image_path = mod / "images" / f"{image_key}.png"
+              # FlxAnimate atlas directories use Animation.json and do not have a
+              # single PNG named after the directory. These are checked separately.
+              atlas_path = mod / "images" / image_key / "Animation.json"
+              if not image_path.is_file() and not atlas_path.is_file():
+                  raise SystemExit(
+                      f"Character {source_name} references missing image/atlas: {image_key}"
+                  )
+              for alias in aliases:
+                  target = mod / "characters" / f"{alias}.json"
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                  char_map.append({
+                      "alias": alias, "source": source_name, "image": image_key,
+                      "image_exists": image_path.is_file(), "atlas_exists": atlas_path.is_file(),
+                      "output": str(target.relative_to(root))
+                  })
+
+          # Stage objects are the five recovered stage definitions selected for
+          # this first pass by their song resource/layout associations. They remain
+          # explicitly marked provisional until runtime testing confirms the layouts.
+          stage_sources = {
+              "tooslow": "stage-05788a54.json",
+              "triple-trouble": "stage-05f2b804.json",
+              "you-cant-run": "stage-0900cd14.json",
+              "final-escape": "stage-08e19024.json",
+              "yourself": "stage-095a8d54.json"
+          }
+          stage_map = []
+          for stage_name, source_name in stage_sources.items():
+              src = metadata / "stage" / source_name
+              if not src.is_file():
+                  raise SystemExit(f"Recovered stage definition missing: {src}")
+              dst = mod / "stages" / f"{stage_name}.json"
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(src, dst)
+              stage_map.append({
+                  "stage": stage_name, "source": source_name,
+                  "output": str(dst.relative_to(root)),
+                  "mapping_status": "provisional; verify in browser runtime"
+              })
+
+          week = json.loads((metadata / "xenophanes-week.json").read_text())
+          week["folder"] = "STORY MODE"
+          week_dir = root / "assets/shared/weeks"
+          week_dir.mkdir(parents=True, exist_ok=True)
+          (week_dir / "xenophanes.json").write_text(json.dumps(week, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          (week_dir / "weekList.txt").write_text("xenophanes\n", encoding="utf-8")
+
+          mapping = {
+              "story_week": "Xenophanes",
+              "songs": charts_out,
+              "characters": char_map,
+              "stages": stage_map,
+              "notes": [
+                  "Character aliases are first-pass matches based on the embedded character objects and Story Mode asset IDs.",
+                  "Stage object associations are provisional; test camera/position layouts in the browser before treating them as final.",
+                  "The original cutscene MP4 files are not included in this first HTML5 bundle because the base engine does not yet have browser video playback enabled."
+              ]
+          }
+          (root / "story-mode-recovery-map.json").write_text(json.dumps(mapping, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          print(f"Charts copied: {len(charts_out)}")
+          print(f"Character aliases created: {len(char_map)}")
+          print(f"Stage JSONs created: {len(stage_map)}")
+          print(f"Story week created: {week['weekName']}")
+          for c in charts_out: print(f"  SONG {c['song']}: {c['notes']} notes")
+          for c in char_map: print(f"  CHAR {c['alias']} -> {c['source']} ({c['image']})")
+          for s in stage_map: print(f"  STAGE {s['stage']} -> {s['source']} [provisional]")
+          PY
+
+      - name: Validate all five song audio pairs and report package size
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, sys
+
+          root = Path("story-mode-package")
+          mod = root / "assets/mods/STORY MODE"
+          songs = ["too-slow","you-cant-run","triple-trouble","final-escape","yourself"]
+          missing=[]
+          for song in songs:
+              for name in ("Inst.mp3","Voices.mp3"):
+                  p=mod/"songs"/song/name
+                  if not p.is_file():
+                      missing.append(str(p))
+          if missing:
+              print("Missing required converted song audio:")
+              for p in missing: print("  "+p)
+              raise SystemExit(1)
+
+          for song in songs:
+              chart=mod/"data"/song/f"{song}.json"
+              if not chart.is_file(): missing.append(str(chart))
+              else:
+                  obj=json.loads(chart.read_text())["song"]
+                  print(f"{song}: bpm={obj.get('bpm')} sections={len(obj.get('notes',[]))} stage={obj.get('stage')}")
+
+          total=sum(p.stat().st_size for p in root.rglob("*") if p.is_file())
+          print(f"Story Mode package file count: {sum(p.is_file() for p in root.rglob('*'))}")
+          print(f"Story Mode package bytes: {total:,}")
+          if missing: raise SystemExit("Missing files: "+", ".join(missing))
+          PY
+          du -sh story-mode-package
+
+      - name: Upload Story Mode HTML5 asset package
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonicexe-story-mode-html5-assets
+          path: story-mode-package/
+          if-no-files-found: error
+          compression-level: 2
+          retention-days: 14
