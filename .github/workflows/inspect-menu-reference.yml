@@ -158,26 +158,29 @@ jobs:
           from zipfile import ZipFile
           import shutil
 
-          prefixes = (
-              "assets/exe/mainmenu/",
-              "assets/exe/title/",
+          import re
+
+          keywords = re.compile(
+              r"menu|button|title|logo|intro|press|font|story|freeplay|extras|option|sound|box|shadow|hitbox",
+              re.I,
           )
-          exact = {
-              "assets/exe/backButton.webp",
-              "assets/shared/images/menuDesat.webp",
+          allowed = {
+              ".webp", ".png", ".jpg", ".jpeg", ".gif",
+              ".xml", ".json", ".txt", ".ttf", ".otf", ".woff", ".woff2", ".fnt",
+              ".mp3", ".ogg", ".wav",
           }
-          allowed = {".webp", ".xml", ".json", ".txt"}
-          output = Path("original-menu-assets")
+          output = Path("original-game-ui-assets")
           copied = []
           with ZipFile("release.zip") as z:
               for name in z.namelist():
                   suffix = Path(name).suffix.casefold()
-                  if name.endswith("/") or not (name.startswith(prefixes) or name in exact):
+                  if name.endswith("/") or suffix not in allowed:
                       continue
-                  if suffix not in allowed:
+                  if not (name.startswith("assets/") or name.startswith("contents/")):
                       continue
-                  relative = Path(name)
-                  target = output / relative
+                  if not keywords.search(name):
+                      continue
+                  target = output / Path(name)
                   target.parent.mkdir(parents=True, exist_ok=True)
                   with z.open(name) as source, target.open("wb") as dest:
                       shutil.copyfileobj(source, dest)
@@ -190,9 +193,9 @@ jobs:
       - name: Upload original menu artwork
         uses: actions/upload-artifact@v4
         with:
-          name: sonicexe-original-menu-artwork
+          name: sonicexe-original-game-ui-assets
           path: |
             menu-reference-report.txt
-            original-menu-assets/
+            original-game-ui-assets/
           if-no-files-found: error
           retention-days: 7
