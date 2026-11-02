@@ -114,6 +114,22 @@ jobs:
               )
           ])
 
+          # Resolve the local Psych Engine options.Option explicitly.
+          # Without this, the wildcard imports and haxelib classes can shadow it
+          # during Haxe's JS target type resolution.
+          for options_file in (
+              "source/options/GraphicsSettingsSubState.hx",
+              "source/options/VisualsUISubState.hx",
+              "source/options/GameplaySettingsSubState.hx",
+          ):
+              patch_file(options_file, [
+                  (
+                      "package options;\\n",
+                      "package options;\\n\\nimport options.Option;\\n",
+                      "explicitly imported Psych Engine Option type"
+                  )
+              ])
+
           # FlxG.error is not available in the web target; the logger is.
           patch_file("source/backend/CoolUtil.hx", [
               (
