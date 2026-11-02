@@ -229,7 +229,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          mkdir -p package engine/assets/images/sonicexe-menu/options
+          mkdir -p package engine/assets/shared/images/sonicexe-menu/options
           cd package
           gh release download v1.0.0 --repo "$GH_REPO" \
             --pattern 'unofficial-windows.1.zip.001' \
@@ -246,9 +246,9 @@ jobs:
 
           archive = Path("package/release.zip")
           images = {
-              "assets/exe/mainmenu/logo.webp": Path("engine/assets/images/sonicexe-logo.png"),
-              "assets/exe/mainmenu/options/box.webp": Path("engine/assets/images/sonicexe-menu/options/box.png"),
-              "assets/exe/mainmenu/options/shadow.webp": Path("engine/assets/images/sonicexe-menu/options/shadow.png"),
+              "assets/exe/mainmenu/logo.webp": Path("engine/assets/shared/images/sonicexe-logo.png"),
+              "assets/exe/mainmenu/options/box.webp": Path("engine/assets/shared/images/sonicexe-menu/options/box.png"),
+              "assets/exe/mainmenu/options/shadow.webp": Path("engine/assets/shared/images/sonicexe-menu/options/shadow.png"),
           }
           with ZipFile(archive) as z:
               for source_name, output in images.items():
@@ -266,7 +266,7 @@ jobs:
                   if suffix not in {".webp", ".xml", ".json"}:
                       continue
                   relative = Path(name[len(title_prefix):])
-                  destination = Path("engine/assets/images/sonicexe-title") / relative
+                  destination = Path("engine/assets/shared/images/sonicexe-title") / relative
                   destination.parent.mkdir(parents=True, exist_ok=True)
                   if suffix == ".webp":
                       with z.open(name) as source, Image.open(source) as image:
