@@ -28,7 +28,7 @@ jobs:
           cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > ../release.zip
           cd ..
 
-      - name: Search executable for complete chart JSON
+      - name: Extract embedded chart metadata
         run: |
           python3 - <<'PY'
           from zipfile import ZipFile
@@ -41,69 +41,94 @@ jobs:
 
           report = []
           def out(s=""): report.append(str(s))
-          out("SONIC.EXE UNOFFICIAL 1.0.0 - EMBEDDED CHART EXTRACTION CHECK")
+          out("SONIC.EXE UNOFFICIAL 1.0.0 - EMBEDDED CHART INDEX")
           out(f"Executable size: {len(data):,} bytes")
           out("SHA256: "+hashlib.sha256(data).hexdigest())
           out()
 
-          markers = [b'mustHitSection', b'sectionNotes', b'"bpm"', b'"notes"', b'"song":']
-          for m in markers:
-              positions = [x.start() for x in re.finditer(re.escape(m), data, re.I)]
-              out(f"{m.decode('ascii')}: {len(positions)} occurrences")
-              for p in positions[:4]:
-                  out(f"  offset 0x{p:x}: {data[max(0,p-100):p+240]!r}")
+          for marker in (b'mustHitSection', b'sectionNotes', b'"bpm"', b'"notes"', b'"song":', b'psych_v1_convert'):
+              positions = [m.start() for m in re.finditer(re.escape(marker), data)]
+              out(f"{marker.decode('ascii')}: {len(positions)} occurrences")
+              for pos in positions[:2]:
+                  out(f"  offset 0x{pos:x}: {data[max(0,pos-80):pos+180]!r}")
           out()
 
-          # Attempt to parse JSON objects that begin with the usual Psych Engine
-          # chart root: { "song": { ... } }. Only metadata is written to the report.
-          starts = [m.start() for m in re.finditer(rb'\{\s*"song"\s*:', data)]
-          out(f"Potential chart JSON root starts: {len(starts)}")
+          # This build stores Psych Engine v1 charts as top-level objects:
+          # { "player1": ..., "player2": ..., "notes": [...], "song": "...", ... }
+          # Locate each format marker, then parse backward from the player fields.
+          format_positions = [m.start() for m in re.finditer(b'psych_v1_convert', data)]
           decoder = json.JSONDecoder()
           charts = []
-          for start in starts:
-              segment = data[start:start+30_000_000].decode("utf-8", "strict") if data[start:start+30_000_000].isascii() else data[start:start+30_000_000].decode("utf-8", "ignore")
+          seen_starts = set()
+          failures = 0
+
+          for fmt_pos in format_positions:
+              lower = max(0, fmt_pos - 20_000_000)
+              p1 = data.rfind(b'"player1"', lower, fmt_pos)
+              p2 = data.rfind(b'"player2"', lower, fmt_pos)
+              player_pos = max(p1, p2)
+              if player_pos < 0:
+                  failures += 1
+                  continue
+
+              # The opening brace is immediately before the first root field.
+              start = data.rfind(b'{', max(0, player_pos - 64), player_pos)
+              if start < 0 or start in seen_starts:
+                  continue
+              seen_starts.add(start)
+
+              segment = data[start:start+20_000_000].decode("utf-8", "ignore")
               try:
                   obj, consumed = decoder.raw_decode(segment)
               except Exception:
+                  failures += 1
                   continue
+
               if not isinstance(obj, dict):
+                  failures += 1
                   continue
-              song_obj = obj.get("song")
-              if not isinstance(song_obj, dict):
+              notes = obj.get("notes")
+              title = obj.get("song")
+              if not isinstance(notes, list) or not isinstance(title, str):
+                  failures += 1
                   continue
-              notes = song_obj.get("notes")
-              if not isinstance(notes, list):
-                  continue
-              note_count = 0
-              for section in notes:
-                  if isinstance(section, dict) and isinstance(section.get("sectionNotes"), list):
-                      note_count += len(section["sectionNotes"])
-              title = song_obj.get("song") or song_obj.get("songName") or "unknown"
+              note_count = sum(
+                  len(section.get("sectionNotes", []))
+                  for section in notes
+                  if isinstance(section, dict) and isinstance(section.get("sectionNotes", []), list)
+              )
               charts.append({
-                  "offset": start,
+                  "offset": f"0x{start:x}",
                   "bytes": consumed,
-                  "song": str(title)[:120],
-                  "bpm": song_obj.get("bpm"),
+                  "song": title[:160],
+                  "bpm": obj.get("bpm"),
+                  "format": obj.get("format"),
                   "sections": len(notes),
-                  "notes": note_count
+                  "notes": note_count,
+                  "player1": obj.get("player1"),
+                  "player2": obj.get("player2"),
+                  "stage": obj.get("stage")
               })
-          out(f"Complete chart JSON objects parsed: {len(charts)}")
-          for c in charts[:1000]:
-              out("  "+json.dumps(c, ensure_ascii=False))
+
+          charts.sort(key=lambda x: int(x["offset"], 16))
+          out(f"psych_v1_convert markers: {len(format_positions)}")
+          out(f"Complete chart objects parsed: {len(charts)}")
+          out(f"Candidate parse failures/skips: {failures}")
+          out()
+          for chart in charts:
+              out(json.dumps(chart, ensure_ascii=False))
           if not charts:
-              out("No complete chart JSON was parsed using the standard Psych Engine chart layout.")
+              out("No complete top-level chart object was recovered with the first-pass parser.")
           out()
-          # Look for JSON-like roots and chart strings around markers if direct parsing
-          # fails, to determine whether the binary uses a packed/encoded representation.
-          for term in (b'mustHitSection', b'sectionNotes'):
-              positions = [m.start() for m in re.finditer(re.escape(term), data)]
-              if positions:
-                  p = positions[0]
-                  lo = max(0, p-2048)
-                  hi = min(len(data), p+4096)
-                  out(f"First {term.decode()} context ({lo:#x}-{hi:#x}):")
-                  out(repr(data[lo:hi]))
-          out()
+
+          # Include context around a parsed chart start to confirm the source layout.
+          if charts:
+              start = int(charts[0]["offset"], 16)
+              out("First parsed chart opening:")
+              out(repr(data[start:start+1200]))
+              out("First parsed chart ending:")
+              out(repr(data[start+charts[0]["bytes"]-500:start+charts[0]["bytes"]+80]))
+
           open("embedded-chart-index.txt","w",encoding="utf-8").write("\n".join(report)+"\n")
           print("\n".join(report))
           PY
