@@ -127,6 +127,29 @@ jobs:
               )
           ])
 
+          # HaxeFlixel 6 moved FlxSound from flixel.system to flixel.sound.
+          # Also import ClickStuff explicitly: it is a secondary type in FlxAnim.hx.
+          patch_file(".haxelib/flxanimate/git/flxanimate/FlxAnimate.hx", [
+              (
+                  "import flixel.system.FlxSound;",
+                  "import flixel.sound.FlxSound;",
+                  "updated FlxAnimate FlxSound import"
+              ),
+              (
+                  "import flxanimate.animate.FlxAnim;",
+                  "import flxanimate.animate.FlxAnim;\\nimport flxanimate.animate.FlxAnim.ClickStuff;",
+                  "imported the ClickStuff typedef"
+              )
+          ])
+
+          patch_file(".haxelib/flxanimate/git/flxanimate/animate/FlxAnim.hx", [
+              (
+                  "import flixel.system.FlxSound;",
+                  "import flixel.sound.FlxSound;",
+                  "updated FlxAnim FlxSound import"
+              )
+          ])
+
           print("Browser compatibility patches applied.")
           PY
 
