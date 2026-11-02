@@ -2,12 +2,17 @@ name: Deploy Psych Engine HTML5 menu
 run-name: Deploy Psych Engine HTML5 menu
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/deploy-html5-menu.yml"
+  workflow_run:
+    workflows:
+      - "Build HTML5 engine base"
+    types:
+      - completed
   workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Successful Build HTML5 engine base run ID"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -21,6 +26,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -30,9 +36,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          SOURCE_RUN_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.run_id || github.event.workflow_run.id }}
         run: |
           mkdir -p site
-          gh run download 41434790502 --repo "$GH_REPO" \
+          gh run download "$SOURCE_RUN_ID" --repo "$GH_REPO" \
             --name psych-engine-html5-base --dir site
           test -s site/index.html
           test -s site/PsychEngine.js
