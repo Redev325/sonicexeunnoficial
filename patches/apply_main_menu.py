@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply the reference-inspired Sonic EXE menu layout to Psych Engine."""
+"""Use the original Sonic.EXE menu video, logo, and option sprites in Psych Engine."""
 
 from pathlib import Path
 import sys
@@ -27,7 +27,7 @@ def main() -> None:
     source = replace_once(
         source,
         "import lime.app.Application;",
-        "import lime.app.Application;\nimport openfl.display.BitmapData;\nimport openfl.display.Shape;",
+        "import lime.app.Application;",
         "OpenFL drawing imports",
     )
 
@@ -55,7 +55,7 @@ def main() -> None:
     source = replace_once(
         source,
         "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;",
-        "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;\n\tvar menuPlates:FlxTypedGroup<FlxSprite>;\n\tvar movingRedBackdrop:FlxSprite;\n\tvar backdropTileWidth:Int = 0;\n\tvar backdropTravel:Float = 0;",
+        "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;\n\tvar menuHighlights:FlxTypedGroup<FlxSprite>;\n\tvar menuPlates:FlxTypedGroup<FlxSprite>;",
         "menu button plate group",
     )
 
@@ -68,14 +68,14 @@ def main() -> None:
 \t\tbg.updateHitbox();
 \t\tbg.screenCenter();
 \t\tadd(bg);""",
-        "\t\tbuildReferenceBackdrop();",
+        "\t\tFlxG.camera.bgColor = FlxColor.TRANSPARENT;",
         "reference-inspired red and black background",
     )
 
     source = replace_once(
         source,
         "\t\tadd(magenta);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
-        "\t\tadd(magenta);\n\n\t\tmenuPlates = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuPlates);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
+        "\t\tadd(magenta);\n\n\t\tmenuHighlights = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHighlights);\n\n\t\tmenuPlates = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuPlates);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
         "menu plates behind menu labels",
     )
 
@@ -97,18 +97,29 @@ def main() -> None:
 \t\t\tmenuItem.screenCenter(X);
 \t\t}"""
     new_loop = """\t\tvar buttonX:Int = Std.int(FlxG.width * 0.505);
-\t\tvar buttonWidth:Int = Std.int(FlxG.width * 0.485);
-\t\tvar buttonHeight:Int = Std.int(FlxG.height * 0.135);
-\t\tvar labelSize:Int = Std.int(FlxG.height * 0.075);
+\t\tvar buttonWidth:Int = Std.int(FlxG.width * 0.47);
+\t\tvar buttonHeight:Int = Std.int(FlxG.height * 0.145);
+\t\tvar labelSize:Int = Std.int(FlxG.height * 0.065);
 \t\tfor (i in 0...optionShit.length)
 \t\t{
-\t\t\tvar buttonY:Int = Std.int(FlxG.height * (0.075 + i * 0.19));
+\t\t\tvar buttonY:Int = Std.int(FlxG.height * (0.06 + i * 0.18));
+
+\t\t\tvar highlight:FlxSprite = new FlxSprite(buttonX - 10, buttonY - 2);
+\t\t\thighlight.loadGraphic(Paths.image('sonicexe-menu/options/shadow'));
+\t\t\thighlight.setGraphicSize(buttonWidth + 20, buttonHeight + 8);
+\t\t\thighlight.updateHitbox();
+\t\t\thighlight.scrollFactor.set(0, 0);
+\t\t\thighlight.visible = (i == curSelected);
+\t\t\tmenuHighlights.add(highlight);
+
 \t\t\tvar plate:FlxSprite = new FlxSprite(buttonX, buttonY);
-\t\t\tplate.loadGraphic(makeMenuPlate(buttonWidth, buttonHeight, i == curSelected));
+\t\t\tplate.loadGraphic(Paths.image('sonicexe-menu/options/box'));
+\t\t\tplate.setGraphicSize(buttonWidth, buttonHeight);
+\t\t\tplate.updateHitbox();
 \t\t\tplate.scrollFactor.set(0, 0);
 \t\t\tmenuPlates.add(plate);
 
-\t\t\tvar label:FlxText = new FlxText(buttonX + 18, buttonY + 8, buttonWidth - 36, menuLabel(i), labelSize);
+\t\t\tvar label:FlxText = new FlxText(buttonX + 24, buttonY + 8, buttonWidth - 48, menuLabel(i), labelSize);
 \t\t\tlabel.antialiasing = false;
 \t\t\tlabel.scrollFactor.set(0, 0);
 \t\t\tlabel.setFormat("VCR OSD Mono", labelSize, FlxColor.GRAY, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -172,6 +183,13 @@ def main() -> None:
 \t\t\t\t\t\t\t{
 \t\t\t\t\t\t\t\tmenuItems.members[i].kill();
 \t\t\t\t\t\t\t}
+\t\t\t\t\t\t});""",
+        """\t\t\t\t\t\tFlxTween.tween(menuItems.members[i], {alpha: 0}, 0.4, {
+\t\t\t\t\t\t\tease: FlxEase.quadOut,
+\t\t\t\t\t\t\tonComplete: function(twn:FlxTween)
+\t\t\t\t\t\t\t{
+\t\t\t\t\t\t\t\tmenuItems.members[i].kill();
+\t\t\t\t\t\t\t}
 \t\t\t\t\t\t});
 \t\t\t\t\t\tFlxTween.tween(menuPlates.members[i], {alpha: 0}, 0.4, {
 \t\t\t\t\t\t\tease: FlxEase.quadOut,
@@ -179,8 +197,15 @@ def main() -> None:
 \t\t\t\t\t\t\t{
 \t\t\t\t\t\t\t\tmenuPlates.members[i].kill();
 \t\t\t\t\t\t\t}
+\t\t\t\t\t\t});
+\t\t\t\t\t\tFlxTween.tween(menuHighlights.members[i], {alpha: 0}, 0.4, {
+\t\t\t\t\t\t\tease: FlxEase.quadOut,
+\t\t\t\t\t\t\tonComplete: function(twn:FlxTween)
+\t\t\t\t\t\t\t{
+\t\t\t\t\t\t\t\tmenuHighlights.members[i].kill();
+\t\t\t\t\t\t\t}
 \t\t\t\t\t\t});""",
-        "fade menu plates on transition",
+        "fade original menu option sprites on transition",
     )
 
     helper_methods = """\tfunction menuLabel(index:Int):String
@@ -196,131 +221,26 @@ def main() -> None:
 \t\t};
 \t}
 
-\tfunction makeMenuPlate(width:Int, height:Int, selected:Bool):BitmapData
+\tfunction setMenuBackdropVisible(visible:Bool):Void
 \t{
-\t\tvar bitmap = new BitmapData(width, height, true, 0x00000000);
-\t\tvar shape = new Shape();
-\t\tvar borderColor:Int = selected ? 0xFF7600A8 : 0xFF68666D;
-\t\tshape.graphics.lineStyle(selected ? 5 : 3, borderColor, 1);
-\t\tshape.graphics.beginFill(0xF008080B, 1);
-\t\tshape.graphics.moveTo(15, 2);
-\t\tshape.graphics.lineTo(width - 3, 2);
-\t\tshape.graphics.lineTo(width - 3, height - 4);
-\t\tshape.graphics.lineTo(32, height - 4);
-\t\tshape.graphics.lineTo(3, 14);
-\t\tshape.graphics.lineTo(15, 2);
-\t\tshape.graphics.endFill();
-\t\tbitmap.draw(shape);
-
-\t\tif (selected)
-\t\t{
-\t\t\tvar underline = new Shape();
-\t\t\tunderline.graphics.beginFill(0xFFFFE52B, 1);
-\t\t\tunderline.graphics.drawRect(34, height - 7, width - 34, 9);
-\t\t\tunderline.graphics.endFill();
-\t\t\tbitmap.draw(underline);
-\t\t}
-\t\treturn bitmap;
+\t\t#if js
+\t\tvar browserWindow:Dynamic = js.Browser.window;
+\t\tvar callback:Dynamic = Reflect.field(browserWindow, "setSonicEXEMenuVideo");
+\t\tif (callback != null)
+\t\t\tReflect.callMethod(browserWindow, callback, [visible]);
+\t\t#end
 \t}
-
-\tfunction buildReferenceBackdrop():Void
-\t{
-\t\tvar black = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, 0xFF020204);
-\t\tblack.scrollFactor.set(0, 0);
-\t\tadd(black);
-
-\t\tvar leftWidth:Int = Std.int(FlxG.width * 0.68);
-\t\tvar tiledWidth:Int = leftWidth * 2;
-\t\tbackdropTileWidth = leftWidth;
-\t\tvar redPixels = new BitmapData(tiledWidth, FlxG.height, false, 0xFF26000A);
-\t\tfor (y in 0...FlxG.height)
-\t\t{
-\t\t\tvar rowWave:Float = Math.sin(y * 0.075) * 21 + Math.sin(y * 0.021) * 13;
-\t\t\tfor (x in 0...tiledWidth)
-\t\t\t{
-\t\t\t\t// Repeat the cloud field twice for a seamless horizontal scroll.
-\t\t\t\tvar patternX:Int = x % leftWidth;
-\t\t\t\tvar flow:Float = Math.sin((y * 0.061) + Math.sin(patternX * 0.014) * 3.8 + Math.sin(patternX * 0.038) * 1.5);
-\t\t\t\tvar ripple:Float = Math.sin((patternX * 0.019) + (y * 0.014)) * 11;
-\t\t\t\tvar grain:Float = ((patternX * 17 + y * 29 + ((patternX * y) % 37)) % 23) - 11;
-\t\t\t\tvar value:Float = 42 + rowWave + flow * 39 + ripple + grain;
-\t\t\t\tvar red:Int = Std.int(Math.max(8, Math.min(176, value * 1.55)));
-\t\t\t\tvar green:Int = Std.int(Math.max(0, Math.min(20, value * 0.055)));
-\t\t\t\tvar blue:Int = Std.int(Math.max(1, Math.min(30, value * 0.08)));
-\t\t\t\tredPixels.setPixel32(x, y, 0xFF000000 | (red << 16) | (green << 8) | blue);
-\t\t\t}
-\t\t}
-
-\t\tmovingRedBackdrop = new FlxSprite(-leftWidth, 0).loadGraphic(redPixels);
-\t\tmovingRedBackdrop.scrollFactor.set(0, 0);
-\t\tadd(movingRedBackdrop);
-
-\t\t// Thick red lightning seam creates the sharp zig-zag split in the reference layout.
-\t\tvar redSeam = new Shape();
-\t\tredSeam.graphics.lineStyle(Math.max(18, FlxG.height * 0.052), 0xFFFF151D, 1);
-\t\tredSeam.graphics.moveTo(FlxG.width * 0.395, -12);
-\t\tredSeam.graphics.lineTo(FlxG.width * 0.545, FlxG.height * 0.325);
-\t\tredSeam.graphics.lineTo(FlxG.width * 0.335, FlxG.height * 0.645);
-\t\tredSeam.graphics.lineTo(FlxG.width * 0.585, FlxG.height * 0.895);
-\t\tredSeam.graphics.lineTo(FlxG.width * 0.415, FlxG.height + 18);
-\t\tvar redSeamBitmap = new BitmapData(FlxG.width, FlxG.height, true, 0x00000000);
-\t\tredSeamBitmap.draw(redSeam);
-\t\tvar redSeamSprite = new FlxSprite().loadGraphic(redSeamBitmap);
-\t\tredSeamSprite.scrollFactor.set(0, 0);
-\t\tadd(redSeamSprite);
-
-\t\t// Inner yellow highlight, slightly offset toward the red field.
-\t\tvar yellowSeam = new Shape();
-\t\tyellowSeam.graphics.lineStyle(Math.max(7, FlxG.height * 0.018), 0xFFFFE51E, 1);
-\t\tyellowSeam.graphics.moveTo(FlxG.width * 0.382, -10);
-\t\tyellowSeam.graphics.lineTo(FlxG.width * 0.522, FlxG.height * 0.325);
-\t\tyellowSeam.graphics.lineTo(FlxG.width * 0.323, FlxG.height * 0.645);
-\t\tyellowSeam.graphics.lineTo(FlxG.width * 0.563, FlxG.height * 0.895);
-\t\tyellowSeam.graphics.lineTo(FlxG.width * 0.402, FlxG.height + 15);
-\t\tvar yellowSeamBitmap = new BitmapData(FlxG.width, FlxG.height, true, 0x00000000);
-\t\tyellowSeamBitmap.draw(yellowSeam);
-\t\tvar yellowSeamSprite = new FlxSprite().loadGraphic(yellowSeamBitmap);
-\t\tyellowSeamSprite.scrollFactor.set(0, 0);
-\t\tadd(yellowSeamSprite);
-
-\t\t// Use the actual Sonic.EXE Unofficial main-menu logo from the game package.
-\t\tvar menuLogo = new FlxSprite(FlxG.width * 0.035, FlxG.height * 0.09);
-\t\tmenuLogo.loadGraphic(Paths.image('sonicexe-logo'));
-\t\tmenuLogo.setGraphicSize(Std.int(FlxG.width * 0.36));
-\t\tmenuLogo.updateHitbox();
-\t\tmenuLogo.antialiasing = ClientPrefs.data.antialiasing;
-\t\tmenuLogo.scrollFactor.set(0, 0);
-\t\tadd(menuLogo);
-\t}
-
 """
 
     source = replace_once(
         source,
-        "\tvar selectedSomethin:Bool = false;",
-        helper_methods + "\tvar selectedSomethin:Bool = false;",
-        "reference backdrop and angled menu helpers",
-    )
-
-    source = replace_once(
-        source,
         """\toverride function update(elapsed:Float)
 \t{
 \t\tif (FlxG.sound.music.volume < 0.8)""",
         """\toverride function update(elapsed:Float)
 \t{
-\t\t// Scroll the repeating red cloud field behind the fixed zig-zag divider.
-\t\tif (movingRedBackdrop != null && backdropTileWidth > 0)
-\t\t{
-\t\t\tbackdropTravel += elapsed * 42;
-\t\t\twhile (backdropTravel >= backdropTileWidth)
-\t\t\t\tbackdropTravel -= backdropTileWidth;
-\t\t\tmovingRedBackdrop.x = -backdropTileWidth + backdropTravel;
-\t\t\tmovingRedBackdrop.y = Math.sin((backdropTravel / backdropTileWidth) * Math.PI * 2) * 8;
-\t\t}
-
 \t\tif (FlxG.sound.music.volume < 0.8)""",
-        "animate menu background during update",
+        "use original looping MP4 menu background",
     )
 
     # Rebuild menu selection colors and plate treatment whenever the selected row changes.
@@ -363,13 +283,57 @@ def main() -> None:
 \t\t\tvar label:FlxText = cast menuItems.members[i];
 \t\t\tlabel.color = selected ? FlxColor.WHITE : 0xFF85838A;
 \t\t\tlabel.alpha = selected ? 1 : 0.82;
-\t\t\tvar plate:FlxSprite = menuPlates.members[i];
-\t\t\tplate.loadGraphic(makeMenuPlate(Std.int(plate.width), Std.int(plate.height), selected));
+\t\t\tmenuHighlights.members[i].visible = selected;
 \t\t}
 
 \t\tcamFollow.setPosition(FlxG.width * 0.75, FlxG.height * 0.5);
 \t}""",
-        "reference menu selection rendering",
+        "update selection using original yellow sprite",
+    )
+
+
+
+    source = replace_once(
+        source,
+        """\t\t\tif (controls.BACK)
+\t\t\t{
+\t\t\t\tselectedSomethin = true;
+\t\t\t\tFlxG.sound.play(Paths.sound('cancelMenu'));""",
+        """\t\t\tif (controls.BACK)
+\t\t\t{
+\t\t\t\tselectedSomethin = true;
+\t\t\t\tsetMenuBackdropVisible(false);
+\t\t\t\tFlxG.sound.play(Paths.sound('cancelMenu'));""",
+        "hide menu video when returning to title screen",
+    )
+
+    source = replace_once(
+        source,
+        """\t\t\t\telse
+\t\t\t\t{
+\t\t\t\t\tselectedSomethin = true;
+
+\t\t\t\t\tif (ClientPrefs.data.flashing)""",
+        """\t\t\t\telse
+\t\t\t\t{
+\t\t\t\t\tselectedSomethin = true;
+\t\t\t\t\tsetMenuBackdropVisible(false);
+
+\t\t\t\t\tif (ClientPrefs.data.flashing)""",
+        "hide menu video when opening another menu",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tsuper.create();
+
+\t\tFlxG.camera.follow(camFollow, null, 9);""",
+        """\t\tsuper.create();
+\t\tFlxG.camera.bgColor = FlxColor.TRANSPARENT;
+\t\tsetMenuBackdropVisible(true);
+
+\t\tFlxG.camera.follow(camFollow, null, 9);""",
+        "show original menu video behind transparent canvas",
     )
 
     target.write_text(source, encoding="utf-8")
