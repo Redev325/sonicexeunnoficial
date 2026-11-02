@@ -108,8 +108,8 @@ jobs:
           # In the browser build the built-in character list remains available.
           patch_file("source/states/editors/CharacterEditorState.hx", [
               (
-                  "var foldersToCheck:Array<String> = Mods.directoriesWithFile(Paths.getSharedPath(), 'characters/');\\n\\t\\tfor (folder in foldersToCheck)\\n\\t\\t\\tfor (file in FileSystem.readDirectory(folder))\\n\\t\\t\\t\\tif(file.toLowerCase().endsWith('.json'))\\n\\t\\t\\t\\t{\\n\\t\\t\\t\\t\\tvar charToCheck:String = file.substr(0, file.length - 5);\\n\\t\\t\\t\\t\\tif(!characterList.contains(charToCheck))\\n\\t\\t\\t\\t\\t\\tcharacterList.push(charToCheck);\\n\\t\\t\\t\\t}",
-                  "#if sys\\n\\t\\tvar foldersToCheck:Array<String> = Mods.directoriesWithFile(Paths.getSharedPath(), 'characters/');\\n\\t\\tfor (folder in foldersToCheck)\\n\\t\\t\\tfor (file in FileSystem.readDirectory(folder))\\n\\t\\t\\t\\tif(file.toLowerCase().endsWith('.json'))\\n\\t\\t\\t\\t{\\n\\t\\t\\t\\t\\tvar charToCheck:String = file.substr(0, file.length - 5);\\n\\t\\t\\t\\t\\tif(!characterList.contains(charToCheck))\\n\\t\\t\\t\\t\\t\\tcharacterList.push(charToCheck);\\n\\t\\t\\t\\t}\\n\\t\\t#end",
+                  "var foldersToCheck:Array<String> = Mods.directoriesWithFile(Paths.getSharedPath(), 'characters/');\n\t\tfor (folder in foldersToCheck)\n\t\t\tfor (file in FileSystem.readDirectory(folder))\n\t\t\t\tif(file.toLowerCase().endsWith('.json'))\n\t\t\t\t{\n\t\t\t\t\tvar charToCheck:String = file.substr(0, file.length - 5);\n\t\t\t\t\tif(!characterList.contains(charToCheck))\n\t\t\t\t\t\tcharacterList.push(charToCheck);\n\t\t\t\t}",
+                  "#if sys\n\t\tvar foldersToCheck:Array<String> = Mods.directoriesWithFile(Paths.getSharedPath(), 'characters/');\n\t\tfor (folder in foldersToCheck)\n\t\t\tfor (file in FileSystem.readDirectory(folder))\n\t\t\t\tif(file.toLowerCase().endsWith('.json'))\n\t\t\t\t{\n\t\t\t\t\tvar charToCheck:String = file.substr(0, file.length - 5);\n\t\t\t\t\tif(!characterList.contains(charToCheck))\n\t\t\t\t\t\tcharacterList.push(charToCheck);\n\t\t\t\t}\n\t\t#end",
                   "guarded editor filesystem scan for HTML5"
               )
           ])
@@ -117,8 +117,8 @@ jobs:
           # FlxG.error is not available in the web target; the logger is.
           patch_file("source/backend/CoolUtil.hx", [
               (
-                  "FlxG.error(\\"Platform is not supported for CoolUtil.openFolder\\");",
-                  "FlxG.log.error(\\"Platform is not supported for CoolUtil.openFolder\\");",
+                  "FlxG.error(\"Platform is not supported for CoolUtil.openFolder\");",
+                  "FlxG.log.error(\"Platform is not supported for CoolUtil.openFolder\");",
                   "used cross-target FlxG logger"
               )
           ])
@@ -190,12 +190,12 @@ jobs:
           patch_file(".haxelib/flxanimate/git/flxanimate/display/FlxAnimateFilterRenderer.hx", [
               (
                   "import flixel.FlxG;",
-                  "import flixel.FlxG;\\nimport lime._internal.graphics.ImageCanvasUtil;",
+                  "import flixel.FlxG;\nimport lime._internal.graphics.ImageCanvasUtil;",
                   "imported Lime ImageCanvasUtil"
               ),
               (
                   "@:access(openfl.display.CairoRenderer)",
-                  "@:access(openfl.display.CairoRenderer)\\n@:access(lime.graphics.ImageBuffer)",
+                  "@:access(openfl.display.CairoRenderer)\n@:access(lime.graphics.ImageBuffer)",
                   "granted access to the Lime canvas context"
               )
           ])
