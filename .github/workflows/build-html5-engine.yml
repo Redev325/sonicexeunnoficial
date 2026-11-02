@@ -23,7 +23,7 @@ jobs:
       - name: Install system packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential libvlc-dev libvlccore-dev
+          sudo apt-get install -y git build-essential libvlc-dev libvlccore-dev ffmpeg
 
       - name: Install Haxe
         uses: krdlab/setup-haxe@master
@@ -292,11 +292,11 @@ jobs:
                       shutil.copyfileobj(source, target)
                   print(f"Installed original game font: {output} ({output.stat().st_size:,} bytes)")
 
-              music_output = Path("engine/assets/shared/music/menu.ogg")
+              music_output = Path("engine/assets/shared/music/menu-source.ogg")
               music_output.parent.mkdir(parents=True, exist_ok=True)
               with z.open("assets/exe/music/menu.ogg") as source, music_output.open("wb") as target:
                   shutil.copyfileobj(source, target)
-              print(f"Installed original menu music ({music_output.stat().st_size:,} bytes)")
+              print(f"Extracted original menu music source ({music_output.stat().st_size:,} bytes)")
 
               video_output = Path("engine/sonicexe-menu.mp4")
               with z.open("assets/exe/mainmenu/menu.mp4") as source, video_output.open("wb") as target:
@@ -304,6 +304,13 @@ jobs:
               print(f"Prepared original animated menu background ({video_output.stat().st_size:,} bytes)")
           PY
           rm -rf package
+
+      - name: Convert original game menu music for HTML5
+        run: |
+          ffmpeg -y -i engine/assets/shared/music/menu-source.ogg -vn -c:a libmp3lame -q:a 2 engine/assets/shared/music/menu.mp3
+          rm -f engine/assets/shared/music/menu-source.ogg
+          test -s engine/assets/shared/music/menu.mp3
+          echo "Prepared original menu.mp3 for the HTML5-only asset library."
 
       - name: Apply original Sonic.EXE title and intro artwork
         run: |
