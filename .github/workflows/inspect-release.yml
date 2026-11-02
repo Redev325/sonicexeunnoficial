@@ -31,55 +31,95 @@ jobs:
           cd ..
           ls -lh unofficial-windows-reassembled.zip
 
-      - name: Inventory archive without running its contents
+      - name: Inspect game data and executable metadata
         run: |
           python3 - <<'PY'
           from collections import Counter
           from pathlib import PurePosixPath
           from zipfile import ZipFile, BadZipFile
+          import json, re
 
           archive = "unofficial-windows-reassembled.zip"
-          report = ["Sonic EXE Unofficial 1.0.0 - focused package inspection", ""]
+          report = ["Sonic EXE Unofficial 1.0.0 - rebuild feasibility report", ""]
           try:
               with ZipFile(archive) as zf:
                   infos = zf.infolist()
                   files = [i for i in infos if not i.is_dir()]
-                  extensions = Counter(PurePosixPath(i.filename).suffix.lower() or "[no extension]" for i in files)
-                  top = Counter(i.filename.split("/", 1)[0] + ("/" if "/" in i.filename else "") for i in infos)
-                  source_exts = {".hx", ".hxml", ".cpp", ".c", ".h", ".js", ".ts", ".wasm", ".html", ".gradle", ".java"}
-                  binary_exts = {".exe", ".dll", ".so", ".dylib", ".ndll"}
-                  sources = [i for i in files if PurePosixPath(i.filename).suffix.lower() in source_exts]
-                  binaries = [i for i in files if PurePosixPath(i.filename).suffix.lower() in binary_exts]
-                  shallow = [i for i in infos if len(PurePosixPath(i.filename).parts) <= 2]
+                  ext_counts = Counter(PurePosixPath(i.filename).suffix.lower() or "[no extension]" for i in files)
                   report += [
-                      "ZIP opened successfully: yes",
+                      "ZIP valid: yes",
                       f"Entries: {len(infos)}",
                       f"Files: {len(files)}",
-                      f"Total uncompressed size: {sum(i.file_size for i in files):,} bytes",
+                      f"Unpacked bytes: {sum(i.file_size for i in files):,}",
                       "",
-                      "Top-level entries:",
+                      "Most common file extensions:",
                   ]
-                  report.extend(f"  {name} ({count} entries)" for name, count in top.most_common(100))
-                  report += ["", "Relevant extension counts:"]
-                  for ext in sorted(set(source_exts | binary_exts)):
-                      count = extensions.get(ext, 0)
-                      if count:
-                          report.append(f"  {ext}: {count}")
-                  report += ["", "Build/source candidates:"]
-                  if sources:
-                      report.extend(f"  {i.filename} ({i.file_size:,} bytes)" for i in sources[:1000])
-                  else:
-                      report.append("  NONE FOUND for common Haxe/C/C++/JS/HTML/WebAssembly project source extensions.")
-                  report += ["", "Compiled executables and runtime libraries:"]
-                  report.extend(f"  {i.filename} ({i.file_size:,} bytes)" for i in binaries[:1000])
-                  report += ["", "Shallow package layout (root and one folder deep):"]
-                  report.extend(f"  {i.filename} ({i.file_size:,} bytes)" for i in shallow[:1000])
+                  report.extend(f"  {ext or '[none]'}: {n}" for ext, n in ext_counts.most_common(40))
+                  report += ["", "Top-level folder names:"]
+                  top = Counter(i.filename.split("/", 1)[0] + ("/" if "/" in i.filename else "") for i in infos)
+                  report.extend(f"  {name} ({n})" for name, n in top.most_common(80))
+
+                  report += ["", "Possible charts, song metadata, scripts, and project data:"]
+                  data_candidates = [
+                      i for i in files
+                      if any(k in i.filename.lower() for k in ("chart", "song", "week", "stage", "character", "script", "dialogue", "story", "manifest"))
+                      and PurePosixPath(i.filename).suffix.lower() in {".json", ".json5", ".lua", ".hx", ".hscript", ".txt", ".xml", ".yaml", ".yml"}
+                  ]
+                  report.extend(f"  {i.filename} ({i.file_size:,} bytes)" for i in data_candidates[:700])
+                  if not data_candidates:
+                      report.append("  No matching data files located.")
+
+                  report += ["", "Largest 50 files:"]
+                  for i in sorted(files, key=lambda x: x.file_size, reverse=True)[:50]:
+                      report.append(f"  {i.file_size:,} bytes  {i.filename}")
+
+                  manifest_name = "manifest/default.json"
+                  report += ["", "Manifest/default.json inspection:"]
+                  try:
+                      raw = zf.read(manifest_name)
+                      report.append(f"  bytes: {len(raw):,}")
+                      obj = json.loads(raw.decode("utf-8-sig"))
+                      report.append(f"  root type: {type(obj).__name__}")
+                      if isinstance(obj, dict):
+                          report.append(f"  root keys: {', '.join(map(str, list(obj.keys())[:80]))}")
+                      if isinstance(obj, list):
+                          report.append(f"  list entries: {len(obj)}")
+                      found = []
+                      def walk(v, path="$"):
+                          if isinstance(v, dict):
+                              for k, x in v.items():
+                                  walk(x, path + "." + str(k))
+                          elif isinstance(v, list):
+                              for j, x in enumerate(v[:10000]):
+                                  walk(x, path + f"[{j}]")
+                          elif isinstance(v, str) and re.search(r"chart|song|week|stage|character|dialogue|\\.hx|\\.lua|\\.json", v, re.I):
+                              found.append((path, v[:300]))
+                      walk(obj)
+                      report.append("  relevant manifest values (first 200):")
+                      report.extend(f"    {p}: {v}" for p, v in found[:200])
+                  except Exception as e:
+                      report.append(f"  Could not parse: {type(e).__name__}: {e}")
+
+                  report += ["", "Main executable string indicators (static inspection only):"]
+                  try:
+                      blob = zf.read("Vs Sonic.exe")
+                      strings = re.findall(rb"[ -~]{6,}", blob)
+                      terms = (b"Psych", b"Friday Night", b"Haxe", b"Flixel", b"Lime", b"OpenFL", b"Sonic", b"Lua", b"chart", b"song", b"version", b"engine")
+                      matched = []
+                      for s in strings:
+                          if any(t.lower() in s.lower() for t in terms):
+                              matched.append(s.decode("ascii", "replace")[:300])
+                      report.extend(f"  {s}" for s in matched[:250])
+                      if not matched:
+                          report.append("  No matching printable indicators found.")
+                  except Exception as e:
+                      report.append(f"  Executable read failed: {type(e).__name__}: {e}")
           except BadZipFile as exc:
               report += [f"ZIP validation failed: {exc}", "The split parts may not match or may be incomplete."]
           except Exception as exc:
               report += [f"Inspection error: {type(exc).__name__}: {exc}"]
 
-          output = "\n".join(report) + "\n"
+          output = "\\n".join(report) + "\\n"
           print(output)
           with open("inspection-report.txt", "w", encoding="utf-8") as f:
               f.write(output)
