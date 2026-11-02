@@ -151,10 +151,23 @@ jobs:
           print(output)
           PY
 
-      - name: Upload metadata report
+      - name: Extract the original game main-menu logo
+        run: |
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          with ZipFile("release.zip") as z:
+              logo = z.read("assets/exe/mainmenu/logo.webp")
+          with open("official-menu-logo.webp", "wb") as f:
+              f.write(logo)
+          print(f"Extracted original main-menu logo: {len(logo):,} bytes")
+          PY
+
+      - name: Upload menu report and original logo
         uses: actions/upload-artifact@v4
         with:
-          name: sonicexe-menu-reference-report
-          path: menu-reference-report.txt
+          name: sonicexe-menu-reference-assets
+          path: |
+            menu-reference-report.txt
+            official-menu-logo.webp
           if-no-files-found: error
           retention-days: 7
