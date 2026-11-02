@@ -39,32 +39,41 @@ jobs:
           from zipfile import ZipFile, BadZipFile
 
           archive = "unofficial-windows-reassembled.zip"
-          report = ["Sonic EXE Unofficial 1.0.0 - package inspection", ""]
+          report = ["Sonic EXE Unofficial 1.0.0 - focused package inspection", ""]
           try:
               with ZipFile(archive) as zf:
                   infos = zf.infolist()
                   files = [i for i in infos if not i.is_dir()]
                   extensions = Counter(PurePosixPath(i.filename).suffix.lower() or "[no extension]" for i in files)
-                  total_size = sum(i.file_size for i in files)
+                  top = Counter(i.filename.split("/", 1)[0] + ("/" if "/" in i.filename else "") for i in infos)
+                  source_exts = {".hx", ".hxml", ".cpp", ".c", ".h", ".js", ".ts", ".wasm", ".html", ".gradle", ".java"}
+                  binary_exts = {".exe", ".dll", ".so", ".dylib", ".ndll"}
+                  sources = [i for i in files if PurePosixPath(i.filename).suffix.lower() in source_exts]
+                  binaries = [i for i in files if PurePosixPath(i.filename).suffix.lower() in binary_exts]
+                  shallow = [i for i in infos if len(PurePosixPath(i.filename).parts) <= 2]
                   report += [
                       "ZIP opened successfully: yes",
                       f"Entries: {len(infos)}",
                       f"Files: {len(files)}",
-                      f"Total uncompressed size: {total_size:,} bytes",
+                      f"Total uncompressed size: {sum(i.file_size for i in files):,} bytes",
                       "",
-                      "Extension counts:",
+                      "Top-level entries:",
                   ]
-                  for ext, count in extensions.most_common():
-                      report.append(f"  {ext}: {count}")
-                  report += ["", "Possible project/source files:"]
-                  source_exts = {".hx", ".hxml", ".cpp", ".c", ".h", ".xml", ".gradle", ".java", ".ts", ".js"}
-                  candidates = [i for i in files if PurePosixPath(i.filename).suffix.lower() in source_exts]
-                  if candidates:
-                      report.extend(f"  {i.filename} ({i.file_size:,} bytes)" for i in candidates[:500])
+                  report.extend(f"  {name} ({count} entries)" for name, count in top.most_common(100))
+                  report += ["", "Relevant extension counts:"]
+                  for ext in sorted(set(source_exts | binary_exts)):
+                      count = extensions.get(ext, 0)
+                      if count:
+                          report.append(f"  {ext}: {count}")
+                  report += ["", "Build/source candidates:"]
+                  if sources:
+                      report.extend(f"  {i.filename} ({i.file_size:,} bytes)" for i in sources[:1000])
                   else:
-                      report.append("  None of the common Haxe/C/C++/JavaScript project source extensions were found.")
-                  report += ["", "Archive paths (first 500):"]
-                  report.extend(f"  {i.filename}" for i in infos[:500])
+                      report.append("  NONE FOUND for common Haxe/C/C++/JS/HTML/WebAssembly project source extensions.")
+                  report += ["", "Compiled executables and runtime libraries:"]
+                  report.extend(f"  {i.filename} ({i.file_size:,} bytes)" for i in binaries[:1000])
+                  report += ["", "Shallow package layout (root and one folder deep):"]
+                  report.extend(f"  {i.filename} ({i.file_size:,} bytes)" for i in shallow[:1000])
           except BadZipFile as exc:
               report += [f"ZIP validation failed: {exc}", "The split parts may not match or may be incomplete."]
           except Exception as exc:
