@@ -98,8 +98,20 @@ jobs:
                   else:
                       target = mod / Path(*rel.parts)
                       target.parent.mkdir(parents=True, exist_ok=True)
-                      target.write_bytes(raw)
-                      out_type = "copied"
+                      if suffix in {".json", ".xml", ".txt", ".frag", ".lua", ".hx"}:
+                          # Sprite atlases and scripts may refer to original media
+                          # extensions. Keep the converted paths consistent.
+                          try:
+                              text = raw.decode("utf-8")
+                              text = text.replace(".webp", ".png").replace(".ogg", ".mp3")
+                              target.write_text(text, encoding="utf-8")
+                              out_type = "copied with web media path updates"
+                          except UnicodeDecodeError:
+                              target.write_bytes(raw)
+                              out_type = "copied binary text resource"
+                      else:
+                          target.write_bytes(raw)
+                          out_type = "copied"
 
                   manifest.append({
                       "source": info.filename,
