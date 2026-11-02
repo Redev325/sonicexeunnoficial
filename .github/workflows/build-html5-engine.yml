@@ -1,0 +1,58 @@
+name: Build HTML5 engine base
+run-name: Build HTML5 engine base
+
+on:
+  push:
+    paths:
+      - ".github/workflows/build-html5-engine.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-html5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git build-essential libvlc-dev libvlccore-dev
+
+      - name: Install Haxe
+        uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: "4.2.5"
+
+      - name: Fetch open-source Psych Engine HTML5 base
+        run: |
+          git clone --depth 1 https://github.com/star-studios-official/FNF-PsychEngine-HTML5.git engine
+          du -sh engine
+
+      - name: Install Haxe libraries
+        working-directory: engine
+        run: |
+          haxelib setup "$HOME/haxelib"
+          haxelib install hxcpp --quiet
+          haxe -cp ./setup -D analyzer-optimize -main Main --interp
+          haxelib fixrepo
+
+      - name: Compile browser target
+        working-directory: engine
+        run: |
+          haxelib run lime build Project.xml html5 -release
+
+      - name: Check browser output
+        run: |
+          test -f engine/export/release/html5/bin/index.html
+          find engine/export/release/html5/bin -maxdepth 2 -type f | head -80
+          du -sh engine/export/release/html5/bin
+
+      - name: Upload HTML5 engine test
+        uses: actions/upload-artifact@v4
+        with:
+          name: psych-engine-html5-base
+          path: engine/export/release/html5/bin/
+          if-no-files-found: error
+          retention-days: 14
