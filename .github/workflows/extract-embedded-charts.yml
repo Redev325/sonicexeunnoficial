@@ -48,16 +48,30 @@ jobs:
           with ZipFile("release.zip") as z:
               exe_info = next(i for i in z.infolist() if PurePosixPath(i.filename).name.lower() == "vs sonic.exe")
               data = z.read(exe_info)
+              manifest = json.loads(z.read("manifest/default.json").decode("utf-8-sig"))
 
-          # Custom asset paths are embedded as URL-encoded strings inside the
-          # native executable; the external default manifest is not the source
-          # of the per-mod chart paths.
-          path_pattern = rb"contents(?:%2[fF]|/)[^\x00\s\x22'<>|*?:]{1,500}?\.json"
+          # The manifest stores its asset registry as one long serialized string.
+          # Decode URL-escaped paths, then select only exact chart files of the form
+          # contents/<GROUP>/data/<song>/<song>.json.
+          manifest_strings = []
+          def collect_strings(value):
+              if isinstance(value, dict):
+                  for child in value.values():
+                      collect_strings(child)
+              elif isinstance(value, list):
+                  for child in value:
+                      collect_strings(child)
+              elif isinstance(value, str):
+                  manifest_strings.append(unquote(value))
+
+          collect_strings(manifest)
           chart_paths = set()
-          for match in re.finditer(path_pattern, data, re.I):
-              candidate = unquote(match.group().decode("ascii", "ignore")).replace("\\\\", "/")
-              if re.fullmatch(r"contents/[^/]+/data/[^/]+/[^/]+\.json", candidate, re.I):
-                  chart_paths.add(candidate)
+          path_pattern = r"contents/[^\\x00\\r\\n\\\"'<>|*?:]{1,500}?\\.json"
+          for value in manifest_strings:
+              for match in re.finditer(path_pattern, value, re.I):
+                  candidate = match.group().replace("\\\\\\\\", "/")
+                  if re.fullmatch(r"contents/[^/]+/data/[^/]+/[^/]+\\.json", candidate, re.I):
+                      chart_paths.add(candidate)
 
           chart_paths = sorted(chart_paths)
           decoder = json.JSONDecoder()
@@ -150,7 +164,7 @@ jobs:
                   "stage": obj.get("stage"),
                   "format": obj.get("format"),
                   "original_game_path": original_path or "UNMATCHED",
-                  "psych_engine_path": str(engine_target).replace("\\\\", "/"),
+                  "psych_engine_path": str(engine_target.relative_to(output_root)).replace("\\\\", "/"),
                   "executable_offset": f"0x{start:x}",
                   "source_bytes": consumed
               })
