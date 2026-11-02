@@ -75,7 +75,7 @@ def main() -> None:
     source = replace_once(
         source,
         "\t\tadd(magenta);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
-        "\t\tadd(magenta);\n\n\t\tmenuHighlights = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHighlights);\n\n\t\tmenuPlates = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuPlates);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
+        "\t\tadd(magenta);\n\n\t\tvar menuLogo:FlxSprite = new FlxSprite(FlxG.width * 0.045, FlxG.height * 0.17);\n\t\tmenuLogo.loadGraphic(Paths.image('sonicexe-logo'));\n\t\tmenuLogo.setGraphicSize(Std.int(FlxG.width * 0.37));\n\t\tmenuLogo.updateHitbox();\n\t\tmenuLogo.antialiasing = ClientPrefs.data.antialiasing;\n\t\tmenuLogo.scrollFactor.set(0, 0);\n\t\tadd(menuLogo);\n\n\t\tmenuPlates = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuPlates);\n\n\t\tmenuHighlights = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHighlights);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
         "menu plates behind menu labels",
     )
 
@@ -104,9 +104,9 @@ def main() -> None:
 \t\t{
 \t\t\tvar buttonY:Int = Std.int(FlxG.height * (0.06 + i * 0.18));
 
-\t\t\tvar highlight:FlxSprite = new FlxSprite(buttonX - 10, buttonY - 2);
+\t\t\tvar highlight:FlxSprite = new FlxSprite(buttonX + 7, buttonY + 9);
 \t\t\thighlight.loadGraphic(Paths.image('sonicexe-menu/options/shadow'));
-\t\t\thighlight.setGraphicSize(buttonWidth + 20, buttonHeight + 8);
+\t\t\thighlight.setGraphicSize(buttonWidth - 14, buttonHeight - 18);
 \t\t\thighlight.updateHitbox();
 \t\t\thighlight.scrollFactor.set(0, 0);
 \t\t\thighlight.visible = (i == curSelected);
@@ -132,25 +132,25 @@ def main() -> None:
     source = replace_once(
         source,
         "var psychVer:FlxText = new FlxText(12, FlxG.height - 44, 0, \"Psych Engine v\" + psychEngineVersion, 12);",
-        "var psychVer:FlxText = new FlxText(8, 6, 0, \"Psych Engine v\" + psychEngineVersion, 8);",
+        "var psychVer:FlxText = new FlxText(12, FlxG.height - 32, 0, \"Psych Engine v\" + psychEngineVersion, 10);",
         "upper-left engine version label",
     )
     source = replace_once(
         source,
         "psychVer.setFormat(\"VCR OSD Mono\", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
-        "psychVer.setFormat(\"VCR OSD Mono\", 8, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
+        "psychVer.setFormat(\"VCR OSD Mono\", 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
         "small engine version text",
     )
     source = replace_once(
         source,
         "var fnfVer:FlxText = new FlxText(12, FlxG.height - 24, 0, \"Friday Night Funkin' v\" + Application.current.meta.get('version'), 12);",
-        "var fnfVer:FlxText = new FlxText(8, 17, 0, \"Friday Night Funkin' v\" + Application.current.meta.get('version'), 8);",
+        "var fnfVer:FlxText = new FlxText(12, FlxG.height - 18, 0, \"Friday Night Funkin' v\" + Application.current.meta.get('version'), 10);",
         "upper-left game version label",
     )
     source = replace_once(
         source,
         "fnfVer.setFormat(\"VCR OSD Mono\", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
-        "fnfVer.setFormat(\"VCR OSD Mono\", 8, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
+        "fnfVer.setFormat(\"VCR OSD Mono\", 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
         "small game version text",
     )
 
@@ -207,10 +207,10 @@ def main() -> None:
 \t\treturn switch (index)
 \t\t{
 \t\t\tcase 0: "SOUND TEST";
-\t\t\tcase 1: "JUEGO LIBRE";
-\t\t\tcase 2: "MODO HISTORIA";
+\t\t\tcase 1: "FREEPLAY";
+\t\t\tcase 2: "STORY MODE";
 \t\t\tcase 3: "EXTRAS";
-\t\t\tcase 4: "OPCIONES";
+\t\t\tcase 4: "OPTIONS";
 \t\t\tdefault: "MENU";
 \t\t};
 \t}

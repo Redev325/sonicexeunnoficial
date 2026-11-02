@@ -256,6 +256,26 @@ jobs:
                       image.convert("RGBA").save(output, format="PNG", optimize=True)
                   print(f"Prepared original menu sprite: {output} ({output.stat().st_size:,} bytes)")
 
+              # Copy original title-screen assets and matching atlas metadata.
+              title_prefix = "assets/exe/title/"
+              for name in z.namelist():
+                  if not name.startswith(title_prefix) or name.endswith("/"):
+                      continue
+                  suffix = Path(name).suffix.casefold()
+                  if suffix not in {".webp", ".xml", ".json"}:
+                      continue
+                  relative = Path(name[len(title_prefix):])
+                  destination = Path("engine/assets/images/sonicexe-title") / relative
+                  destination.parent.mkdir(parents=True, exist_ok=True)
+                  if suffix == ".webp":
+                      with z.open(name) as source, Image.open(source) as image:
+                          destination = destination.with_suffix(".png")
+                          image.convert("RGBA").save(destination, format="PNG", optimize=True)
+                  else:
+                      with z.open(name) as source, destination.open("wb") as target:
+                          shutil.copyfileobj(source, target)
+                  print(f"Prepared original title asset: {destination} ({destination.stat().st_size:,} bytes)")
+
               video_output = Path("engine/sonicexe-menu.mp4")
               with z.open("assets/exe/mainmenu/menu.mp4") as source, video_output.open("wb") as target:
                   shutil.copyfileobj(source, target)
@@ -294,7 +314,8 @@ jobs:
             html, body { position: relative; background: #000; }
             #sonicexe-menu-bg {
               position: fixed; inset: 0; width: 100vw; height: 100vh;
-              object-fit: cover; display: none; z-index: 0; pointer-events: none;
+              object-fit: contain; display: none; z-index: 2;
+              pointer-events: none; mix-blend-mode: screen;
             }
             #openfl-content {
               position: relative; z-index: 1; background: transparent !important;
