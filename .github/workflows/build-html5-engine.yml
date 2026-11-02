@@ -225,7 +225,7 @@ jobs:
 
       - name: Fetch original Sonic.EXE menu assets
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
           GH_REPO: \${{ github.repository }}
         run: |
           mkdir -p package engine/assets/images/sonicexe-menu/options
