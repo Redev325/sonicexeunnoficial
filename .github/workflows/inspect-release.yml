@@ -1,0 +1,85 @@
+name: Inspect Sonic EXE release package
+
+on:
+  push:
+    paths:
+      - ".github/workflows/inspect-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Download the two release parts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p package
+          cd package
+          gh release download v1.0.0 --repo "$GH_REPO" \
+            --pattern 'unofficial-windows.1.zip.001' \
+            --pattern 'unofficial-windows.1.zip.002'
+          test -s unofficial-windows.1.zip.001
+          test -s unofficial-windows.1.zip.002
+          cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > ../unofficial-windows-reassembled.zip
+          cd ..
+          ls -lh unofficial-windows-reassembled.zip
+
+      - name: Inventory archive without running its contents
+        run: |
+          python3 - <<'PY'
+          from collections import Counter
+          from pathlib import PurePosixPath
+          from zipfile import ZipFile, BadZipFile
+
+          archive = "unofficial-windows-reassembled.zip"
+          report = ["Sonic EXE Unofficial 1.0.0 - package inspection", ""]
+          try:
+              with ZipFile(archive) as zf:
+                  infos = zf.infolist()
+                  files = [i for i in infos if not i.is_dir()]
+                  extensions = Counter(PurePosixPath(i.filename).suffix.lower() or "[no extension]" for i in files)
+                  total_size = sum(i.file_size for i in files)
+                  report += [
+                      f"ZIP opened successfully: yes",
+                      f"Entries: {len(infos)}",
+                      f"Files: {len(files)}",
+                      f"Total uncompressed size: {total_size:,} bytes",
+                      "",
+                      "Extension counts:",
+                  ]
+                  for ext, count in extensions.most_common():
+                      report.append(f"  {ext}: {count}")
+                  report += ["", "Possible project/source files:"]
+                  source_exts = {".hx", ".hxml", ".cpp", ".c", ".h", ".xml", ".gradle", ".java", ".ts", ".js"}
+                  candidates = [i for i in files if PurePosixPath(i.filename).suffix.lower() in source_exts]
+                  if candidates:
+                      report.extend(f"  {i.filename} ({i.file_size:,} bytes)" for i in candidates[:500])
+                  else:
+                      report.append("  None of the common Haxe/C/C++/JavaScript project source extensions were found.")
+                  report += ["", "Archive paths (first 500):"]
+                  report.extend(f"  {i.filename}" for i in infos[:500])
+          except BadZipFile as exc:
+              report += [f"ZIP validation failed: {exc}", "The split parts may not match or may be incomplete."]
+          except Exception as exc:
+              report += [f"Inspection error: {type(exc).__name__}: {exc}"]
+
+          text = "\n".join(report) + "\n"
+          print(text)
+          with open("inspection-report.txt", "w", encoding="utf-8") as f:
+              f.write(text)
+          PY
+
+      - name: Upload inspection report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonicexe-inspection-report
+          path: inspection-report.txt
+          if-no-files-found: warn
+          retention-days: 14
