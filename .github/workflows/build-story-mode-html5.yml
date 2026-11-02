@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build-html5:
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha == 'PENDING_FINAL_ASSET_SHA' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha == '2e4770c796ef2179a9e9c1b2f8d135e017765db0' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
