@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/build-html5-engine.yml"
       - "patches/apply_main_menu.py"
+      - "patches/apply_title_screen.py"
   workflow_dispatch:
 
 permissions:
@@ -282,6 +283,10 @@ jobs:
               print(f"Prepared original animated menu background ({video_output.stat().st_size:,} bytes)")
           PY
           rm -rf package
+
+      - name: Apply original Sonic.EXE title and intro artwork
+        run: |
+          python3 patches/apply_title_screen.py engine/source/states/TitleState.hx
 
       - name: Apply original browser main menu layout
         run: |
