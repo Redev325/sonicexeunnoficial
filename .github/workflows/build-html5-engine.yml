@@ -292,7 +292,7 @@ jobs:
                       shutil.copyfileobj(source, target)
                   print(f"Installed original game font: {output} ({output.stat().st_size:,} bytes)")
 
-              music_output = Path("engine/assets/music/menu.ogg")
+              music_output = Path("engine/assets/shared/music/menu.ogg")
               music_output.parent.mkdir(parents=True, exist_ok=True)
               with z.open("assets/exe/music/menu.ogg") as source, music_output.open("wb") as target:
                   shutil.copyfileobj(source, target)
