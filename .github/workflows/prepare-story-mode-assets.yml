@@ -72,6 +72,10 @@ jobs:
                   if suffix in {".mp4", ".webm", ".m4v"}:
                       skipped_videos.append(str(rel))
                       continue
+                  # The first playable browser test contains Too-Slow only.
+                  # Other Story Mode songs are added after this chart loads correctly.
+                  if str(rel).casefold().startswith("songs/") and not str(rel).casefold().startswith("songs/too-slow/"):
+                      continue
 
                   raw = z.read(info)
                   if suffix == ".webp":
@@ -152,13 +156,7 @@ jobs:
           story_songs = {"too-slow", "you-cant-run", "triple-trouble", "final-escape", "yourself"}
           charts_out = []
 
-          story_song_paths = {
-              "tooslow": "too-slow",
-              "youcantrun": "you-cant-run",
-              "tripletrouble": "triple-trouble",
-              "finalescape": "final-escape",
-              "yourself": "yourself"
-          }
+          story_song_paths = {"tooslow": "too-slow"}
           for entry in chart_index:
               normalized_title = re.sub(r"[^a-z0-9]+", "", entry["song"].lower())
               slug = story_song_paths.get(normalized_title)
@@ -176,20 +174,14 @@ jobs:
                   "output": str(dst.relative_to(root))
               })
 
-          if len(charts_out) != 5:
-              raise SystemExit(f"Expected 5 Xenophanes charts, found {len(charts_out)}")
+          if len(charts_out) != 1:
+              raise SystemExit(f"Expected exactly one Too-Slow chart for the first browser test, found {len(charts_out)}")
 
           # First-pass character aliases. Each source is a full recovered character
           # JSON object from the native executable. Multiple aliases accommodate
           # the original display IDs and Psych Engine's path naming conventions.
           character_sources = {
-              "sonicexe-08e61d54.json": ["sonic.exe", "sonic_exe"],
-              "xeno-p2-07020d54.json": ["sonic.exe 2", "sonic_exe_2"],
-              "tails-05df3bb4.json": ["tails"],
-              "minilook-08df3664.json": ["mirror look2", "mirror_look2"],
-              "gf-06a270a4.json": ["dark gf", "dark_gf"],
-              "bfback-05680ac4.json": ["bf-intro", "bf_intro"],
-              "xeno-p4back-058c4cc4.json": ["xeno-intro", "xeno_intro"]
+              "sonicexe-08e61d54.json": ["sonic.exe", "sonic_exe"]
           }
 
           char_map = []
@@ -221,11 +213,7 @@ jobs:
           # this first pass by their song resource/layout associations. They remain
           # explicitly marked provisional until runtime testing confirms the layouts.
           stage_sources = {
-              "tooslow": "stage-05788a54.json",
-              "triple-trouble": "stage-05f2b804.json",
-              "you-cant-run": "stage-0900cd14.json",
-              "final-escape": "stage-08e19024.json",
-              "yourself": "stage-095a8d54.json"
+              "tooslow": "stage-05788a54.json"
           }
           stage_map = []
           for stage_name, source_name in stage_sources.items():
@@ -242,6 +230,12 @@ jobs:
               })
 
           week = json.loads((metadata / "xenophanes-week.json").read_text())
+          # Expose only the first original route song until its browser playtest passes.
+          week["songs"] = [song for song in week.get("songs", []) if re.sub(r"[^a-z0-9]+", "", str(song[0]).lower()) == "tooslow"]
+          if len(week["songs"]) != 1:
+              raise SystemExit(f"Could not isolate original Too-Slow week entry: {week.get('songs')}")
+          week["weekName"] = "Xenophanes - Too-Slow browser test"
+          week["storyName"] = "Xenophanes"
           week["folder"] = "STORY MODE"
           week_dir = root / "assets/shared/weeks"
           week_dir.mkdir(parents=True, exist_ok=True)
@@ -277,10 +271,10 @@ jobs:
 
           root = Path("story-mode-package")
           mod = root / "assets/mods/STORY MODE"
-          songs = ["too-slow","you-cant-run","triple-trouble","final-escape","yourself"]
+          songs = ["too-slow"]
           missing=[]
           for song in songs:
-              for name in ("Inst.mp3","Voices.mp3"):
+              for name in ("Inst.mp3","Voices.mp3","Voices-Opponent.mp3"):
                   p=mod/"songs"/song/name
                   if not p.is_file():
                       missing.append(str(p))
