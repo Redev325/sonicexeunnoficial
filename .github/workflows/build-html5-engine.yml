@@ -43,57 +43,88 @@ jobs:
           haxelib install hxcpp --quiet
           haxe -cp ./setup -D analyzer-optimize -main Main --interp
 
-      - name: Patch FlxAnimate for HaxeFlixel 6
+      - name: Patch browser compatibility in Psych Engine
         working-directory: engine
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          animate = Path(".haxelib/flxanimate/git/flxanimate/FlxAnimate.hx")
-          anim = Path(".haxelib/flxanimate/git/flxanimate/animate/FlxAnim.hx")
-
-          for path in (animate, anim):
+          def patch_file(path_text, replacements):
+              path = Path(path_text)
               if not path.is_file():
-                  raise SystemExit(f"Expected FlxAnimate source file was not found: {path}")
+                  raise SystemExit(f"Expected source file was not found: {path}")
+              source = path.read_text()
+              for old, new, description in replacements:
+                  count = source.count(old)
+                  if count != 1:
+                      raise SystemExit(
+                          f"{path}: expected one match for {description}, found {count}"
+                      )
+                  source = source.replace(old, new, 1)
+              path.write_text(source)
+              print(f"Patched {path}")
 
-          source = animate.read_text()
-          old_sound_import = "import flixel.system.FlxSound;"
-          new_sound_import = """#if (flixel >= "5.3.0")
-          import flixel.sound.FlxSound;
-          #else
-          import flixel.system.FlxSound;
-          #end"""
-          if old_sound_import in source:
-              source = source.replace(old_sound_import, new_sound_import, 1)
-          elif "import flixel.sound.FlxSound;" not in source:
-              raise SystemExit("Could not locate the FlxAnimate FlxSound import")
+          # HaxeFlixel 6 moved the crosshair graphic out of this internal package.
+          # The Character Editor is not needed for normal browser gameplay, so use
+          # a transparent placeholder instead of relying on that removed debug asset.
+          patch_file("source/states/editors/CharacterEditorState.hx", [
+              (
+                  "import flixel.system.debug.interaction.tools.Pointer.GraphicCursorCross;\\n",
+                  "",
+                  "removed GraphicCursorCross import"
+              ),
+              (
+                  "cameraFollowPointer = new FlxSprite().loadGraphic(FlxGraphic.fromClass(GraphicCursorCross));",
+                  "cameraFollowPointer = new FlxSprite();\\n\\t\\tcameraFollowPointer.makeGraphic(40, 40, 0x00000000);",
+                  "replaced removed GraphicCursorCross asset"
+              )
+          ])
 
-          click_import = "import flxanimate.animate.FlxAnim.ClickStuff;"
-          if click_import not in source:
-              anchor = "import flxanimate.animate.FlxAnim;"
-              if anchor not in source:
-                  raise SystemExit("Could not locate the FlxAnim import for ClickStuff")
-              source = source.replace(anchor, anchor + "\n" + click_import, 1)
-          animate.write_text(source)
+          # Newer FlxInputText border enum variants need explicit switch cases.
+          patch_file("source/flixel/addons/ui/FlxInputText.hx", [
+              (
+                  "case SHADOW:",
+                  "case SHADOW, SHADOW_XY:",
+                  "handled SHADOW_XY border style"
+              ),
+              (
+                  "case OUTLINE_FAST, OUTLINE:",
+                  "case OUTLINE_CARDINAL, OUTLINE_FAST, OUTLINE:",
+                  "handled OUTLINE_CARDINAL border style"
+              )
+          ])
 
-          source = anim.read_text()
-          old_sound_import = """#if FLX_SOUND_SYSTEM
-          import flixel.system.FlxSound;
-          #end"""
-          new_sound_import = """#if FLX_SOUND_SYSTEM
-          #if (flixel >= "5.3.0")
-          import flixel.sound.FlxSound;
-          #else
-          import flixel.system.FlxSound;
-          #end
-          #end"""
-          if old_sound_import in source:
-              source = source.replace(old_sound_import, new_sound_import, 1)
-          elif "import flixel.sound.FlxSound;" not in source:
-              raise SystemExit("Could not locate the FlxAnim FlxSound import")
-          anim.write_text(source)
+          # File.getContent resolves to js.html.File on the JS target. Use embedded
+          # OpenFL assets on web and the filesystem only on sys targets.
+          patch_file("source/backend/Paths.hx", [
+              (
+                  "spriteJson = File.getContent(spriteJson);",
+                  "#if sys\\n\\t\\t\\tspriteJson = sys.io.File.getContent(spriteJson);\\n\\t\\t\\t#else\\n\\t\\t\\tspriteJson = OpenFlAssets.getText(spriteJson);\\n\\t\\t\\t#end",
+                  "made sprite JSON loading web-compatible"
+              ),
+              (
+                  "animationJson = File.getContent(animationJson);",
+                  "#if sys\\n\\t\\t\\tanimationJson = sys.io.File.getContent(animationJson);\\n\\t\\t\\t#else\\n\\t\\t\\tanimationJson = OpenFlAssets.getText(animationJson);\\n\\t\\t\\t#end",
+                  "made animation JSON loading web-compatible"
+              )
+          ])
 
-          print("Patched FlxAnimate imports for HaxeFlixel 6.x.")
+          # FlxAnimate's path-based atlas helper contains filesystem calls that
+          # must be replaced with OpenFL's embedded-asset reader on HTML5.
+          patch_file(".haxelib/flxanimate/git/flxanimate/FlxAnimate.hx", [
+              (
+                  "if(trimmed == '.json') myJson = sys.io.File.getContent(myJson); //is a path",
+                  "if(trimmed == '.json') {\\n\\t\\t\\t#if sys\\n\\t\\t\\tmyJson = sys.io.File.getContent(myJson);\\n\\t\\t\\t#else\\n\\t\\t\\tmyJson = openfl.Assets.getText(myJson);\\n\\t\\t\\t#end\\n\\t\\t}",
+                  "guarded FlxAnimate JSON filesystem access"
+              ),
+              (
+                  "myData = sys.io.File.getContent(pathOrStr);",
+                  "#if sys\\n\\t\\t\\tmyData = sys.io.File.getContent(pathOrStr);\\n\\t\\t\\t#else\\n\\t\\t\\tmyData = openfl.Assets.getText(pathOrStr);\\n\\t\\t\\t#end",
+                  "guarded FlxAnimate data filesystem access"
+              )
+          ])
+
+          print("Browser compatibility patches applied.")
           PY
 
       - name: Compile browser target
