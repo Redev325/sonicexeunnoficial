@@ -16,6 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+
       - name: Install system packages
         run: |
           sudo apt-get update
