@@ -60,6 +60,16 @@ jobs:
           with ZipFile("release.zip") as z:
               infos = [x for x in z.infolist() if not x.is_dir()]
               shared = [x for x in infos if x.filename.casefold().startswith("contents/images/")]
+              image_exts = {".webp", ".png", ".jpg", ".jpeg", ".gif"}
+              root_images = [
+                  x for x in infos
+                  if x.filename.casefold().startswith("assets/")
+                  and PurePosixPath(x.filename).suffix.casefold() in image_exts
+              ]
+              root_ui_images = [
+                  x for x in root_images
+                  if keywords.search(x.filename)
+              ]
               matches = [
                   x for x in infos
                   if x.filename.casefold().startswith("contents/")
@@ -70,6 +80,19 @@ jobs:
               ]
 
               add(f"Shared contents/images files: {len(shared)}")
+              add(f"Root assets image files: {len(root_images)}")
+              add(f"Root assets UI/logo/menu image candidates: {len(root_ui_images)}")
+              add("ROOT ASSETS UI/LOGO/MENU IMAGE CANDIDATES:")
+              for x in sorted(root_ui_images, key=lambda v:(v.filename.casefold(), v.file_size)):
+                  dims = ""
+                  if Image is not None:
+                      try:
+                          with Image.open(BytesIO(z.read(x))) as im:
+                              dims = f" [{im.width}x{im.height}]"
+                      except Exception:
+                          pass
+                  add(f"  {x.file_size:>10,} bytes{dims}  {x.filename}")
+              add()
               add("SHARED UI IMAGE PATHS:")
               for x in sorted(shared, key=lambda v:v.filename.casefold()):
                   dims = ""
