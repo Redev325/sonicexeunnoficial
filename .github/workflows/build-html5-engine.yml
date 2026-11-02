@@ -124,8 +124,8 @@ jobs:
           ):
               patch_file(options_file, [
                   (
-                      "package options;\\n",
-                      "package options;\\n\\nimport options.Option;\\n",
+                      "package options;\n",
+                      "package options;\n\nimport options.Option;\n",
                       "explicitly imported Psych Engine Option type"
                   )
               ])
