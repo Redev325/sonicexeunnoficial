@@ -75,7 +75,7 @@ def main() -> None:
     source = replace_once(
         source,
         "\t\tadd(magenta);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
-        "\t\tadd(magenta);\n\n\t\tvar menuLogo:FlxSprite = new FlxSprite(FlxG.width * 0.045, FlxG.height * 0.17);\n\t\tmenuLogo.loadGraphic(Paths.image('sonicexe-logo'));\n\t\tmenuLogo.setGraphicSize(Std.int(FlxG.width * 0.37));\n\t\tmenuLogo.updateHitbox();\n\t\tmenuLogo.antialiasing = ClientPrefs.data.antialiasing;\n\t\tmenuLogo.scrollFactor.set(0, 0);\n\t\tadd(menuLogo);\n\n\t\tmenuHighlights = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHighlights);\n\n\t\tmenuPlates = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuPlates);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();\n\t\tmenuHitboxes = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHitboxes);",
+        "\t\tadd(magenta);\n\n\t\t// Keep the original VS Sonic artwork proportional and place it inside the screenshot's upper-left guide box.\n\t\tvar logoWidth:Int = Std.int(FlxG.width * 0.165);\n\t\tvar menuLogo:FlxSprite = new FlxSprite(FlxG.width * 0.005, FlxG.height * 0.095);\n\t\tmenuLogo.loadGraphic(Paths.image('sonicexe-logo'));\n\t\tmenuLogo.setGraphicSize(logoWidth);\n\t\tmenuLogo.updateHitbox();\n\t\tmenuLogo.y = FlxG.height * 0.18 - menuLogo.height * 0.5;\n\t\tmenuLogo.updateHitbox();\n\t\tmenuLogo.antialiasing = ClientPrefs.data.antialiasing;\n\t\tmenuLogo.scrollFactor.set(0, 0);\n\t\tadd(menuLogo);\n\n\t\tmenuHighlights = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHighlights);\n\n\t\tmenuPlates = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuPlates);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();\n\t\tmenuHitboxes = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHitboxes);",
         "menu plates behind menu labels",
     )
 
