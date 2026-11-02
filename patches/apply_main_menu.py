@@ -104,52 +104,56 @@ def main() -> None:
 \t\t{
 \t\t\tvar buttonY:Int = Std.int(FlxG.height * (0.06 + i * 0.18));
 
-\t\t\tvar shadowWidth:Int = Std.int(buttonWidth * (1833.0 / 1673.0));
-			var shadowHeight:Int = Std.int(buttonHeight * (324.0 / 322.0));
+\t\t\t// The original menu uses one yellow hover layer that travels between rows.
+\t\t\t// Keep it as a single sprite so the highlight glides instead of cross-fading.
+\t\t\tif (i == 0)
+\t\t\t{
+\t\t\t\tvar shadowWidth:Int = Std.int(buttonWidth * (1833.0 / 1673.0));
+\t\t\t\tvar shadowHeight:Int = Std.int(buttonHeight * (324.0 / 322.0));
+\t\t\t\tvar highlight:FlxSprite = new FlxSprite(
+\t\t\t\t\tbuttonX - (shadowWidth - buttonWidth) * 0.5,
+\t\t\t\t\tbuttonY - (shadowHeight - buttonHeight) * 0.5
+\t\t\t\t);
+\t\t\t\thighlight.loadGraphic(Paths.image('sonicexe-menu/options/shadow'));
+\t\t\t\thighlight.antialiasing = false;
+\t\t\t\thighlight.setGraphicSize(shadowWidth, shadowHeight);
+\t\t\t\thighlight.updateHitbox();
+\t\t\t\thighlight.scrollFactor.set(0, 0);
+\t\t\t\thighlight.alpha = 0.95;
+\t\t\t\tmenuHighlights.add(highlight);
+\t\t\t}
 
-			// Layer 1: original yellow hover shadow, wider than the button frame.
-			var highlight:FlxSprite = new FlxSprite(
-				buttonX - (shadowWidth - buttonWidth) * 0.5,
-				buttonY - (shadowHeight - buttonHeight) * 0.5
-			);
-			highlight.loadGraphic(Paths.image('sonicexe-menu/options/shadow'));
-			highlight.antialiasing = false;
-			highlight.setGraphicSize(shadowWidth, shadowHeight);
-			highlight.updateHitbox();
-			highlight.scrollFactor.set(0, 0);
-			highlight.alpha = (i == curSelected) ? 0.95 : 0;
-			menuHighlights.add(highlight);
+\t\t\t// Layer 2: original black-backed purple frame.
+\t\t\tvar plate:FlxSprite = new FlxSprite(buttonX, buttonY);
+\t\t\tplate.loadGraphic(Paths.image('sonicexe-menu/options/box'));
+\t\t\tplate.antialiasing = false;
+\t\t\tplate.setGraphicSize(buttonWidth, buttonHeight);
+\t\t\tplate.updateHitbox();
+\t\t\tplate.scrollFactor.set(0, 0);
+\t\t\tmenuPlates.add(plate);
 
-			// Layer 2: original black-backed purple frame.
-			var plate:FlxSprite = new FlxSprite(buttonX, buttonY);
-			plate.loadGraphic(Paths.image('sonicexe-menu/options/box'));
-			plate.antialiasing = false;
-			plate.setGraphicSize(buttonWidth, buttonHeight);
-			plate.updateHitbox();
-			plate.scrollFactor.set(0, 0);
-			menuPlates.add(plate);
+\t\t\t// Layer 3: English pixel label, brightened for the selected row.
+\t\t\tvar label:FlxText = new FlxText(buttonX + 24, buttonY + 8, buttonWidth - 48, menuLabel(i), labelSize);
+\t\t\tlabel.antialiasing = false;
+\t\t\tlabel.scrollFactor.set(0, 0);
+\t\t\tlabel.setFormat(Paths.font('sonichud.ttf'), labelSize, FlxColor.GRAY, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\t\tlabel.y = buttonY + (buttonHeight - label.height) * 0.5 - 2;
+\t\t\tmenuItems.add(label);
 
-			var label:FlxText = new FlxText(buttonX + 24, buttonY + 8, buttonWidth - 48, menuLabel(i), labelSize);
-			label.antialiasing = false;
-			label.scrollFactor.set(0, 0);
-			label.setFormat(Paths.font('sonichud.ttf'), labelSize, FlxColor.GRAY, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-			label.y = buttonY + (buttonHeight - label.height) * 0.5 - 2;
-			menuItems.add(label);
-
-			// Layer 3: original invisible hitbox sprite (the red pixels in the source are not drawn).
-			var hitbox:FlxSprite = new FlxSprite();
-			hitbox.loadGraphic(Paths.image('sonicexe-menu/options/hitbox'));
-			hitbox.antialiasing = false;
-			hitbox.setGraphicSize(
-				Std.int(buttonWidth * (1478.0 / 1673.0)),
-				Std.int(buttonHeight * (231.0 / 322.0))
-			);
-			hitbox.updateHitbox();
-			hitbox.x = buttonX + (buttonWidth - hitbox.width) * 0.5;
-			hitbox.y = buttonY + (buttonHeight - hitbox.height) * 0.5;
-			hitbox.alpha = 0;
-			hitbox.scrollFactor.set(0, 0);
-			menuHitboxes.add(hitbox);
+\t\t\t// Invisible original hitbox: it handles pointer hover/click without drawing over the button.
+\t\t\tvar hitbox:FlxSprite = new FlxSprite();
+\t\t\thitbox.loadGraphic(Paths.image('sonicexe-menu/options/hitbox'));
+\t\t\thitbox.antialiasing = false;
+\t\t\thitbox.setGraphicSize(
+\t\t\t\tStd.int(buttonWidth * (1478.0 / 1673.0)),
+\t\t\t\tStd.int(buttonHeight * (231.0 / 322.0))
+\t\t\t);
+\t\t\thitbox.updateHitbox();
+\t\t\thitbox.x = buttonX + (buttonWidth - hitbox.width) * 0.5;
+\t\t\thitbox.y = buttonY + (buttonHeight - hitbox.height) * 0.5;
+\t\t\thitbox.alpha = 0;
+\t\t\thitbox.scrollFactor.set(0, 0);
+\t\t\tmenuHitboxes.add(hitbox);
 \t\t}"""
     source = replace_once(source, old_loop, new_loop, "replace standard icon row with angled pixel menu")
 
@@ -360,8 +364,20 @@ def main() -> None:
 \t\t\tvar label:FlxText = cast menuItems.members[i];
 \t\t\tlabel.color = selected ? FlxColor.WHITE : 0xFF85838A;
 \t\t\tlabel.alpha = selected ? 1 : 0.82;
-\t\t\tvar shadow:FlxSprite = menuHighlights.members[i];\n\t\t\tFlxTween.cancelTweensOf(shadow);\n\t\t\tFlxTween.tween(shadow, {alpha: selected ? 0.95 : 0}, 0.14, {ease: FlxEase.quadOut});
 \t\t}
+
+\t\t// Slide the one original yellow shadow underneath the selected purple frame.
+\t\tvar shadow:FlxSprite = menuHighlights.members[0];
+\t\tvar buttonX:Float = FlxG.width * 0.505;
+\t\tvar buttonWidth:Float = FlxG.width * 0.47;
+\t\tvar buttonHeight:Float = buttonWidth * (322.0 / 1673.0);
+\t\tvar shadowWidth:Float = buttonWidth * (1833.0 / 1673.0);
+\t\tvar shadowHeight:Float = buttonHeight * (324.0 / 322.0);
+\t\tvar buttonY:Float = FlxG.height * (0.06 + curSelected * 0.18);
+\t\tvar targetX:Float = buttonX - (shadowWidth - buttonWidth) * 0.5;
+\t\tvar targetY:Float = buttonY - (shadowHeight - buttonHeight) * 0.5;
+\t\tFlxTween.cancelTweensOf(shadow);
+\t\tFlxTween.tween(shadow, {x: targetX, y: targetY}, 0.22, {ease: FlxEase.cubicOut});
 
 \t\tcamFollow.setPosition(FlxG.width * 0.75, FlxG.height * 0.5);
 \t}""",
