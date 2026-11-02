@@ -379,7 +379,7 @@ def main() -> None:
 \t\tvar targetX:Float = buttonX - (shadowWidth - buttonWidth) * 0.5;
 \t\tvar targetY:Float = buttonY - (shadowHeight - buttonHeight) * 0.5;
 \t\tFlxTween.cancelTweensOf(shadow);
-\t\tFlxTween.tween(shadow, {x: targetX, y: targetY}, 0.22, {ease: FlxEase.cubicOut});
+\t\tFlxTween.tween(shadow, {x: targetX, y: targetY}, 0.22, {ease: FlxEase.cubeOut});
 
 \t\tcamFollow.setPosition(FlxG.width * 0.75, FlxG.height * 0.5);
 \t}""",
