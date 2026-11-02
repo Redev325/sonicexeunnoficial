@@ -55,7 +55,7 @@ def main() -> None:
     source = replace_once(
         source,
         "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;",
-        "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;\n\tvar menuHighlights:FlxTypedGroup<FlxSprite>;\n\tvar menuPlates:FlxTypedGroup<FlxSprite>;\n\tvar menuHitboxes:FlxTypedGroup<FlxSprite>;",
+        "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;\n\tvar menuHighlights:FlxTypedGroup<FlxSprite>;\n\tvar menuPlates:FlxTypedGroup<FlxSprite>;\n\tvar menuHitboxes:FlxTypedGroup<FlxSprite>;\n\tvar lastMouseX:Float = -99999;\n\tvar lastMouseY:Float = -99999;",
         "menu button plate group",
     )
 
@@ -277,20 +277,38 @@ def main() -> None:
         """\t\tif (!selectedSomethin)
 \t\t{
 \t\t\tvar mouseAccept:Bool = false;
-\t\t\tvar hoveredIndex:Int = -1;
-\t\t\tfor (i in 0...menuHitboxes.length)
+\t\t\tvar mouseMoved:Bool = (FlxG.mouse.x != lastMouseX || FlxG.mouse.y != lastMouseY);
+
+\t\t\t// Only let hover change selection when the pointer actually moves.
+\t\t\t// A stationary cursor must not fight keyboard navigation.
+\t\t\tif (mouseMoved)
 \t\t\t{
-\t\t\t\tif (FlxG.mouse.overlaps(menuHitboxes.members[i]))
+\t\t\t\tlastMouseX = FlxG.mouse.x;
+\t\t\t\tlastMouseY = FlxG.mouse.y;
+\t\t\t\tfor (i in 0...menuHitboxes.length)
 \t\t\t\t{
-\t\t\t\t\thoveredIndex = i;
-\t\t\t\t\tbreak;
+\t\t\t\t\tif (FlxG.mouse.overlaps(menuHitboxes.members[i]))
+\t\t\t\t\t{
+\t\t\t\t\t\tif (i != curSelected)
+\t\t\t\t\t\t\tchangeItem(i - curSelected);
+\t\t\t\t\t\tbreak;
+\t\t\t\t\t}
 \t\t\t\t}
 \t\t\t}
-\t\t\tif (hoveredIndex >= 0)
+
+\t\t\t// A click is checked independently so it works without pointer movement.
+\t\t\tif (FlxG.mouse.justPressed)
 \t\t\t{
-\t\t\t\tif (hoveredIndex != curSelected)
-\t\t\t\t\tchangeItem(hoveredIndex - curSelected);
-\t\t\t\tmouseAccept = FlxG.mouse.justPressed;
+\t\t\t\tfor (i in 0...menuHitboxes.length)
+\t\t\t\t{
+\t\t\t\t\tif (FlxG.mouse.overlaps(menuHitboxes.members[i]))
+\t\t\t\t\t{
+\t\t\t\t\t\tif (i != curSelected)
+\t\t\t\t\t\t\tchangeItem(i - curSelected);
+\t\t\t\t\t\tmouseAccept = true;
+\t\t\t\t\t\tbreak;
+\t\t\t\t\t}
+\t\t\t\t}
 \t\t\t}
 
 \t\t\tif (controls.UI_UP_P)""",
@@ -332,11 +350,9 @@ def main() -> None:
 \t{
 \t\tFlxG.sound.play(Paths.sound('scrollMenu'));
 
-\t\tcurSelected += huh;
-\t\tif (curSelected >= menuItems.length)
-\t\t\tcurSelected = 0;
+\t\tcurSelected = (curSelected + huh) % menuItems.length;
 \t\tif (curSelected < 0)
-\t\t\tcurSelected = menuItems.length - 1;
+\t\t\tcurSelected += menuItems.length;
 
 \t\tfor (i in 0...menuItems.length)
 \t\t{
