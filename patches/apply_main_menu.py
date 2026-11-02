@@ -138,7 +138,7 @@ def main() -> None:
     source = replace_once(
         source,
         "psychVer.setFormat(\"VCR OSD Mono\", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
-        "psychVer.setFormat(\"VCR OSD Mono\", 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
+        "psychVer.setFormat(Paths.font('vcr.ttf'), 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
         "small engine version text",
     )
     source = replace_once(
@@ -150,7 +150,7 @@ def main() -> None:
     source = replace_once(
         source,
         "fnfVer.setFormat(\"VCR OSD Mono\", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
-        "fnfVer.setFormat(\"VCR OSD Mono\", 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
+        "fnfVer.setFormat(Paths.font('vcr.ttf'), 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
         "small game version text",
     )
 

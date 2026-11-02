@@ -302,6 +302,11 @@ jobs:
               with z.open("assets/exe/mainmenu/menu.mp4") as source, video_output.open("wb") as target:
                   shutil.copyfileobj(source, target)
               print(f"Prepared original animated menu background ({video_output.stat().st_size:,} bytes)")
+
+              post_intro_source = Path("engine/postIntro-source.mp4")
+              with z.open("assets/videos/postIntro.mp4") as source, post_intro_source.open("wb") as target:
+                  shutil.copyfileobj(source, target)
+              print(f"Extracted original postIntro video ({post_intro_source.stat().st_size:,} bytes)")
           PY
           rm -rf package
 
@@ -311,6 +316,15 @@ jobs:
           rm -f engine/assets/shared/music/menu-source.ogg
           test -s engine/assets/shared/music/menu.mp3
           echo "Prepared original menu.mp3 for the HTML5-only asset library."
+
+      - name: Convert original postIntro video for HTML5 playback
+        run: |
+          ffmpeg -y -i engine/postIntro-source.mp4 \
+            -c:v libx264 -preset veryfast -crf 21 -pix_fmt yuv420p \
+            -c:a aac -b:a 160k -movflags +faststart engine/postIntro.mp4
+          rm -f engine/postIntro-source.mp4
+          test -s engine/postIntro.mp4
+          ffprobe -v error -show_entries format=duration -of csv=p=0 engine/postIntro.mp4
 
       - name: Apply original Sonic.EXE title and intro artwork
         run: |
@@ -335,6 +349,8 @@ jobs:
         run: |
           output="engine/export/release/html5/bin"
           cp engine/sonicexe-menu.mp4 "$output/sonicexe-menu.mp4"
+          cp engine/postIntro.mp4 "$output/postIntro.mp4"
+          test -s "$output/postIntro.mp4"
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -354,8 +370,52 @@ jobs:
               background: transparent !important;
             }
             #openfl-content canvas { background: transparent !important; }
+            #sonicexe-postintro-video {
+              position: fixed; inset: 0; width: 100vw; height: 100vh;
+              object-fit: contain; display: none; z-index: 5;
+              background: #000; pointer-events: none;
+            }
           </style>
           <script>
+            window.sonicEXEPostIntroFinished = true;
+            window.setSonicEXEPostIntro = function(show) {
+              var video = document.getElementById("sonicexe-postintro-video");
+              if (!video) {
+                window.sonicEXEPostIntroFinished = true;
+                return;
+              }
+              if (show) {
+                window.sonicEXEPostIntroFinished = false;
+                video.currentTime = 0;
+                video.muted = true;
+                video.style.display = "block";
+                var playPromise = video.play();
+                if (playPromise && playPromise.catch) {
+                  playPromise.catch(function() {
+                    window.sonicEXEPostIntroFinished = true;
+                    video.style.display = "none";
+                  });
+                }
+              } else {
+                video.pause();
+                video.style.display = "none";
+              }
+            };
+            (function() {
+              var video = document.getElementById("sonicexe-postintro-video");
+              if (!video) return;
+              video.addEventListener("ended", function() {
+                window.sonicEXEPostIntroFinished = true;
+              });
+              video.addEventListener("error", function() {
+                window.sonicEXEPostIntroFinished = true;
+              });
+              function unlockPostIntroAudio() {
+                if (video && !video.paused) video.muted = false;
+              }
+              window.addEventListener("pointerdown", unlockPostIntroAudio, { once: true, passive: true });
+              window.addEventListener("keydown", unlockPostIntroAudio, { once: true });
+            })();
             window.setSonicEXEMenuVideo = function(show) {
               var video = document.getElementById("sonicexe-menu-bg");
               if (!video) return;
@@ -372,6 +432,9 @@ jobs:
           body_markup = """
           <video id="sonicexe-menu-bg" muted loop playsinline preload="auto" aria-hidden="true">
             <source src="sonicexe-menu.mp4" type="video/mp4">
+          </video>
+          <video id="sonicexe-postintro-video" muted playsinline preload="auto" aria-hidden="true">
+            <source src="postIntro.mp4" type="video/mp4">
           </video>
           """
 

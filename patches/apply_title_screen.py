@@ -1,25 +1,50 @@
 #!/usr/bin/env python3
-"""Replace the generic Psych title card with the game's original Sonic.EXE title artwork."""
+"""Install the original Sonic.EXE post-intro video and title card in Psych Engine."""
 
 from pathlib import Path
 import sys
 
 
-def replace_visuals(source: str) -> str:
-    start_marker = "\t\tvar bg:FlxSprite = new FlxSprite();"
-    end_marker = "\t\tcredGroup = new FlxGroup();"
-    start = source.find(start_marker, source.find("function startIntro()"))
-    end = source.find(end_marker, start)
-    if start < 0 or end < 0:
-        raise SystemExit("TitleState patch stopped: could not locate the original title artwork block.")
+def replace_once(source: str, old: str, new: str, label: str) -> str:
+    count = source.count(old)
+    if count != 1:
+        raise SystemExit(f"TitleState patch stopped: expected one match for {label}, found {count}")
+    return source.replace(old, new)
 
-    replacement = """\t\t// The original Sonic.EXE title screen is assembled from the supplied game layers.
+
+def replace_function(source: str, signature: str, next_signature: str, replacement: str, label: str) -> str:
+    start = source.find(signature)
+    end = source.find(next_signature, start + len(signature))
+    if start < 0 or end < 0:
+        raise SystemExit(f"TitleState patch stopped: could not locate {label}")
+    return source[:start] + replacement + source[end:]
+
+
+def patch_title_state(source: str) -> str:
+    source = replace_once(
+        source,
+        "var swagShader:ColorSwap = null;",
+        "var swagShader:ColorSwap = null;\n"
+        "\tvar postIntroGroup:FlxGroup;\n"
+        "\tvar postIntroPlaying:Bool = false;",
+        "postIntro state fields",
+    )
+
+    start_intro = """\tfunction startIntro()
+\t{
+\t\t// The game's own postIntro movie plays first; the original title card is revealed afterward.
+\t\tpersistentUpdate = true;
+\t\tConductor.bpm = 102;
+\t\tif (FlxG.sound.music != null)
+\t\t\tFlxG.sound.music.stop();
+
 \t\tvar bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 \t\tbg.scrollFactor.set(0, 0);
 \t\tadd(bg);
 
 \t\tlogoBl = null;
 \t\tgfDance = null;
+\t\tpostIntroGroup = new FlxGroup();
 
 \t\tvar ring:FlxSprite = new FlxSprite().loadGraphic(Paths.image('sonicexe-title/logo/ring'));
 \t\tring.setGraphicSize(Std.int(FlxG.width * 0.62));
@@ -28,7 +53,7 @@ def replace_visuals(source: str) -> str:
 \t\tring.y = FlxG.height * 0.055;
 \t\tring.antialiasing = ClientPrefs.data.antialiasing;
 \t\tring.scrollFactor.set(0, 0);
-\t\tadd(ring);
+\t\tpostIntroGroup.add(ring);
 
 \t\tvar eyes:FlxSprite = new FlxSprite().loadGraphic(Paths.image('sonicexe-title/logo/eyes'));
 \t\teyes.setGraphicSize(Std.int(FlxG.width * 0.19));
@@ -37,7 +62,7 @@ def replace_visuals(source: str) -> str:
 \t\teyes.y = FlxG.height * 0.255;
 \t\teyes.antialiasing = ClientPrefs.data.antialiasing;
 \t\teyes.scrollFactor.set(0, 0);
-\t\tadd(eyes);
+\t\tpostIntroGroup.add(eyes);
 
 \t\tvar bandana:FlxSprite = new FlxSprite().loadGraphic(Paths.image('sonicexe-title/logo/bandana'));
 \t\tbandana.setGraphicSize(Std.int(FlxG.width * 0.56));
@@ -46,7 +71,7 @@ def replace_visuals(source: str) -> str:
 \t\tbandana.y = FlxG.height * 0.49;
 \t\tbandana.antialiasing = ClientPrefs.data.antialiasing;
 \t\tbandana.scrollFactor.set(0, 0);
-\t\tadd(bandana);
+\t\tpostIntroGroup.add(bandana);
 
 \t\tvar sonicLogo:FlxSprite = new FlxSprite().loadGraphic(Paths.image('sonicexe-title/logo/sonic'));
 \t\tsonicLogo.setGraphicSize(Std.int(FlxG.width * 0.51));
@@ -55,7 +80,7 @@ def replace_visuals(source: str) -> str:
 \t\tsonicLogo.y = FlxG.height * 0.36;
 \t\tsonicLogo.antialiasing = ClientPrefs.data.antialiasing;
 \t\tsonicLogo.scrollFactor.set(0, 0);
-\t\tadd(sonicLogo);
+\t\tpostIntroGroup.add(sonicLogo);
 
 \t\tvar spikes:FlxSprite = new FlxSprite().loadGraphic(Paths.image('sonicexe-title/spikesdown'));
 \t\tspikes.setGraphicSize(FlxG.width);
@@ -63,9 +88,9 @@ def replace_visuals(source: str) -> str:
 \t\tspikes.x = 0;
 \t\tspikes.y = 0;
 \t\tspikes.scrollFactor.set(0, 0);
-\t\tadd(spikes);
+\t\tpostIntroGroup.add(spikes);
 
-\t\t// This is the original 11-frame "Press Enter to Begin" animation atlas.
+\t\t// The original 1280x720 atlas already includes the prompt's placement.
 \t\ttitleText = new FlxSprite(0, 0);
 \t\ttitleText.frames = Paths.getSparrowAtlas('sonicexe-title/titleEnterNEW');
 \t\ttitleText.animation.addByPrefix('idle', 'Press Enter to Begin instance', 24, true);
@@ -75,37 +100,109 @@ def replace_visuals(source: str) -> str:
 \t\ttitleText.scrollFactor.set(0, 0);
 \t\ttitleText.setGraphicSize(FlxG.width, FlxG.height);
 \t\ttitleText.updateHitbox();
-\t\tadd(titleText);
+\t\tpostIntroGroup.add(titleText);
+
+\t\tpostIntroGroup.visible = false;
+\t\tadd(postIntroGroup);
 \t\tnewTitle = true;
-\t\t
+
+\t\tcredGroup = new FlxGroup();
+\t\ttextGroup = new FlxGroup();
+\t\tinitialized = true;
+\t\tskippedIntro = false;
+\t\tclosedState = true;
+\t\tpostIntroPlaying = true;
+
+\t\tsetMenuBackdropVisible(false);
+\t\tsetPostIntroVideoVisible(true);
+\t\tPaths.clearUnusedMemory();
+\t}
+
+\tfunction setMenuBackdropVisible(visible:Bool):Void
+\t{
+\t\t#if js
+\t\tvar browserWindow:Dynamic = js.Browser.window;
+\t\tvar callback:Dynamic = Reflect.field(browserWindow, "setSonicEXEMenuVideo");
+\t\tif (callback != null)
+\t\t\tReflect.callMethod(browserWindow, callback, [visible]);
+\t\t#end
+\t}
+
+\tfunction setPostIntroVideoVisible(visible:Bool):Void
+\t{
+\t\t#if js
+\t\tvar browserWindow:Dynamic = js.Browser.window;
+\t\tvar callback:Dynamic = Reflect.field(browserWindow, "setSonicEXEPostIntro");
+\t\tif (callback != null)
+\t\t\tReflect.callMethod(browserWindow, callback, [visible]);
+\t\t#end
+\t}
+
+\tfunction postIntroVideoFinished():Bool
+\t{
+\t\t#if js
+\t\tvar browserWindow:Dynamic = js.Browser.window;
+\t\treturn Reflect.field(browserWindow, "sonicEXEPostIntroFinished") == true;
+\t\t#else
+\t\treturn true;
+\t\t#end
+\t}
+
+\tfunction postIntro():Void
+\t{
+\t\tif (!postIntroPlaying)
+\t\t\treturn;
+
+\t\tpostIntroPlaying = false;
+\t\tsetPostIntroVideoVisible(false);
+\t\tif (postIntroGroup != null)
+\t\t\tpostIntroGroup.visible = true;
+
+\t\tskippedIntro = true;
+\t\tclosedState = true;
+\t\tFlxG.sound.playMusic(Paths.music('menu'), 0);
+\t\tif (FlxG.sound.music != null)
+\t\t\tFlxG.sound.music.fadeIn(1.2, 0, 0.7);
+\t}
 """
-    patched = source[:start] + replacement + source[end:]
-    patched = patched.replace("Paths.music('freakyMenu')", "Paths.music('menu')")
-
-    credit_start = patched.find("\t\tcredGroup = new FlxGroup();")
-    clear_memory = patched.find("\t\tPaths.clearUnusedMemory();", credit_start)
-    if credit_start < 0 or clear_memory < 0:
-        raise SystemExit("TitleState patch stopped: could not locate the generic credit splash.")
-    patched = (
-        patched[:credit_start]
-        + "\t\tcredGroup = new FlxGroup();\n"
-        + "\t\ttextGroup = new FlxGroup();\n"
-        + "\t\tinitialized = true;\n"
-        + "\t\tskippedIntro = true;\n"
-        + "\t\tclosedState = true;\n\n"
-        + patched[clear_memory:]
+    source = replace_function(
+        source,
+        "\tfunction startIntro()",
+        "\n\tfunction getIntroTextShit()",
+        start_intro,
+        "startIntro",
     )
 
-    beat_start = patched.find("\toverride function beatHit()")
-    beat_end = patched.find("\n\tvar skippedIntro:Bool", beat_start)
+    post_intro_update = """\t\tif (postIntroPlaying)
+\t\t{
+\t\t\tif (postIntroVideoFinished() || pressedEnter)
+\t\t\t\tpostIntro();
+
+\t\t\tsuper.update(elapsed);
+\t\t\treturn;
+\t\t}
+
+"""
+    source = replace_once(
+        source,
+        "\t\tif (newTitle) {",
+        post_intro_update + "\t\tif (newTitle) {",
+        "postIntro video completion and skip handling",
+    )
+
+    # The original video's soundtrack is used during the postIntro clip. The
+    # normal menu theme begins only after the clip hands off to the title card.
+    beat_start = source.find("\toverride function beatHit()")
+    beat_end = source.find("\n\tvar skippedIntro:Bool", beat_start)
     if beat_start < 0 or beat_end < 0:
-        raise SystemExit("TitleState patch stopped: could not locate generic intro beat sequence.")
-    patched = (
-        patched[:beat_start]
+        raise SystemExit("TitleState patch stopped: could not locate beatHit")
+    source = (
+        source[:beat_start]
         + "\toverride function beatHit()\n\t{\n\t\tsuper.beatHit();\n\t}\n"
-        + patched[beat_end:]
+        + source[beat_end:]
     )
-    return patched
+
+    return source
 
 
 def main() -> None:
@@ -115,11 +212,11 @@ def main() -> None:
     if not target.is_file():
         raise SystemExit(f"TitleState source file not found: {target}")
     original = target.read_text(encoding="utf-8")
-    patched = replace_visuals(original)
+    patched = patch_title_state(original)
     if patched == original:
         raise SystemExit("TitleState was not changed.")
     target.write_text(patched, encoding="utf-8")
-    print(f"Applied original Sonic.EXE title artwork to {target}")
+    print("Installed the postIntro video and original Sonic.EXE post-intro title card.")
 
 
 if __name__ == "__main__":
