@@ -30,6 +30,12 @@ jobs:
           git clone --depth 1 https://github.com/star-studios-official/FNF-PsychEngine-HTML5.git engine
           du -sh engine
 
+      - name: Disable desktop-only Discord integration for web
+        working-directory: engine
+        run: |
+          sed -i 's/<define name="DISCORD_ALLOWED" \/>/<define name="DISCORD_ALLOWED" if="desktop" \/>/' Project.xml
+          grep 'DISCORD_ALLOWED' Project.xml
+
       - name: Install Haxe libraries
         working-directory: engine
         run: |
