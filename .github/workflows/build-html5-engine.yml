@@ -329,6 +329,9 @@ jobs:
             -c:a aac -b:a 160k -movflags +faststart engine/postIntro.mp4
           rm -f engine/postIntro-source.mp4
           test -s engine/postIntro.mp4
+          echo "Checking that the converted postIntro video contains audio:"
+          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,channels,sample_rate -of default=noprint_wrappers=1 engine/postIntro.mp4
+          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 engine/postIntro.mp4 | grep -q .
           ffprobe -v error -show_entries format=duration -of csv=p=0 engine/postIntro.mp4
 
       - name: Apply original Sonic.EXE title and intro artwork
@@ -400,13 +403,28 @@ jobs:
               if (show) {
                 window.sonicEXEPostIntroFinished = false;
                 video.currentTime = 0;
-                video.muted = true;
+                // Keep autoplay-compatible mute only until the first real user gesture.
+                var audioUnlocked = window.sonicEXEAudioUnlocked === true;
+                video.defaultMuted = !audioUnlocked;
+                video.muted = !audioUnlocked;
+                if (audioUnlocked) video.removeAttribute("muted");
+                video.volume = 1;
                 video.style.display = "block";
                 var playPromise = video.play();
                 if (playPromise && playPromise.catch) {
                   playPromise.catch(function() {
-                    window.sonicEXEPostIntroFinished = true;
-                    video.style.display = "none";
+                    // A previous gesture may no longer count as an autoplay gesture.
+                    // Fall back to muted playback instead of dropping the cutscene.
+                    if (!video.muted) {
+                      video.defaultMuted = true;
+                      video.muted = true;
+                      video.setAttribute("muted", "");
+                      var retryPromise = video.play();
+                      if (retryPromise && retryPromise.catch) retryPromise.catch(function() {});
+                    } else {
+                      window.sonicEXEPostIntroFinished = true;
+                      video.style.display = "none";
+                    }
                   });
                 }
               } else {
@@ -414,7 +432,30 @@ jobs:
                 video.style.display = "none";
               }
             };
-            (function() {
+            // This script is in <head>, before the video element is parsed.
+            // Install gesture handlers now, then bind video events after DOMContentLoaded.
+            window.sonicEXEAudioUnlocked = false;
+            window.unlockSonicEXEAudio = function() {
+              window.sonicEXEAudioUnlocked = true;
+              var video = document.getElementById("sonicexe-postintro-video");
+              if (!video) return;
+              video.defaultMuted = false;
+              video.muted = false;
+              video.removeAttribute("muted");
+              video.volume = 1;
+              // Calling play() from the gesture lets browsers resume the audio track.
+              if (!video.paused) {
+                var resumePromise = video.play();
+                if (resumePromise && resumePromise.catch) resumePromise.catch(function() {});
+              }
+            };
+            ["pointerdown", "touchstart", "keydown"].forEach(function(eventName) {
+              window.addEventListener(eventName, window.unlockSonicEXEAudio, {
+                capture: true,
+                passive: true
+              });
+            });
+            window.addEventListener("DOMContentLoaded", function() {
               var video = document.getElementById("sonicexe-postintro-video");
               if (!video) return;
               video.addEventListener("ended", function() {
@@ -423,12 +464,15 @@ jobs:
               video.addEventListener("error", function() {
                 window.sonicEXEPostIntroFinished = true;
               });
-              function unlockPostIntroAudio() {
-                if (video && !video.paused) video.muted = false;
-              }
-              window.addEventListener("pointerdown", unlockPostIntroAudio, { once: true, passive: true });
-              window.addEventListener("keydown", unlockPostIntroAudio, { once: true });
-            })();
+              video.addEventListener("loadedmetadata", function() {
+                if (window.sonicEXEAudioUnlocked) {
+                  video.defaultMuted = false;
+                  video.muted = false;
+                  video.removeAttribute("muted");
+                  video.volume = 1;
+                }
+              });
+            });
             window.setSonicEXETitleVideo = function(show) {
               var video = document.getElementById("sonicexe-title-bg");
               if (!video) return;
