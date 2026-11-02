@@ -43,27 +43,49 @@ jobs:
               exe_info = next(i for i in infos if PurePosixPath(i.filename).name.lower() == "vs sonic.exe")
               data = z.read(exe_info)
 
+              from urllib.parse import unquote
               manifest = json.loads(z.read("manifest/default.json").decode("utf-8-sig"))
               manifest_paths = set()
+              manifest_debug = []
+              manifest_string_count = 0
 
               def collect_paths(value):
+                  global manifest_string_count
                   if isinstance(value, dict):
-                      for key, child in value.items():
-                          if isinstance(child, str) and child.casefold().startswith("contents/"):
-                              if "/data/" in child.casefold() and child.casefold().endswith(".json"):
-                                  manifest_paths.add(child.replace("\\", "/"))
+                      for child in value.values():
                           collect_paths(child)
                   elif isinstance(value, list):
                       for child in value:
                           collect_paths(child)
+                  elif isinstance(value, str):
+                      decoded = unquote(value).replace("\\\\", "/")
+                      if "contents/" in decoded.casefold():
+                          manifest_string_count += 1
+                          if len(manifest_debug) < 80:
+                              manifest_debug.append(decoded[:500])
+                          # Asset paths may be URL-encoded or embedded in an asset ID.
+                          for match in re.finditer(r"contents/", decoded, re.I):
+                              tail = decoded[match.start():]
+                              end = tail.casefold().find(".json")
+                              if end >= 0:
+                                  candidate = tail[:end + 5].strip()
+                                  if "/data/" in candidate.casefold() and re.search(r"/data/[^/]+/[^/]+\.json$", candidate, re.I):
+                                      manifest_paths.add(candidate)
 
               collect_paths(manifest)
-              # Also handle manifests that store the virtual asset paths in IDs
-              # and path strings inside the same JSON record.
-              chart_paths = sorted(
-                  path for path in manifest_paths
-                  if re.search(r"/data/[^/]+/[^/]+\.json$", path, re.I)
-              )
+              chart_paths = sorted(manifest_paths)
+              debug_text = [
+                  "manifest/default.json inspection",
+                  f"Root type: {type(manifest).__name__}",
+                  f"Root keys: {list(manifest.keys()) if isinstance(manifest, dict) else 'not a dict'}",
+                  f"Strings containing contents/: {manifest_string_count}",
+                  f"Chart data paths discovered: {len(chart_paths)}",
+                  "Discovered paths:",
+                  *chart_paths,
+                  "Sample containing strings:",
+                  *manifest_debug
+              ]
+              Path("manifest-debug.txt").write_text("\\n".join(debug_text) + "\\n", encoding="utf-8")
 
           decoder = json.JSONDecoder()
           format_positions = [m.start() for m in re.finditer(b'psych_v1_convert', data)]
@@ -183,6 +205,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sonicexe-extracted-charts
-          path: embedded-charts/
+          path: |
+            embedded-charts/
+            manifest-debug.txt
           if-no-files-found: error
           retention-days: 14
