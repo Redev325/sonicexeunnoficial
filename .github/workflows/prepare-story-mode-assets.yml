@@ -82,7 +82,7 @@ jobs:
                       target = (mod / rel).with_suffix(".png")
                       target.parent.mkdir(parents=True, exist_ok=True)
                       with Image.open(io.BytesIO(raw)) as img:
-                          img.convert("RGBA").save(target, format="PNG", optimize=True)
+                          img.convert("RGBA").save(target, format="PNG", optimize=False, compress_level=1)
                       out_type = "webp->png"
                   elif suffix == ".ogg":
                       target = (mod / rel).with_suffix(".mp3")
