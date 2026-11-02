@@ -55,7 +55,7 @@ def main() -> None:
     source = replace_once(
         source,
         "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;",
-        "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;\n\tvar menuPlates:FlxTypedGroup<FlxSprite>;",
+        "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;\n\tvar menuPlates:FlxTypedGroup<FlxSprite>;\n\tvar movingRedBackdrop:FlxSprite;\n\tvar backdropTileWidth:Int = 0;\n\tvar backdropTravel:Float = 0;",
         "menu button plate group",
     )
 
@@ -230,15 +230,19 @@ def main() -> None:
 \t\tadd(black);
 
 \t\tvar leftWidth:Int = Std.int(FlxG.width * 0.68);
-\t\tvar redPixels = new BitmapData(leftWidth, FlxG.height, false, 0xFF26000A);
+\t\tvar tiledWidth:Int = leftWidth * 2;
+\t\tbackdropTileWidth = leftWidth;
+\t\tvar redPixels = new BitmapData(tiledWidth, FlxG.height, false, 0xFF26000A);
 \t\tfor (y in 0...FlxG.height)
 \t\t{
 \t\t\tvar rowWave:Float = Math.sin(y * 0.075) * 21 + Math.sin(y * 0.021) * 13;
-\t\t\tfor (x in 0...leftWidth)
+\t\t\tfor (x in 0...tiledWidth)
 \t\t\t{
-\t\t\t\tvar flow:Float = Math.sin((y * 0.061) + Math.sin(x * 0.014) * 3.8 + Math.sin(x * 0.038) * 1.5);
-\t\t\t\tvar ripple:Float = Math.sin((x * 0.019) + (y * 0.014)) * 11;
-\t\t\t\tvar grain:Float = ((x * 17 + y * 29 + ((x * y) % 37)) % 23) - 11;
+\t\t\t\t// Repeat the cloud field twice for a seamless horizontal scroll.
+\t\t\t\tvar patternX:Int = x % leftWidth;
+\t\t\t\tvar flow:Float = Math.sin((y * 0.061) + Math.sin(patternX * 0.014) * 3.8 + Math.sin(patternX * 0.038) * 1.5);
+\t\t\t\tvar ripple:Float = Math.sin((patternX * 0.019) + (y * 0.014)) * 11;
+\t\t\t\tvar grain:Float = ((patternX * 17 + y * 29 + ((patternX * y) % 37)) % 23) - 11;
 \t\t\t\tvar value:Float = 42 + rowWave + flow * 39 + ripple + grain;
 \t\t\t\tvar red:Int = Std.int(Math.max(8, Math.min(176, value * 1.55)));
 \t\t\t\tvar green:Int = Std.int(Math.max(0, Math.min(20, value * 0.055)));
@@ -247,9 +251,9 @@ def main() -> None:
 \t\t\t}
 \t\t}
 
-\t\tvar redBackdrop = new FlxSprite(0, 0).loadGraphic(redPixels);
-\t\tredBackdrop.scrollFactor.set(0, 0);
-\t\tadd(redBackdrop);
+\t\tmovingRedBackdrop = new FlxSprite(-leftWidth, 0).loadGraphic(redPixels);
+\t\tmovingRedBackdrop.scrollFactor.set(0, 0);
+\t\tadd(movingRedBackdrop);
 
 \t\t// Thick red lightning seam creates the sharp zig-zag split in the reference layout.
 \t\tvar redSeam = new Shape();
@@ -311,6 +315,26 @@ def main() -> None:
         "\tvar selectedSomethin:Bool = false;",
         helper_methods + "\tvar selectedSomethin:Bool = false;",
         "reference backdrop and angled menu helpers",
+    )
+
+    source = replace_once(
+        source,
+        """\toverride function update(elapsed:Float)
+\t{
+\t\tif (FlxG.sound.music.volume < 0.8)""",
+        """\toverride function update(elapsed:Float)
+\t{
+\t\t// Scroll the repeating red cloud field behind the fixed zig-zag divider.
+\t\tif (movingRedBackdrop != null && backdropTileWidth > 0)
+\t\t{
+\t\t\tbackdropTravel += elapsed * 22;
+\t\t\twhile (backdropTravel >= backdropTileWidth)
+\t\t\t\tbackdropTravel -= backdropTileWidth;
+\t\t\tmovingRedBackdrop.x = -backdropTileWidth + backdropTravel;
+\t\t}
+
+\t\tif (FlxG.sound.music.volume < 0.8)""",
+        "animate menu background during update",
     )
 
     # Rebuild menu selection colors and plate treatment whenever the selected row changes.
