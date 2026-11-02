@@ -160,25 +160,39 @@ jobs:
 
           import re
 
-          keywords = re.compile(
-              r"menu|button|title|logo|intro|press|font|story|freeplay|extras|option|sound|box|shadow|hitbox",
-              re.I,
+          image_prefixes = (
+              "assets/exe/mainmenu/",
+              "assets/exe/title/",
+              "assets/exe/options/",
           )
-          allowed = {
-              ".webp", ".png", ".jpg", ".jpeg", ".gif",
-              ".xml", ".json", ".txt", ".ttf", ".otf", ".woff", ".woff2", ".fnt",
-              ".mp3", ".ogg", ".wav",
+          explicit_paths = {
+              "assets/exe/backButton.webp",
+              "assets/exe/backButton.xml",
+              "assets/shared/images/menuDesat.webp",
           }
+          selected_fonts = {
+              "assets/fonts/vcr.ttf",
+              "assets/fonts/pixel-latin.ttf",
+              "assets/fonts/NiseSega.ttf",
+              "assets/fonts/NiseSegaSonic.TTF",
+              "assets/fonts/SonicFont.ttf",
+              "assets/fonts/SonicCD.ttf",
+              "assets/fonts/sonic4.ttf",
+              "assets/fonts/sonichud.ttf",
+              "assets/fonts/Plaza Regular.ttf",
+              "assets/fonts/fps.ttf",
+          }
+          allowed = {".webp", ".png", ".xml", ".json", ".ttf", ".otf"}
           output = Path("original-game-ui-assets")
           copied = []
           with ZipFile("release.zip") as z:
               for name in z.namelist():
                   suffix = Path(name).suffix.casefold()
-                  if name.endswith("/") or suffix not in allowed:
+                  is_ui_image = name.startswith(image_prefixes) or name in explicit_paths
+                  is_font = name in selected_fonts
+                  if name.endswith("/") or not (is_ui_image or is_font):
                       continue
-                  if not (name.startswith("assets/") or name.startswith("contents/")):
-                      continue
-                  if not keywords.search(name):
+                  if suffix not in allowed:
                       continue
                   target = output / Path(name)
                   target.parent.mkdir(parents=True, exist_ok=True)
