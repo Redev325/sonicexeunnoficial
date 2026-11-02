@@ -283,17 +283,21 @@ def main() -> None:
         """\t\tif (!selectedSomethin)
 \t\t{
 \t\t\tvar mouseAccept:Bool = false;
-\t\t\tvar mouseMoved:Bool = (FlxG.mouse.x != lastMouseX || FlxG.mouse.y != lastMouseY);
+\t\t\t// These buttons are fixed to the screen (scrollFactor 0), so use the
+\t\t\t// mouse's screen-space coordinates instead of world-space overlaps.
+\t\t\tvar mouseX:Float = FlxG.mouse.screenX;
+\t\t\tvar mouseY:Float = FlxG.mouse.screenY;
+\t\t\tvar mouseMoved:Bool = (mouseX != lastMouseX || mouseY != lastMouseY);
 
-\t\t\t// Only let hover change selection when the pointer actually moves.
-\t\t\t// A stationary cursor must not fight keyboard navigation.
 \t\t\tif (mouseMoved)
 \t\t\t{
-\t\t\t\tlastMouseX = FlxG.mouse.x;
-\t\t\t\tlastMouseY = FlxG.mouse.y;
-\t\t\t\tfor (i in 0...menuHitboxes.length)
+\t\t\t\tlastMouseX = mouseX;
+\t\t\t\tlastMouseY = mouseY;
+\t\t\t\tfor (i in 0...menuPlates.length)
 \t\t\t\t{
-\t\t\t\t\tif (FlxG.mouse.overlaps(menuHitboxes.members[i]))
+\t\t\t\t\tvar plate:FlxSprite = menuPlates.members[i];
+\t\t\t\t\tif (mouseX >= plate.x && mouseX <= plate.x + plate.width
+\t\t\t\t\t\t&& mouseY >= plate.y && mouseY <= plate.y + plate.height)
 \t\t\t\t\t{
 \t\t\t\t\t\tif (i != curSelected)
 \t\t\t\t\t\t\tchangeItem(i - curSelected);
@@ -302,12 +306,15 @@ def main() -> None:
 \t\t\t\t}
 \t\t\t}
 
-\t\t\t// A click is checked independently so it works without pointer movement.
+\t\t\t// Use the same screen-space rectangle for clicks, including clicks
+\t\t\t// that happen without a preceding mouse-move event.
 \t\t\tif (FlxG.mouse.justPressed)
 \t\t\t{
-\t\t\t\tfor (i in 0...menuHitboxes.length)
+\t\t\t\tfor (i in 0...menuPlates.length)
 \t\t\t\t{
-\t\t\t\t\tif (FlxG.mouse.overlaps(menuHitboxes.members[i]))
+\t\t\t\t\tvar plate:FlxSprite = menuPlates.members[i];
+\t\t\t\t\tif (mouseX >= plate.x && mouseX <= plate.x + plate.width
+\t\t\t\t\t\t&& mouseY >= plate.y && mouseY <= plate.y + plate.height)
 \t\t\t\t\t{
 \t\t\t\t\t\tif (i != curSelected)
 \t\t\t\t\t\t\tchangeItem(i - curSelected);
