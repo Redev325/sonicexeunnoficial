@@ -1,0 +1,296 @@
+name: Build Sonic EXE Story Mode HTML5
+run-name: Build Sonic EXE Story Mode browser game
+
+on:
+  workflow_run:
+    workflows:
+      - "Prepare Sonic EXE Story Mode browser assets"
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build-html5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git build-essential libvlc-dev libvlccore-dev
+
+      - name: Install Haxe
+        uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: "4.2.5"
+
+      - name: Fetch open-source Psych Engine HTML5 base
+        run: |
+          git clone --depth 1 https://github.com/star-studios-official/FNF-PsychEngine-HTML5.git engine
+          du -sh engine
+
+      - name: Disable desktop-only Discord integration for web
+        working-directory: engine
+        run: |
+          sed -i 's/<define name="DISCORD_ALLOWED" \/>/<define name="DISCORD_ALLOWED" if="desktop" \/>/' Project.xml
+          grep 'DISCORD_ALLOWED' Project.xml
+
+      - name: Install Haxe libraries
+        working-directory: engine
+        run: |
+          haxelib setup "$HOME/haxelib"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("hmm.json")
+          data = json.loads(path.read_text())
+
+          # This engine source snapshot is from early 2024. Do not let HMM
+          # silently install much newer APIs that this source was not written for.
+          pinned = {
+              "lime": "8.1.1",
+              "openfl": "9.3.2",
+              "flixel": "5.5.0",
+              "flixel-addons": "3.2.2",
+              "flixel-ui": "2.5.0",
+          }
+          html5_unused = {
+              "flixel-tools", "hxCodec", "SScript",
+              "hxdiscord_rpc", "linc_luajit",
+          }
+
+          kept = []
+          for dependency in data["dependencies"]:
+              name = dependency["name"]
+              if name in html5_unused:
+                  continue
+              if name in pinned:
+                  dependency["version"] = pinned[name]
+              kept.append(dependency)
+
+          data["dependencies"] = kept
+          path.write_text(json.dumps(data, indent=2) + "\n")
+          print("Pinned HTML5 dependencies:")
+          for name, version in pinned.items():
+              print(f"  {name} {version}")
+          print("Skipped desktop-only libraries:", ", ".join(sorted(html5_unused)))
+          PY
+          haxelib install hxcpp 4.3.2 --quiet
+          haxe -cp ./setup -D analyzer-optimize -main Main --interp
+          haxelib list
+
+      - name: Download prepared Story Mode HTML5 assets
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          mkdir -p story-assets
+          gh run download "$SOURCE_RUN_ID" --repo "$GH_REPO" \
+            --name sonicexe-story-mode-html5-assets --dir story-assets
+          test -d "story-assets/assets/mods/STORY MODE"
+          mkdir -p engine/assets/mods engine/assets/shared/weeks
+          cp -a story-assets/assets/mods/. engine/assets/mods/
+          cp -a story-assets/assets/shared/weeks/. engine/assets/shared/weeks/
+          echo "Prepared Story Mode assets copied into engine."
+          du -sh engine/assets/mods "engine/assets/shared/weeks"
+
+      - name: Patch browser compatibility in Psych Engine
+        working-directory: engine
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def patch_file(path_text, replacements):
+              path = Path(path_text)
+              if not path.is_file():
+                  raise SystemExit(f"Expected source file was not found: {path}")
+              source = path.read_text()
+              for replacement in replacements:
+                  old, new, description = replacement[:3]
+                  expected = replacement[3] if len(replacement) > 3 else 1
+                  count = source.count(old)
+                  if count != expected:
+                      raise SystemExit(
+                          f"{path}: expected {expected} match(es) for {description}, found {count}"
+                      )
+                  source = source.replace(old, new)
+              path.write_text(source)
+              print(f"Patched {path}")
+
+          # The Character Editor's directory scan is only supported on sys targets.
+          # In the browser build the built-in character list remains available.
+          patch_file("source/states/editors/CharacterEditorState.hx", [
+              (
+                  "var foldersToCheck:Array<String> = Mods.directoriesWithFile(Paths.getSharedPath(), 'characters/');\n\t\tfor (folder in foldersToCheck)\n\t\t\tfor (file in FileSystem.readDirectory(folder))\n\t\t\t\tif(file.toLowerCase().endsWith('.json'))\n\t\t\t\t{\n\t\t\t\t\tvar charToCheck:String = file.substr(0, file.length - 5);\n\t\t\t\t\tif(!characterList.contains(charToCheck))\n\t\t\t\t\t\tcharacterList.push(charToCheck);\n\t\t\t\t}",
+                  "#if sys\n\t\tvar foldersToCheck:Array<String> = Mods.directoriesWithFile(Paths.getSharedPath(), 'characters/');\n\t\tfor (folder in foldersToCheck)\n\t\t\tfor (file in FileSystem.readDirectory(folder))\n\t\t\t\tif(file.toLowerCase().endsWith('.json'))\n\t\t\t\t{\n\t\t\t\t\tvar charToCheck:String = file.substr(0, file.length - 5);\n\t\t\t\t\tif(!characterList.contains(charToCheck))\n\t\t\t\t\t\tcharacterList.push(charToCheck);\n\t\t\t\t}\n\t\t#end",
+                  "guarded editor filesystem scan for HTML5"
+              )
+          ])
+
+          # Resolve the local Psych Engine options.Option explicitly.
+          # Without this, the wildcard imports and haxelib classes can shadow it
+          # during Haxe's JS target type resolution.
+          for options_file in (
+              "source/options/GraphicsSettingsSubState.hx",
+              "source/options/VisualsUISubState.hx",
+              "source/options/GameplaySettingsSubState.hx",
+          ):
+              patch_file(options_file, [
+                  (
+                      "package options;\n",
+                      "package options;\n\nimport options.Option;\n",
+                      "explicitly imported Psych Engine Option type"
+                  )
+              ])
+
+          # FlxG.error is not available in the web target; the logger is.
+          patch_file("source/backend/CoolUtil.hx", [
+              (
+                  "FlxG.error(\"Platform is not supported for CoolUtil.openFolder\");",
+                  "FlxG.log.error(\"Platform is not supported for CoolUtil.openFolder\");",
+                  "used cross-target FlxG logger"
+              )
+          ])
+
+          # File.getContent resolves to js.html.File on the JS target. Use embedded
+          # OpenFL assets on web and the filesystem only on sys targets.
+          patch_file("source/backend/Paths.hx", [
+              (
+                  "spriteJson = File.getContent(spriteJson);",
+                  "#if sys\n\t\t\tspriteJson = sys.io.File.getContent(spriteJson);\n\t\t\t#else\n\t\t\tspriteJson = OpenFlAssets.getText(spriteJson);\n\t\t\t#end",
+                  "made sprite JSON loading web-compatible"
+              ),
+              (
+                  "animationJson = File.getContent(animationJson);",
+                  "#if sys\n\t\t\tanimationJson = sys.io.File.getContent(animationJson);\n\t\t\t#else\n\t\t\tanimationJson = OpenFlAssets.getText(animationJson);\n\t\t\t#end",
+                  "made animation JSON loading web-compatible"
+              )
+          ])
+
+          # FlxAnimate's path-based atlas helper contains filesystem calls that
+          # must be replaced with OpenFL's embedded-asset reader on HTML5.
+          patch_file(".haxelib/flxanimate/git/flxanimate/FlxAnimate.hx", [
+              (
+                  "if(trimmed == '.json') myJson = sys.io.File.getContent(myJson); //is a path",
+                  "if(trimmed == '.json') {\n\t\t\t#if sys\n\t\t\tmyJson = sys.io.File.getContent(myJson);\n\t\t\t#else\n\t\t\tmyJson = openfl.Assets.getText(myJson);\n\t\t\t#end\n\t\t}",
+                  "guarded FlxAnimate JSON filesystem access"
+              ),
+              (
+                  "myData = sys.io.File.getContent(pathOrStr);",
+                  "#if sys\n\t\t\tmyData = sys.io.File.getContent(pathOrStr);\n\t\t\t#else\n\t\t\tmyData = openfl.Assets.getText(pathOrStr);\n\t\t\t#end",
+                  "guarded FlxAnimate data filesystem access",
+                  2
+              )
+          ])
+
+          # HaxeFlixel 6 moved FlxSound from flixel.system to flixel.sound.
+          # Also import ClickStuff explicitly: it is a secondary type in FlxAnim.hx.
+          patch_file(".haxelib/flxanimate/git/flxanimate/FlxAnimate.hx", [
+              (
+                  "import flixel.system.FlxSound;",
+                  "import flixel.sound.FlxSound;",
+                  "updated FlxAnimate FlxSound import"
+              ),
+              (
+                  "import flxanimate.animate.FlxAnim;",
+                  "import flxanimate.animate.FlxAnim;\nimport flxanimate.animate.FlxAnim.ClickStuff;",
+                  "imported the ClickStuff typedef"
+              )
+          ])
+
+          patch_file(".haxelib/flxanimate/git/flxanimate/animate/FlxAnim.hx", [
+              (
+                  "import flixel.system.FlxSound;",
+                  "import flixel.sound.FlxSound;",
+                  "updated FlxAnim FlxSound import"
+              )
+          ])
+
+          # The FlxAnimate button event also imports FlxSound from the old package.
+          patch_file(".haxelib/flxanimate/git/flxanimate/animate/ButtonEvent.hx", [
+              (
+                  "import flixel.system.FlxSound;",
+                  "import flixel.sound.FlxSound;",
+                  "updated ButtonEvent FlxSound import"
+              )
+          ])
+
+          # The HTML5 filter renderer uses Lime's internal canvas bridge.
+          patch_file(".haxelib/flxanimate/git/flxanimate/display/FlxAnimateFilterRenderer.hx", [
+              (
+                  "import flixel.FlxG;",
+                  "import flixel.FlxG;\nimport lime._internal.graphics.ImageCanvasUtil;",
+                  "imported Lime ImageCanvasUtil"
+              ),
+              (
+                  "@:access(openfl.display.CairoRenderer)",
+                  "@:access(openfl.display.CairoRenderer)\n@:access(lime.graphics.ImageBuffer)",
+                  "granted access to the Lime canvas context"
+              )
+          ])
+
+
+          # Embed the prepared Story Mode mod folder as normal OpenFL assets on web.
+          patch_file("Project.xml", [
+              (
+                  '<assets path="assets/shared"        exclude="*.ogg" if="web"/>',
+                  '<assets path="assets/shared"        exclude="*.ogg" if="web"/>\\n\\t<assets path="assets/mods" rename="mods" if="web"/>',
+                  "registered embedded Story Mode folder for HTML5"
+              )
+          ])
+
+          # Allow the browser build to resolve the selected Story Mode folder without
+          # enabling filesystem-based desktop mods.
+          patch_file("source/backend/Paths.hx", [
+              (
+                  "#if MODS_ALLOWED\\nimport backend.Mods;\\n#end",
+                  "#if (MODS_ALLOWED || web)\\nimport backend.Mods;\\n#end",
+                  "made current mod directory available to browser"
+              ),
+              (
+                  "\\t\\t#end\\n\\n\\t\\tif (library != null)\\n\\t\\t\\treturn getLibraryPath(file, library);",
+                  "\\t\\t#end\\n\\n\\t\\t#if web\\n\\t\\tif (Mods.currentModDirectory != null && Mods.currentModDirectory.length > 0) {\\n\\t\\t\\tvar modPath:String = 'mods/\${Mods.currentModDirectory}/';\\n\\t\\t\\tif (library != null && library != 'shared') modPath += '$library/';\\n\\t\\t\\tmodPath += file;\\n\\t\\t\\tif (OpenFlAssets.exists(modPath, type)) return modPath;\\n\\t\\t}\\n\\t\\t#end\\n\\n\\t\\tif (library != null)\\n\\t\\t\\treturn getLibraryPath(file, library);",
+                  "resolved embedded Story Mode paths in the browser"
+              ),
+              (
+                  "\\t\\t#end\\n\\n\\t\\t// I hate this so god damn much",
+                  "\\t\\t#end\\n\\n\\t\\t#if web\\n\\t\\tif (Mods.currentModDirectory != null && Mods.currentModDirectory.length > 0) {\\n\\t\\t\\tvar modSoundPath:String = 'mods/\${Mods.currentModDirectory}/';\\n\\t\\t\\tif (library != null && library != 'shared') modSoundPath += '$library/';\\n\\t\\t\\tif (path != null) modSoundPath += '$path/';\\n\\t\\t\\tmodSoundPath += '$key.$SOUND_EXT';\\n\\t\\t\\tif (OpenFlAssets.exists(modSoundPath, SOUND)) {\\n\\t\\t\\t\\tif (!currentTrackedSounds.exists(modSoundPath)) currentTrackedSounds.set(modSoundPath, OpenFlAssets.getSound(modSoundPath));\\n\\t\\t\\t\\tlocalTrackedAssets.push(modSoundPath);\\n\\t\\t\\t\\treturn currentTrackedSounds.get(modSoundPath);\\n\\t\\t\\t}\\n\\t\\t}\\n\\t\\t#end\\n\\n\\t\\t// I hate this so god damn much",
+                  "loaded converted Story Mode OGG audio from embedded MP3 assets"
+              )
+          ])
+
+          patch_file("source/backend/StageData.hx", [
+              (
+                  "public static function getStageFile(stage:String):StageFile {\\n\\t\\tvar rawJson:String = null;\\n\\t\\tvar path:String = Paths.getSharedPath('stages/' + stage + '.json');\\n\\n\\t\\t#if MODS_ALLOWED\\n\\t\\tvar modPath:String = Paths.modFolders('stages/' + stage + '.json');\\n\\t\\tif(FileSystem.exists(modPath)) {\\n\\t\\t\\trawJson = File.getContent(modPath);\\n\\t\\t} else if(FileSystem.exists(path)) {\\n\\t\\t\\t rawJson = File.getContent(path);\\n\\t\\t}\\n\\t\\t#else\\n\\t\\tif(Assets.exists(path)) {\\n\\t\\t\\trawJson = Assets.getText(path);\\n\\t\\t}\\n\\t\\t#end\\n\\t\\telse\\n\\t\\t{\\n\\t\\t\\treturn null;\\n\\t\\t}\\n\\t\\treturn cast tjson.TJSON.parse(rawJson);\\n\\t}",
+                  "public static function getStageFile(stage:String):StageFile {\\n\\t\\tvar rawJson:String = null;\\n\\t\\tvar path:String = Paths.getSharedPath('stages/' + stage + '.json');\\n\\n\\t\\t#if MODS_ALLOWED\\n\\t\\tvar modPath:String = Paths.modFolders('stages/' + stage + '.json');\\n\\t\\tif (FileSystem.exists(modPath)) rawJson = File.getContent(modPath);\\n\\t\\telse if (FileSystem.exists(path)) rawJson = File.getContent(path);\\n\\t\\t#elseif web\\n\\t\\tvar modPath:String = 'mods/' + Mods.currentModDirectory + '/stages/' + stage + '.json';\\n\\t\\tif (Assets.exists(modPath)) rawJson = Assets.getText(modPath);\\n\\t\\telse if (Assets.exists(path)) rawJson = Assets.getText(path);\\n\\t\\t#else\\n\\t\\tif (Assets.exists(path)) rawJson = Assets.getText(path);\\n\\t\\t#end\\n\\n\\t\\tif (rawJson == null || rawJson.length == 0) return null;\\n\\t\\treturn cast tjson.TJSON.parse(rawJson);\\n\\t}",
+                  "loaded Story Mode stage JSON through embedded browser assets"
+              )
+          ])
+
+          print("Browser compatibility patches applied.")
+          PY
+
+      - name: Compile browser target
+        working-directory: engine
+        run: |
+          haxelib run lime build Project.xml html5 -release
+
+      - name: Check browser output
+        run: |
+          test -f engine/export/release/html5/bin/index.html
+          find engine/export/release/html5/bin -maxdepth 2 -type f | head -80
+          du -sh engine/export/release/html5/bin
+
+      - name: Upload Sonic EXE Story Mode HTML5 build
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonicexe-story-mode-html5
+          path: engine/export/release/html5/bin/
+          if-no-files-found: error
+          retention-days: 14
