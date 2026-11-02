@@ -137,7 +137,7 @@ jobs:
               ),
               (
                   "import flxanimate.animate.FlxAnim;",
-                  "import flxanimate.animate.FlxAnim;\\nimport flxanimate.animate.FlxAnim.ClickStuff;",
+                  "import flxanimate.animate.FlxAnim;\nimport flxanimate.animate.FlxAnim.ClickStuff;",
                   "imported the ClickStuff typedef"
               )
           ])
