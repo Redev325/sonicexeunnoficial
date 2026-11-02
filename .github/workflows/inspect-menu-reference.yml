@@ -194,6 +194,7 @@ jobs:
               "assets/exe/backButton.webp",
               "assets/exe/backButton.xml",
               "assets/shared/images/menuDesat.webp",
+              "assets/videos/postIntro.mp4",
           }
           selected_fonts = {
               "assets/fonts/vcr.ttf",
@@ -207,7 +208,7 @@ jobs:
               "assets/fonts/Plaza Regular.ttf",
               "assets/fonts/fps.ttf",
           }
-          allowed = {".webp", ".png", ".xml", ".json", ".ttf", ".otf"}
+          allowed = {".webp", ".png", ".xml", ".json", ".ttf", ".otf", ".mp4"}
           output = Path("original-game-ui-assets")
           copied = []
           with ZipFile("release.zip") as z:
