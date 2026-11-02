@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply the original browser main-menu layout to the open-source Psych Engine source."""
+"""Apply the reference-inspired Sonic EXE menu layout to Psych Engine."""
 
 from pathlib import Path
 import sys
@@ -26,12 +26,37 @@ def main() -> None:
 
     source = replace_once(
         source,
+        "import lime.app.Application;",
+        "import lime.app.Application;\nimport openfl.display.BitmapData;\nimport openfl.display.Shape;",
+        "OpenFL drawing imports",
+    )
+
+    source = replace_once(
+        source,
+        """\tvar optionShit:Array<String> = [
+\t\t'story_mode',
+\t\t'freeplay',
+\t\t#if MODS_ALLOWED 'mods', #end
+\t\t#if ACHIEVEMENTS_ALLOWED 'awards', #end
+\t\t'credits',
+\t\t#if !switch 'donate', #end
+\t\t'options'
+\t];""",
+        """\tvar optionShit:Array<String> = [
+\t\t'sound_test',
+\t\t'freeplay',
+\t\t'story_mode',
+\t\t'extras',
+\t\t'options'
+\t];""",
+        "five reference menu destinations",
+    )
+
+    source = replace_once(
+        source,
         "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;",
-        "var magenta:FlxSprite;\n"
-        "\tvar camFollow:FlxObject;\n"
-        "\tvar selectedModeText:FlxText;\n"
-        "\tvar selectedModeDescription:FlxText;",
-        "menu information fields",
+        "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;\n\tvar menuPlates:FlxTypedGroup<FlxSprite>;",
+        "menu button plate group",
     )
 
     source = replace_once(
@@ -43,137 +68,240 @@ def main() -> None:
 \t\tbg.updateHitbox();
 \t\tbg.screenCenter();
 \t\tadd(bg);""",
-        """\t\t// Original dark, high-contrast browser menu background.
-\t\tvar bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, 0xFF08080D);
-\t\tbg.scrollFactor.set(0, 0);
-\t\tadd(bg);
-
-\t\tvar upperBand:FlxSprite = new FlxSprite(0, 0).makeGraphic(FlxG.width, 5, 0xFFFF405B);
-\t\tupperBand.scrollFactor.set(0, 0);
-\t\tadd(upperBand);
-
-\t\tvar lowerBand:FlxSprite = new FlxSprite(0, FlxG.height - 5).makeGraphic(FlxG.width, 5, 0xFF6B2638);
-\t\tlowerBand.scrollFactor.set(0, 0);
-\t\tadd(lowerBand);
-
-\t\tvar leftRail:FlxSprite = new FlxSprite(30, 0).makeGraphic(2, FlxG.height, 0xFF401D2A);
-\t\tleftRail.scrollFactor.set(0, 0);
-\t\tadd(leftRail);""",
-        "custom browser background",
+        "\t\tbuildReferenceBackdrop();",
+        "reference-inspired red and black background",
     )
 
     source = replace_once(
         source,
         "\t\tadd(magenta);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
-        "\t\tadd(magenta);\n\n\t\tbuildSidePanel();\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
-        "side panel creation call",
+        "\t\tadd(magenta);\n\n\t\tmenuPlates = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuPlates);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
+        "menu plates behind menu labels",
     )
 
+    old_loop = """\t\tfor (i in 0...optionShit.length)
+\t\t{
+\t\t\tvar offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;
+\t\t\tvar menuItem:FlxSprite = new FlxSprite(0, (i * 140) + offset);
+\t\t\tmenuItem.antialiasing = ClientPrefs.data.antialiasing;
+\t\t\tmenuItem.frames = Paths.getSparrowAtlas('mainmenu/menu_' + optionShit[i]);
+\t\t\tmenuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
+\t\t\tmenuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
+\t\t\tmenuItem.animation.play('idle');
+\t\t\tmenuItems.add(menuItem);
+\t\t\tvar scr:Float = (optionShit.length - 4) * 0.135;
+\t\t\tif (optionShit.length < 6)
+\t\t\t\tscr = 0;
+\t\t\tmenuItem.scrollFactor.set(0, scr);
+\t\t\tmenuItem.updateHitbox();
+\t\t\tmenuItem.screenCenter(X);
+\t\t}"""
+    new_loop = """\t\tvar buttonX:Int = Std.int(FlxG.width * 0.505);
+\t\tvar buttonWidth:Int = Std.int(FlxG.width * 0.485);
+\t\tvar buttonHeight:Int = Std.int(FlxG.height * 0.135);
+\t\tvar labelSize:Int = Std.int(FlxG.height * 0.075);
+\t\tfor (i in 0...optionShit.length)
+\t\t{
+\t\t\tvar buttonY:Int = Std.int(FlxG.height * (0.075 + i * 0.19));
+\t\t\tvar plate:FlxSprite = new FlxSprite(buttonX, buttonY);
+\t\t\tplate.loadGraphic(makeMenuPlate(buttonWidth, buttonHeight, i == curSelected));
+\t\t\tplate.scrollFactor.set(0, 0);
+\t\t\tmenuPlates.add(plate);
+
+\t\t\tvar label:FlxText = new FlxText(buttonX + 18, buttonY + 8, buttonWidth - 36, menuLabel(i), labelSize);
+\t\t\tlabel.antialiasing = false;
+\t\t\tlabel.scrollFactor.set(0, 0);
+\t\t\tlabel.setFormat("VCR OSD Mono", labelSize, FlxColor.GRAY, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\t\tlabel.y = buttonY + (buttonHeight - label.height) * 0.5 - 2;
+\t\t\tmenuItems.add(label);
+\t\t}"""
+    source = replace_once(source, old_loop, new_loop, "replace standard icon row with angled pixel menu")
+
+    # The game version labels are moved to the upper-left to stay out of the menu list.
     source = replace_once(
         source,
-        "var menuItem:FlxSprite = new FlxSprite(0, (i * 140) + offset);",
-        "var menuItem:FlxSprite = new FlxSprite(60, (i * 140) + offset);",
-        "left aligned menu item construction",
+        "var psychVer:FlxText = new FlxText(12, FlxG.height - 44, 0, \"Psych Engine v\" + psychEngineVersion, 12);",
+        "var psychVer:FlxText = new FlxText(8, 6, 0, \"Psych Engine v\" + psychEngineVersion, 8);",
+        "upper-left engine version label",
     )
     source = replace_once(
         source,
-        "\t\t\tmenuItem.screenCenter(X);",
-        "\t\t\tmenuItem.x = 60;",
-        "left aligned menu item placement",
+        "psychVer.setFormat(\"VCR OSD Mono\", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
+        "psychVer.setFormat(\"VCR OSD Mono\", 8, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
+        "small engine version text",
+    )
+    source = replace_once(
+        source,
+        "var fnfVer:FlxText = new FlxText(12, FlxG.height - 24, 0, \"Friday Night Funkin' v\" + Application.current.meta.get('version'), 12);",
+        "var fnfVer:FlxText = new FlxText(8, 17, 0, \"Friday Night Funkin' v\" + Application.current.meta.get('version'), 8);",
+        "upper-left game version label",
+    )
+    source = replace_once(
+        source,
+        "fnfVer.setFormat(\"VCR OSD Mono\", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
+        "fnfVer.setFormat(\"VCR OSD Mono\", 8, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
+        "small game version text",
     )
 
+    # Sound Test is a lightweight action for now; the other four choices enter real engine screens.
     source = replace_once(
         source,
-        "\t\tmenuItems.members[curSelected].screenCenter(X);",
-        "\t\tmenuItems.members[curSelected].x = 60;",
-        "left aligned current item placement",
-        count=2,
+        "\t\t\t\t\t\tswitch (optionShit[curSelected])\n\t\t\t\t\t\t{\n",
+        "\t\t\t\t\t\tswitch (optionShit[curSelected])\n\t\t\t\t\t\t{\n"
+        "\t\t\t\t\t\t\tcase 'sound_test':\n"
+        "\t\t\t\t\t\t\t\tFlxG.sound.play(Paths.sound('confirmMenu'));\n"
+        "\t\t\t\t\t\t\t\tMusicBeatState.switchState(new FreeplayState());\n"
+        "\t\t\t\t\t\t\tcase 'extras':\n"
+        "\t\t\t\t\t\t\t\tMusicBeatState.switchState(new CreditsState());\n",
+        "sound test and extras menu actions",
     )
 
+    # Fade the button outlines along with the selected labels when changing screens.
     source = replace_once(
         source,
-        "camFollow.setPosition(menuItems.members[curSelected].getGraphicMidpoint().x,",
-        "camFollow.setPosition(FlxG.width * 0.5,",
-        "fixed horizontal camera position",
+        """\t\t\t\t\t\tFlxTween.tween(menuItems.members[i], {alpha: 0}, 0.4, {
+\t\t\t\t\t\t\tease: FlxEase.quadOut,
+\t\t\t\t\t\t\tonComplete: function(twn:FlxTween)
+\t\t\t\t\t\t\t{
+\t\t\t\t\t\t\t\tmenuItems.members[i].kill();
+\t\t\t\t\t\t\t}
+\t\t\t\t\t\t});""",
+        """\t\t\t\t\t\tFlxTween.tween(menuItems.members[i], {alpha: 0}, 0.4, {
+\t\t\t\t\t\t\tease: FlxEase.quadOut,
+\t\t\t\t\t\t\tonComplete: function(twn:FlxTween)
+\t\t\t\t\t\t\t{
+\t\t\t\t\t\t\t\tmenuItems.members[i].kill();
+\t\t\t\t\t\t\t}
+\t\t\t\t\t\t});
+\t\t\t\t\t\tFlxTween.tween(menuPlates.members[i], {alpha: 0}, 0.4, {
+\t\t\t\t\t\t\tease: FlxEase.quadOut,
+\t\t\t\t\t\t\tonComplete: function(twn:FlxTween)
+\t\t\t\t\t\t\t{
+\t\t\t\t\t\t\t\tmenuPlates.members[i].kill();
+\t\t\t\t\t\t\t}
+\t\t\t\t\t\t});""",
+        "fade menu plates on transition",
     )
 
-    insertion = """\tfunction buildSidePanel():Void
+    helper_methods = """\tfunction menuLabel(index:Int):String
 \t{
-\t\tvar sidePanel = new FlxSprite(870, 0).makeGraphic(FlxG.width - 870, FlxG.height, 0xF20D0D14);
-\t\tsidePanel.scrollFactor.set(0, 0);
-\t\tadd(sidePanel);
-
-\t\tvar panelEdge = new FlxSprite(866, 0).makeGraphic(3, FlxG.height, 0xFFFF405B);
-\t\tpanelEdge.scrollFactor.set(0, 0);
-\t\tadd(panelEdge);
-
-\t\tvar topLabel = new FlxText(915, 125, FlxG.width - 940, "SONIC.EXE", 42);
-\t\ttopLabel.scrollFactor.set(0, 0);
-\t\ttopLabel.setFormat("VCR OSD Mono", 42, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-\t\tadd(topLabel);
-
-\t\tvar editionLabel = new FlxText(918, 183, FlxG.width - 940, "UNOFFICIAL  /  BROWSER EDITION", 12);
-\t\teditionLabel.scrollFactor.set(0, 0);
-\t\teditionLabel.setFormat("VCR OSD Mono", 12, 0xFFFF7184, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-\t\tadd(editionLabel);
-
-\t\tvar separator = new FlxSprite(915, 235).makeGraphic(FlxG.width - 955, 2, 0xFF763344);
-\t\tseparator.scrollFactor.set(0, 0);
-\t\tadd(separator);
-
-\t\tvar selectedLabel = new FlxText(918, 275, FlxG.width - 940, "SELECTED MODE", 11);
-\t\tselectedLabel.scrollFactor.set(0, 0);
-\t\tselectedLabel.setFormat("VCR OSD Mono", 11, 0xFFB2A6B2, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-\t\tadd(selectedLabel);
-
-\t\tselectedModeText = new FlxText(915, 310, FlxG.width - 940, "STORY MODE", 27);
-\t\tselectedModeText.scrollFactor.set(0, 0);
-\t\tselectedModeText.setFormat("VCR OSD Mono", 27, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-\t\tadd(selectedModeText);
-
-\t\tselectedModeDescription = new FlxText(918, 360, FlxG.width - 945, "", 13);
-\t\tselectedModeDescription.scrollFactor.set(0, 0);
-\t\tselectedModeDescription.setFormat("VCR OSD Mono", 13, 0xFFD0CBD4, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-\t\tadd(selectedModeDescription);
-
-\t\tvar controlRule = new FlxSprite(915, 510).makeGraphic(FlxG.width - 955, 2, 0xFF763344);
-\t\tcontrolRule.scrollFactor.set(0, 0);
-\t\tadd(controlRule);
-
-\t\tvar controls = new FlxText(918, 535, FlxG.width - 940,
-\t\t\t"UP / DOWN   SELECT\\nENTER       CONFIRM\\nESC         BACK", 12);
-\t\tcontrols.scrollFactor.set(0, 0);
-\t\tcontrols.setFormat("VCR OSD Mono", 12, 0xFFFF7184, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-\t\tadd(controls);
+\t\treturn switch (index)
+\t\t{
+\t\t\tcase 0: "SOUND TEST";
+\t\t\tcase 1: "JUEGO LIBRE";
+\t\t\tcase 2: "MODO HISTORIA";
+\t\t\tcase 3: "EXTRAS";
+\t\t\tcase 4: "OPCIONES";
+\t\t\tdefault: "MENU";
+\t\t};
 \t}
 
-\tfunction updateMenuInformation():Void
+\tfunction makeMenuPlate(width:Int, height:Int, selected:Bool):BitmapData
 \t{
-\t\tif (selectedModeText == null || selectedModeDescription == null) return;
+\t\tvar bitmap = new BitmapData(width, height, true, 0x00000000);
+\t\tvar shape = new Shape();
+\t\tvar borderColor:Int = selected ? 0xFF7600A8 : 0xFF68666D;
+\t\tshape.graphics.lineStyle(selected ? 5 : 3, borderColor, 1);
+\t\tshape.graphics.beginFill(0xF008080B, 1);
+\t\tshape.graphics.moveTo(15, 2);
+\t\tshape.graphics.lineTo(width - 3, 2);
+\t\tshape.graphics.lineTo(width - 3, height - 4);
+\t\tshape.graphics.lineTo(32, height - 4);
+\t\tshape.graphics.lineTo(3, 14);
+\t\tshape.graphics.lineTo(15, 2);
+\t\tshape.graphics.endFill();
+\t\tbitmap.draw(shape);
 
-\t\tselectedModeText.text = switch (optionShit[curSelected])
+\t\tif (selected)
 \t\t{
-\t\t\tcase 'story_mode': 'STORY MODE';
-\t\t\tcase 'freeplay': 'FREEPLAY';
-\t\t\tcase 'mods': 'MODS';
-\t\t\tcase 'awards': 'AWARDS';
-\t\t\tcase 'credits': 'CREDITS';
-\t\t\tcase 'donate': 'SUPPORT';
-\t\t\tcase 'options': 'OPTIONS';
-\t\t\tdefault: 'MENU';
-\t\t};
+\t\t\tvar underline = new Shape();
+\t\t\tunderline.graphics.beginFill(0xFFFFE52B, 1);
+\t\t\tunderline.graphics.drawRect(34, height - 7, width - 34, 9);
+\t\t\tunderline.graphics.endFill();
+\t\t\tbitmap.draw(underline);
+\t\t}
+\t\treturn bitmap;
+\t}
 
-\t\tselectedModeDescription.text = switch (optionShit[curSelected])
+\tfunction buildReferenceBackdrop():Void
+\t{
+\t\tvar black = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, 0xFF020204);
+\t\tblack.scrollFactor.set(0, 0);
+\t\tadd(black);
+
+\t\tvar leftWidth:Int = Std.int(FlxG.width * 0.68);
+\t\tvar redPixels = new BitmapData(leftWidth, FlxG.height, false, 0xFF26000A);
+\t\tfor (y in 0...FlxG.height)
 \t\t{
-\t\t\tcase 'story_mode': 'Play the available story weeks and follow the song order.';
-\t\t\tcase 'freeplay': 'Choose an individual song and play it on your own terms.';
-\t\t\tcase 'mods': 'Browse and select installed content packs.';
-\t\t\tcase 'awards': 'Review achievements earned while playing.';
-\t\t\tcase 'credits': 'See the people behind the engine and this project.';
-\t\t\tcase 'donate': 'Visit the engine creators’ support page.';
-\t\t\tcase 'options': 'Adjust controls, visuals, audio, and gameplay settings.';
-\t\t\tdefault: 'Choose a menu option to continue.';
-\t\t};
+\t\t\tvar rowWave:Float = Math.sin(y * 0.075) * 21 + Math.sin(y * 0.021) * 13;
+\t\t\tfor (x in 0...leftWidth)
+\t\t\t{
+\t\t\t\tvar flow:Float = Math.sin((y * 0.061) + Math.sin(x * 0.014) * 3.8 + Math.sin(x * 0.038) * 1.5);
+\t\t\t\tvar ripple:Float = Math.sin((x * 0.019) + (y * 0.014)) * 11;
+\t\t\t\tvar grain:Float = ((x * 17 + y * 29 + ((x * y) % 37)) % 23) - 11;
+\t\t\t\tvar value:Float = 42 + rowWave + flow * 39 + ripple + grain;
+\t\t\t\tvar red:Int = Std.int(Math.max(8, Math.min(176, value * 1.55)));
+\t\t\t\tvar green:Int = Std.int(Math.max(0, Math.min(20, value * 0.055)));
+\t\t\t\tvar blue:Int = Std.int(Math.max(1, Math.min(30, value * 0.08)));
+\t\t\t\tredPixels.setPixel32(x, y, 0xFF000000 | (red << 16) | (green << 8) | blue);
+\t\t\t}
+\t\t}
+
+\t\tvar redBackdrop = new FlxSprite(0, 0).loadGraphic(redPixels);
+\t\tredBackdrop.scrollFactor.set(0, 0);
+\t\tadd(redBackdrop);
+
+\t\t// Thick red lightning seam creates the sharp zig-zag split in the reference layout.
+\t\tvar redSeam = new Shape();
+\t\tredSeam.graphics.lineStyle(Math.max(18, FlxG.height * 0.052), 0xFFFF151D, 1);
+\t\tredSeam.graphics.moveTo(FlxG.width * 0.395, -12);
+\t\tredSeam.graphics.lineTo(FlxG.width * 0.545, FlxG.height * 0.325);
+\t\tredSeam.graphics.lineTo(FlxG.width * 0.335, FlxG.height * 0.645);
+\t\tredSeam.graphics.lineTo(FlxG.width * 0.585, FlxG.height * 0.895);
+\t\tredSeam.graphics.lineTo(FlxG.width * 0.415, FlxG.height + 18);
+\t\tvar redSeamBitmap = new BitmapData(FlxG.width, FlxG.height, true, 0x00000000);
+\t\tredSeamBitmap.draw(redSeam);
+\t\tvar redSeamSprite = new FlxSprite().loadGraphic(redSeamBitmap);
+\t\tredSeamSprite.scrollFactor.set(0, 0);
+\t\tadd(redSeamSprite);
+
+\t\t// Inner yellow highlight, slightly offset toward the red field.
+\t\tvar yellowSeam = new Shape();
+\t\tyellowSeam.graphics.lineStyle(Math.max(7, FlxG.height * 0.018), 0xFFFFE51E, 1);
+\t\tyellowSeam.graphics.moveTo(FlxG.width * 0.382, -10);
+\t\tyellowSeam.graphics.lineTo(FlxG.width * 0.522, FlxG.height * 0.325);
+\t\tyellowSeam.graphics.lineTo(FlxG.width * 0.323, FlxG.height * 0.645);
+\t\tyellowSeam.graphics.lineTo(FlxG.width * 0.563, FlxG.height * 0.895);
+\t\tyellowSeam.graphics.lineTo(FlxG.width * 0.402, FlxG.height + 15);
+\t\tvar yellowSeamBitmap = new BitmapData(FlxG.width, FlxG.height, true, 0x00000000);
+\t\tyellowSeamBitmap.draw(yellowSeam);
+\t\tvar yellowSeamSprite = new FlxSprite().loadGraphic(yellowSeamBitmap);
+\t\tyellowSeamSprite.scrollFactor.set(0, 0);
+\t\tadd(yellowSeamSprite);
+
+\t\t// Small original emblem treatment; the source game's logo art is not reused.
+\t\tvar emblem = new Shape();
+\t\temblem.graphics.lineStyle(5, 0xFF251721, 1);
+\t\temblem.graphics.beginFill(0xB814111A, 1);
+\t\temblem.graphics.drawCircle(FlxG.width * 0.135, FlxG.height * 0.145, FlxG.height * 0.082);
+\t\temblem.graphics.endFill();
+\t\tvar emblemBitmap = new BitmapData(Std.int(FlxG.width * 0.28), Std.int(FlxG.height * 0.30), true, 0x00000000);
+\t\temblemBitmap.draw(emblem);
+\t\tvar emblemSprite = new FlxSprite().loadGraphic(emblemBitmap);
+\t\temblemSprite.scrollFactor.set(0, 0);
+\t\tadd(emblemSprite);
+
+\t\tvar versus = new FlxText(FlxG.width * 0.075, FlxG.height * 0.085, FlxG.width * 0.12, "VS", Std.int(FlxG.height * 0.045));
+\t\tversus.scrollFactor.set(0, 0);
+\t\tversus.alignment = CENTER;
+\t\tversus.setFormat("VCR OSD Mono", Std.int(FlxG.height * 0.045), 0xFFFFD8E2, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\tadd(versus);
+
+\t\tvar emblemTitle = new FlxText(FlxG.width * 0.035, FlxG.height * 0.17, FlxG.width * 0.20, "SONIC.EXE", Std.int(FlxG.height * 0.043));
+\t\temblemTitle.scrollFactor.set(0, 0);
+\t\temblemTitle.alignment = CENTER;
+\t\temblemTitle.setFormat("VCR OSD Mono", Std.int(FlxG.height * 0.043), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, 0xFF24111A);
+\t\tadd(emblemTitle);
 \t}
 
 """
@@ -181,20 +309,62 @@ def main() -> None:
     source = replace_once(
         source,
         "\tvar selectedSomethin:Bool = false;",
-        insertion + "\tvar selectedSomethin:Bool = false;",
-        "side panel helper methods",
+        helper_methods + "\tvar selectedSomethin:Bool = false;",
+        "reference backdrop and angled menu helpers",
     )
 
+    # Rebuild menu selection colors and plate treatment whenever the selected row changes.
     source = replace_once(
         source,
-        "\t\tcamFollow.setPosition(FlxG.width * 0.5,\n\t\t\tmenuItems.members[curSelected].getGraphicMidpoint().y - (menuItems.length > 4 ? menuItems.length * 8 : 0));",
-        "\t\tcamFollow.setPosition(FlxG.width * 0.5,\n\t\t\tmenuItems.members[curSelected].getGraphicMidpoint().y - (menuItems.length > 4 ? menuItems.length * 8 : 0));\n"
-        "\t\tupdateMenuInformation();",
-        "update selected mode detail text",
+        """\tfunction changeItem(huh:Int = 0)
+\t{
+\t\tFlxG.sound.play(Paths.sound('scrollMenu'));
+\t\tmenuItems.members[curSelected].animation.play('idle');
+\t\tmenuItems.members[curSelected].updateHitbox();
+\t\tmenuItems.members[curSelected].screenCenter(X);
+
+\t\tcurSelected += huh;
+
+\t\tif (curSelected >= menuItems.length)
+\t\t\tcurSelected = 0;
+\t\tif (curSelected < 0)
+\t\t\tcurSelected = menuItems.length - 1;
+
+\t\tmenuItems.members[curSelected].animation.play('selected');
+\t\tmenuItems.members[curSelected].centerOffsets();
+\t\tmenuItems.members[curSelected].screenCenter(X);
+
+\t\tcamFollow.setPosition(FlxG.width * 0.5,
+\t\t\tmenuItems.members[curSelected].getGraphicMidpoint().y - (menuItems.length > 4 ? menuItems.length * 8 : 0));
+\t\tupdateMenuInformation();
+\t}""",
+        """\tfunction changeItem(huh:Int = 0)
+\t{
+\t\tFlxG.sound.play(Paths.sound('scrollMenu'));
+
+\t\tcurSelected += huh;
+\t\tif (curSelected >= menuItems.length)
+\t\t\tcurSelected = 0;
+\t\tif (curSelected < 0)
+\t\t\tcurSelected = menuItems.length - 1;
+
+\t\tfor (i in 0...menuItems.length)
+\t\t{
+\t\t\tvar selected:Bool = (i == curSelected);
+\t\t\tvar label:FlxText = cast menuItems.members[i];
+\t\t\tlabel.color = selected ? FlxColor.WHITE : 0xFF85838A;
+\t\t\tlabel.alpha = selected ? 1 : 0.82;
+\t\t\tvar plate:FlxSprite = menuPlates.members[i];
+\t\t\tplate.loadGraphic(makeMenuPlate(Std.int(plate.width), Std.int(plate.height), selected));
+\t\t}
+
+\t\tcamFollow.setPosition(FlxG.width * 0.75, FlxG.height * 0.5);
+\t}""",
+        "reference menu selection rendering",
     )
 
     target.write_text(source, encoding="utf-8")
-    print(f"Applied original browser main menu layout to {target}")
+    print(f"Applied screenshot-referenced menu layout to {target}")
 
 
 if __name__ == "__main__":
