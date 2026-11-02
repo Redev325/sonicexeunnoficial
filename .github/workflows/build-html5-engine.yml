@@ -43,6 +43,59 @@ jobs:
           haxelib install hxcpp --quiet
           haxe -cp ./setup -D analyzer-optimize -main Main --interp
 
+      - name: Patch FlxAnimate for HaxeFlixel 6
+        working-directory: engine
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          animate = Path(".haxelib/flxanimate/git/flxanimate/FlxAnimate.hx")
+          anim = Path(".haxelib/flxanimate/git/flxanimate/animate/FlxAnim.hx")
+
+          for path in (animate, anim):
+              if not path.is_file():
+                  raise SystemExit(f"Expected FlxAnimate source file was not found: {path}")
+
+          source = animate.read_text()
+          old_sound_import = "import flixel.system.FlxSound;"
+          new_sound_import = """#if (flixel >= "5.3.0")
+          import flixel.sound.FlxSound;
+          #else
+          import flixel.system.FlxSound;
+          #end"""
+          if old_sound_import in source:
+              source = source.replace(old_sound_import, new_sound_import, 1)
+          elif "import flixel.sound.FlxSound;" not in source:
+              raise SystemExit("Could not locate the FlxAnimate FlxSound import")
+
+          click_import = "import flxanimate.animate.FlxAnim.ClickStuff;"
+          if click_import not in source:
+              anchor = "import flxanimate.animate.FlxAnim;"
+              if anchor not in source:
+                  raise SystemExit("Could not locate the FlxAnim import for ClickStuff")
+              source = source.replace(anchor, anchor + "\\n" + click_import, 1)
+          animate.write_text(source)
+
+          source = anim.read_text()
+          old_sound_import = """#if FLX_SOUND_SYSTEM
+          import flixel.system.FlxSound;
+          #end"""
+          new_sound_import = """#if FLX_SOUND_SYSTEM
+          #if (flixel >= "5.3.0")
+          import flixel.sound.FlxSound;
+          #else
+          import flixel.system.FlxSound;
+          #end
+          #end"""
+          if old_sound_import in source:
+              source = source.replace(old_sound_import, new_sound_import, 1)
+          elif "import flixel.sound.FlxSound;" not in source:
+              raise SystemExit("Could not locate the FlxAnim FlxSound import")
+          anim.write_text(source)
+
+          print("Patched FlxAnimate imports for HaxeFlixel 6.x.")
+          PY
+
       - name: Compile browser target
         working-directory: engine
         run: |
