@@ -73,7 +73,7 @@ jobs:
               anchor = "import flxanimate.animate.FlxAnim;"
               if anchor not in source:
                   raise SystemExit("Could not locate the FlxAnim import for ClickStuff")
-              source = source.replace(anchor, anchor + "\\n" + click_import, 1)
+              source = source.replace(anchor, anchor + "\n" + click_import, 1)
           animate.write_text(source)
 
           source = anim.read_text()
