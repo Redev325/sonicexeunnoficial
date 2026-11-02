@@ -228,6 +228,13 @@ def main() -> None:
 
     source = replace_once(
         source,
+        "\tvar selectedSomethin:Bool = false;",
+        helper_methods + "\tvar selectedSomethin:Bool = false;",
+        "insert original menu label and video helpers",
+    )
+
+    source = replace_once(
+        source,
         """\toverride function update(elapsed:Float)
 \t{
 \t\tif (FlxG.sound.music.volume < 0.8)""",
