@@ -1,0 +1,49 @@
+name: Deploy Psych Engine HTML5 menu
+run-name: Deploy Psych Engine HTML5 menu
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/deploy-html5-menu.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: psych-engine-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download compiled HTML5 engine
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p site
+          gh run download 41434790502 --repo "$GH_REPO" \
+            --name psych-engine-html5-base --dir site
+          test -s site/index.html
+          test -s site/PsychEngine.js
+          echo "Verified HTML5 entry point and engine bundle."
+          du -sh site
+
+      - name: Upload compiled game to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Publish browser build
+        id: deployment
+        uses: actions/deploy-pages@v4
