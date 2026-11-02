@@ -36,7 +36,6 @@ jobs:
           haxelib setup "$HOME/haxelib"
           haxelib install hxcpp --quiet
           haxe -cp ./setup -D analyzer-optimize -main Main --interp
-          haxelib fixrepo
 
       - name: Compile browser target
         working-directory: engine
