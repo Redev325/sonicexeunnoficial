@@ -46,49 +46,17 @@ def patch_title_state(source: str) -> str:
 \t\tgfDance = null;
 \t\tpostIntroGroup = new FlxGroup();
 
-\t\tvar ring:FlxSprite = new FlxSprite().loadGraphic(Paths.image('sonicexe-title/logo/ring'));
-\t\tring.setGraphicSize(Std.int(FlxG.width * 0.62));
-\t\tring.updateHitbox();
-\t\tring.x = (FlxG.width - ring.width) * 0.5;
-\t\tring.y = FlxG.height * 0.055;
-\t\tring.antialiasing = ClientPrefs.data.antialiasing;
-\t\tring.scrollFactor.set(0, 0);
-\t\tpostIntroGroup.add(ring);
-
-\t\tvar eyes:FlxSprite = new FlxSprite().loadGraphic(Paths.image('sonicexe-title/logo/eyes'));
-\t\teyes.setGraphicSize(Std.int(FlxG.width * 0.19));
-\t\teyes.updateHitbox();
-\t\teyes.x = (FlxG.width - eyes.width) * 0.5;
-\t\teyes.y = FlxG.height * 0.255;
-\t\teyes.antialiasing = ClientPrefs.data.antialiasing;
-\t\teyes.scrollFactor.set(0, 0);
-\t\tpostIntroGroup.add(eyes);
-
-\t\tvar bandana:FlxSprite = new FlxSprite().loadGraphic(Paths.image('sonicexe-title/logo/bandana'));
-\t\tbandana.setGraphicSize(Std.int(FlxG.width * 0.56));
-\t\tbandana.updateHitbox();
-\t\tbandana.x = (FlxG.width - bandana.width) * 0.5;
-\t\tbandana.y = FlxG.height * 0.49;
-\t\tbandana.antialiasing = ClientPrefs.data.antialiasing;
-\t\tbandana.scrollFactor.set(0, 0);
-\t\tpostIntroGroup.add(bandana);
-
-\t\tvar sonicLogo:FlxSprite = new FlxSprite().loadGraphic(Paths.image('sonicexe-title/logo/sonic'));
-\t\tsonicLogo.setGraphicSize(Std.int(FlxG.width * 0.51));
-\t\tsonicLogo.updateHitbox();
-\t\tsonicLogo.x = (FlxG.width - sonicLogo.width) * 0.5;
-\t\tsonicLogo.y = FlxG.height * 0.36;
-\t\tsonicLogo.antialiasing = ClientPrefs.data.antialiasing;
-\t\tsonicLogo.scrollFactor.set(0, 0);
-\t\tpostIntroGroup.add(sonicLogo);
-
-\t\tvar spikes:FlxSprite = new FlxSprite().loadGraphic(Paths.image('sonicexe-title/spikesdown'));
-\t\tspikes.setGraphicSize(FlxG.width);
-\t\tspikes.updateHitbox();
-\t\tspikes.x = 0;
-\t\tspikes.y = 0;
-\t\tspikes.scrollFactor.set(0, 0);
-\t\tpostIntroGroup.add(spikes);
+\t\t// Use the original, already-composited Sonic.EXE logo artwork.
+\t\t// The separate ring/eyes/bandana/sonic files are component layers, not centered standalone sprites.
+\t\tvar titleLogo:FlxSprite = new FlxSprite();
+\t\ttitleLogo.loadGraphic(Paths.image('sonicexe-logo'));
+\t\ttitleLogo.setGraphicSize(Std.int(FlxG.width * 0.50));
+\t\ttitleLogo.updateHitbox();
+\t\ttitleLogo.x = (FlxG.width - titleLogo.width) * 0.5;
+\t\ttitleLogo.y = FlxG.height * 0.075;
+\t\ttitleLogo.antialiasing = ClientPrefs.data.antialiasing;
+\t\ttitleLogo.scrollFactor.set(0, 0);
+\t\tpostIntroGroup.add(titleLogo);
 
 \t\t// The original 1280x720 atlas already includes the prompt's placement.
 \t\ttitleText = new FlxSprite(0, 0);
@@ -98,8 +66,11 @@ def patch_title_state(source: str) -> str:
 \t\ttitleText.animation.play('idle');
 \t\ttitleText.antialiasing = false;
 \t\ttitleText.scrollFactor.set(0, 0);
-\t\ttitleText.setGraphicSize(FlxG.width, FlxG.height);
+\t\tvar titlePromptScale:Float = Math.min(FlxG.width / 1280, FlxG.height / 720);
+\t\ttitleText.scale.set(titlePromptScale, titlePromptScale);
 \t\ttitleText.updateHitbox();
+\t\ttitleText.x = (FlxG.width - titleText.width) * 0.5;
+\t\ttitleText.y = (FlxG.height - titleText.height) * 0.5;
 \t\tpostIntroGroup.add(titleText);
 
 \t\tpostIntroGroup.visible = false;
@@ -114,6 +85,7 @@ def patch_title_state(source: str) -> str:
 \t\tpostIntroPlaying = true;
 
 \t\tsetMenuBackdropVisible(false);
+\t\tsetTitleBackdropVisible(true);
 \t\tsetPostIntroVideoVisible(true);
 \t\tPaths.clearUnusedMemory();
 \t}
@@ -123,6 +95,16 @@ def patch_title_state(source: str) -> str:
 \t\t#if js
 \t\tvar browserWindow:Dynamic = js.Browser.window;
 \t\tvar callback:Dynamic = Reflect.field(browserWindow, "setSonicEXEMenuVideo");
+\t\tif (callback != null)
+\t\t\tReflect.callMethod(browserWindow, callback, [visible]);
+\t\t#end
+\t}
+
+\tfunction setTitleBackdropVisible(visible:Bool):Void
+\t{
+\t\t#if js
+\t\tvar browserWindow:Dynamic = js.Browser.window;
+\t\tvar callback:Dynamic = Reflect.field(browserWindow, "setSonicEXETitleVideo");
 \t\tif (callback != null)
 \t\t\tReflect.callMethod(browserWindow, callback, [visible]);
 \t\t#end

@@ -307,6 +307,11 @@ jobs:
               with z.open("assets/videos/postIntro.mp4") as source, post_intro_source.open("wb") as target:
                   shutil.copyfileobj(source, target)
               print(f"Extracted original postIntro video ({post_intro_source.stat().st_size:,} bytes)")
+
+              title_bg_source = Path("engine/sonicexe-title-bg.mp4")
+              with z.open("assets/exe/title/statictitlemenu.mp4") as source, title_bg_source.open("wb") as target:
+                  shutil.copyfileobj(source, target)
+              print(f"Extracted original animated title background ({title_bg_source.stat().st_size:,} bytes)")
           PY
           rm -rf package
 
@@ -349,8 +354,10 @@ jobs:
         run: |
           output="engine/export/release/html5/bin"
           cp engine/sonicexe-menu.mp4 "$output/sonicexe-menu.mp4"
+          cp engine/sonicexe-title-bg.mp4 "$output/sonicexe-title-bg.mp4"
           cp engine/postIntro.mp4 "$output/postIntro.mp4"
           test -s "$output/postIntro.mp4"
+          test -s "$output/sonicexe-title-bg.mp4"
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -375,6 +382,11 @@ jobs:
               position: fixed; inset: 0; width: 100vw; height: 100vh;
               object-fit: contain; display: none; z-index: 5;
               background: #000; pointer-events: none;
+            }
+            #sonicexe-title-bg {
+              position: fixed; inset: 0; width: 100vw; height: 100vh;
+              object-fit: cover; display: none; z-index: 2;
+              pointer-events: none; mix-blend-mode: screen;
             }
           </style>
           <script>
@@ -417,11 +429,26 @@ jobs:
               window.addEventListener("pointerdown", unlockPostIntroAudio, { once: true, passive: true });
               window.addEventListener("keydown", unlockPostIntroAudio, { once: true });
             })();
+            window.setSonicEXETitleVideo = function(show) {
+              var video = document.getElementById("sonicexe-title-bg");
+              if (!video) return;
+              video.style.display = show ? "block" : "none";
+              if (show) {
+                var menuVideo = document.getElementById("sonicexe-menu-bg");
+                if (menuVideo) { menuVideo.pause(); menuVideo.style.display = "none"; }
+                var playPromise = video.play();
+                if (playPromise && playPromise.catch) playPromise.catch(function() {});
+              } else {
+                video.pause();
+              }
+            };
             window.setSonicEXEMenuVideo = function(show) {
               var video = document.getElementById("sonicexe-menu-bg");
               if (!video) return;
               video.style.display = show ? "block" : "none";
               if (show) {
+                var titleVideo = document.getElementById("sonicexe-title-bg");
+                if (titleVideo) { titleVideo.pause(); titleVideo.style.display = "none"; }
                 var playPromise = video.play();
                 if (playPromise && playPromise.catch) playPromise.catch(function() {});
               } else {
@@ -433,6 +460,9 @@ jobs:
           body_markup = """
           <video id="sonicexe-menu-bg" muted loop playsinline preload="auto" aria-hidden="true">
             <source src="sonicexe-menu.mp4" type="video/mp4">
+          </video>
+          <video id="sonicexe-title-bg" muted loop playsinline preload="auto" aria-hidden="true">
+            <source src="sonicexe-title-bg.mp4" type="video/mp4">
           </video>
           <video id="sonicexe-postintro-video" muted playsinline preload="auto" aria-hidden="true">
             <source src="postIntro.mp4" type="video/mp4">
