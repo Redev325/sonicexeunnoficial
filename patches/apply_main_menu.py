@@ -334,9 +334,8 @@ def main() -> None:
 \t\tmenuItems.members[curSelected].centerOffsets();
 \t\tmenuItems.members[curSelected].screenCenter(X);
 
-\t\tcamFollow.setPosition(FlxG.width * 0.5,
+\t\tcamFollow.setPosition(menuItems.members[curSelected].getGraphicMidpoint().x,
 \t\t\tmenuItems.members[curSelected].getGraphicMidpoint().y - (menuItems.length > 4 ? menuItems.length * 8 : 0));
-\t\tupdateMenuInformation();
 \t}""",
         """\tfunction changeItem(huh:Int = 0)
 \t{
