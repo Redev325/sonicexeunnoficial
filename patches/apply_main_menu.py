@@ -225,7 +225,7 @@ def main() -> None:
         "fade original menu option sprites on transition",
     )
 
-    // The moving hover shadow is a single sprite, so fade it once at the start of the exit loop.
+    # The moving hover shadow is a single sprite, so fade it once at the start of the exit loop.
     source = replace_once(
         source,
         "if (i == curSelected)\n\t\t\t\t\t\t\tcontinue;",
