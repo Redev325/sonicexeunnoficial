@@ -183,37 +183,13 @@ jobs:
           # JSON object from the native executable. Multiple aliases accommodate
           # the original display IDs and Psych Engine's path naming conventions.
           character_sources = {
-              "sonicexe-0311dca4.json": [
-                  "sonic.exe", "sonic_exe", "sonicexe"
-              ],
-              "xeno-p2-0901c524.json": [
-                  "sonic.exe 2", "sonic_exe_2", "sonic-exe-2",
-                  "xeno_fe2", "XENO-P2"
-              ],
-              "xeno-p3-0456ebc4.json": [
-                  "xeno_fe3", "XENO-P3"
-              ],
-              "xeno-p4-083469d4.json": [
-                  "xeno_fefinale", "XENO-P4"
-              ],
-              "xeno-p4-0562cfe4.json": [
-                  "xeno_fegrand"
-              ],
-              "xeno-p4-08c3e004.json": [
-                  "xeno_handfe"
-              ],
-              "xeno-p4back-058c4cc4.json": [
-                  "xeno_intro", "xeno-intro"
-              ],
-              "minilook-08df3664.json": [
-                  "mirror look2", "mirror_look2", "mirror-look2", "minilook"
-              ],
-              "minilook-05bbed24.json": [
-                  "mirror_lookbg", "mirror-lookbg"
-              ],
-              "tails-05df3bb4.json": [
-                  "tails"
-              ]
+              "sonicexe-08e61d54.json": ["sonic.exe", "sonic_exe"],
+              "xeno-p2-07020d54.json": ["sonic.exe 2", "sonic_exe_2"],
+              "tails-05df3bb4.json": ["tails"],
+              "minilook-08df3664.json": ["mirror look2", "mirror_look2"],
+              "gf-06a270a4.json": ["dark gf", "dark_gf"],
+              "bfback-05680ac4.json": ["bf-intro", "bf_intro"],
+              "xeno-p4back-058c4cc4.json": ["xeno-intro", "xeno_intro"]
           }
 
           char_map = []
