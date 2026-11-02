@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build-html5:
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha == 'PENDING_FAST_PACKAGE_SHA' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_sha == 'c8f114d8f964228e6cbf532088d1e789f6317129' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
