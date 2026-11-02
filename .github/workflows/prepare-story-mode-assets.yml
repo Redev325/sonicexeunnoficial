@@ -153,22 +153,15 @@ jobs:
           charts_out = []
 
           story_song_paths = {
-              "too-slow": "too-slow",
-              "you-cant-run": "you-cant-run",
-              "triple-trouble": "triple-trouble",
-              "final-escape": "final-escape",
-              "yourself": "yourself"
-          }
-          story_song_names = {
-              "too slow": "too-slow",
-              "you can't run": "you-cant-run",
-              "triple trouble": "triple-trouble",
-              "final escape": "final-escape",
+              "tooslow": "too-slow",
+              "youcantrun": "you-cant-run",
+              "tripletrouble": "triple-trouble",
+              "finalescape": "final-escape",
               "yourself": "yourself"
           }
           for entry in chart_index:
-              normalized_title = entry["song"].strip().lower()
-              slug = story_song_names.get(normalized_title)
+              normalized_title = re.sub(r"[^a-z0-9]+", "", entry["song"].lower())
+              slug = story_song_paths.get(normalized_title)
               if slug is None:
                   continue
               src = chart_root / entry["psych_engine_path"]
