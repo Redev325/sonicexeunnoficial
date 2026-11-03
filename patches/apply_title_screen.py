@@ -31,11 +31,7 @@ def patch_title_state(source: str) -> str:
         "\tvar warningPrompt:FlxText;\n"
         "\tvar warningActive:Bool = false;\n"
         "\tvar warningPulseTime:Float = 0;\n"
-        "\tvar sonicTitleRing:FlxSprite;\n"
-        "\tvar sonicTitleEyes:FlxSprite;\n"
-        "\tvar sonicTitleBandana:FlxSprite;\n"
-        "\tvar sonicTitleWordmark:FlxSprite;\n"
-        "\tvar sonicTitleSpikes:FlxSprite;\n"
+        "\tvar sonicTitleLogo:FlxSprite;\n"
         "\tvar sonicLogoBaseY:Float = 0;\n"
         "\tvar sonicLogoFloatTime:Float = 0;",
         "title warning and layered emblem state fields",
@@ -57,54 +53,19 @@ def patch_title_state(source: str) -> str:
 \t\tgfDance = null;
 \t\tpostIntroGroup = new FlxGroup();
 
-\t\t// Rebuild the V3 emblem from its original layered artwork.
-\t\tsonicTitleRing = new FlxSprite();
-\t\tsonicTitleRing.loadGraphic(Paths.image('sonicexe-title/logo/ring'));
-\t\tsonicTitleRing.setGraphicSize(Std.int(FlxG.width * 0.44));
-\t\tsonicTitleRing.updateHitbox();
-\t\tsonicTitleRing.x = (FlxG.width - sonicTitleRing.width) * 0.5;
-\t\tsonicTitleRing.y = FlxG.height * 0.105;
-\t\tsonicTitleRing.antialiasing = ClientPrefs.data.antialiasing;
-\t\tsonicTitleRing.scrollFactor.set(0, 0);
-\t\tpostIntroGroup.add(sonicTitleRing);
+\t\t// Use the original release's complete VS SONIC.EXE emblem as one sprite.
+		// The source artwork already contains the ring, eyes, wings, wordmark, and ribbon.
+		sonicTitleLogo = new FlxSprite();
+		sonicTitleLogo.loadGraphic(Paths.image('sonicexe-logo'));
+		sonicTitleLogo.setGraphicSize(Std.int(FlxG.width * 0.56));
+		sonicTitleLogo.updateHitbox();
+		sonicTitleLogo.x = (FlxG.width - sonicTitleLogo.width) * 0.5;
+		sonicTitleLogo.y = FlxG.height * 0.155;
+		sonicTitleLogo.antialiasing = ClientPrefs.data.antialiasing;
+		sonicTitleLogo.scrollFactor.set(0, 0);
+		postIntroGroup.add(sonicTitleLogo);
 
-\t\tsonicTitleEyes = new FlxSprite();
-\t\tsonicTitleEyes.loadGraphic(Paths.image('sonicexe-title/logo/eyes'));
-\t\tsonicTitleEyes.setGraphicSize(Std.int(FlxG.width * 0.065));
-\t\tsonicTitleEyes.updateHitbox();
-\t\tsonicTitleEyes.x = (FlxG.width - sonicTitleEyes.width) * 0.5;
-\t\tsonicTitleEyes.y = FlxG.height * 0.405;
-\t\tsonicTitleEyes.scrollFactor.set(0, 0);
-\t\tpostIntroGroup.add(sonicTitleEyes);
-
-\t\tsonicTitleBandana = new FlxSprite();
-\t\tsonicTitleBandana.loadGraphic(Paths.image('sonicexe-title/logo/bandana'));
-\t\tsonicTitleBandana.setGraphicSize(Std.int(FlxG.width * 0.51));
-\t\tsonicTitleBandana.updateHitbox();
-\t\tsonicTitleBandana.x = (FlxG.width - sonicTitleBandana.width) * 0.5;
-\t\tsonicTitleBandana.y = FlxG.height * 0.535;
-\t\tsonicTitleBandana.scrollFactor.set(0, 0);
-\t\tpostIntroGroup.add(sonicTitleBandana);
-
-\t\tsonicTitleWordmark = new FlxSprite();
-\t\tsonicTitleWordmark.loadGraphic(Paths.image('sonicexe-title/logo/sonic'));
-\t\tsonicTitleWordmark.setGraphicSize(Std.int(FlxG.width * 0.43));
-\t\tsonicTitleWordmark.updateHitbox();
-\t\tsonicTitleWordmark.x = (FlxG.width - sonicTitleWordmark.width) * 0.5;
-\t\tsonicTitleWordmark.y = FlxG.height * 0.485;
-\t\tsonicTitleWordmark.scrollFactor.set(0, 0);
-\t\tpostIntroGroup.add(sonicTitleWordmark);
-
-\t\tsonicTitleSpikes = new FlxSprite();
-\t\tsonicTitleSpikes.loadGraphic(Paths.image('sonicexe-title/spikesdown'));
-\t\tsonicTitleSpikes.setGraphicSize(Std.int(FlxG.width * 0.52));
-\t\tsonicTitleSpikes.updateHitbox();
-\t\tsonicTitleSpikes.x = (FlxG.width - sonicTitleSpikes.width) * 0.5;
-\t\tsonicTitleSpikes.y = FlxG.height * 0.765;
-\t\tsonicTitleSpikes.scrollFactor.set(0, 0);
-\t\tpostIntroGroup.add(sonicTitleSpikes);
-
-\t\t// This atlas supplies the pulsing white/yellow Enter prompt and its pressed animation.
+		// This atlas supplies the pulsing white/yellow Enter prompt and its pressed animation.
 \t\ttitleText = new FlxSprite(0, 0);
 \t\ttitleText.frames = Paths.getSparrowAtlas('sonicexe-title/titleEnterNEW');
 \t\ttitleText.animation.addByPrefix('idle', 'Press Enter to Begin instance', 24, true);
@@ -114,12 +75,14 @@ def patch_title_state(source: str) -> str:
 \t\ttitleText.scrollFactor.set(0, 0);
 \t\tvar titlePromptScale:Float = Math.min(FlxG.width / 1280, FlxG.height / 720);
 \t\ttitleText.scale.set(titlePromptScale, titlePromptScale);
-\t\ttitleText.updateHitbox();
-\t\ttitleText.x = (FlxG.width - titleText.width) * 0.5;
-\t\ttitleText.y = (FlxG.height - titleText.height) * 0.5;
+		titleText.updateHitbox();
+		// Atlas frames are trimmed but retain a 1280x720 source canvas. Position
+		// that full canvas, not the cropped text rectangle, so the prompt stays low.
+		titleText.x = (FlxG.width - 1280 * titlePromptScale) * 0.5;
+		titleText.y = (FlxG.height - 720 * titlePromptScale) * 0.5;
 \t\tpostIntroGroup.add(titleText);
 
-\t\tsonicLogoBaseY = sonicTitleRing.y;
+\t\tsonicLogoBaseY = sonicTitleLogo.y;
 \t\tpostIntroGroup.visible = false;
 \t\tadd(postIntroGroup);
 \t\tnewTitle = true;
@@ -256,17 +219,11 @@ def patch_title_state(source: str) -> str:
 \t\t\treturn;
 \t\t}
 
-\t\tif (sonicTitleRing != null && postIntroGroup != null && postIntroGroup.visible)
-\t\t{
-\t\t\tsonicLogoFloatTime += elapsed;
-\t\t\tvar floatOffset:Float = Math.sin(sonicLogoFloatTime * 1.6) * 10;
-\t\t\tsonicTitleRing.y = sonicLogoBaseY + floatOffset;
-\t\t\tsonicTitleEyes.y = FlxG.height * 0.405 + floatOffset;
-\t\t\tsonicTitleBandana.y = FlxG.height * 0.535 + floatOffset;
-\t\t\tsonicTitleWordmark.y = FlxG.height * 0.485 + floatOffset;
-\t\t\tsonicTitleSpikes.y = FlxG.height * 0.765 + floatOffset;
-\t\t\tsonicTitleEyes.alpha = 0.78 + Math.sin(sonicLogoFloatTime * 2.5) * 0.22;
-\t\t}
+\t\tif (sonicTitleLogo != null && postIntroGroup != null && postIntroGroup.visible)
+		{
+			sonicLogoFloatTime += elapsed;
+			sonicTitleLogo.y = sonicLogoBaseY + Math.sin(sonicLogoFloatTime * 1.6) * 10;
+		}
 
 """
     source = replace_once(
