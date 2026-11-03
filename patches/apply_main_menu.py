@@ -276,27 +276,13 @@ def main() -> None:
 
 \tfunction beginSonicConfirmWipe():Void
 \t{
+\t\t// The reference transitions with a clean fade to black, not a red Sonic mask.
 \t\tvar darken:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 \t\tdarken.scrollFactor.set(0, 0);
 \t\tdarken.alpha = 0;
 \t\tadd(darken);
-
-\t\tvar sonicWipe:FlxSprite = new FlxSprite();
-\t\tsonicWipe.loadGraphic(Paths.image('sonicexe-transitions/head-red'));
-\t\tsonicWipe.setGraphicSize(Std.int(FlxG.width * 0.18), Std.int(FlxG.height * 0.18));
-\t\tsonicWipe.updateHitbox();
-\t\tsonicWipe.screenCenter();
-\t\tsonicWipe.scrollFactor.set(0, 0);
-\t\tsonicWipe.alpha = 0;
-\t\tadd(sonicWipe);
-
-\t\tvar targetScaleX:Float = sonicWipe.scale.x * 6.4;
-\t\tvar targetScaleY:Float = sonicWipe.scale.y * 6.4;
-\t\tFlxTween.tween(sonicWipe, {alpha: 1}, 0.12, {ease: FlxEase.quadOut});
-\t\tFlxTween.tween(sonicWipe.scale, {x: targetScaleX, y: targetScaleY}, 0.78, {ease: FlxEase.quadIn});
-\t\tFlxTween.tween(darken, {alpha: 1}, 0.34, {startDelay: 0.48, ease: FlxEase.quadIn});
+\t\tFlxTween.tween(darken, {alpha: 1}, 0.52, {ease: FlxEase.quadIn});
 \t}
-
 \tfunction menuLabel(index:Int):String
 \t{
 \t\treturn switch (index)
@@ -440,37 +426,87 @@ def main() -> None:
 \t\tcamFollow.setPosition(menuItems.members[curSelected].getGraphicMidpoint().x,
 \t\t\tmenuItems.members[curSelected].getGraphicMidpoint().y - (menuItems.length > 4 ? menuItems.length * 8 : 0));
 \t}""",
-        """\tfunction changeItem(huh:Int = 0)
-\t{
-\t\tFlxG.sound.play(Paths.sound('scrollMenu'));
+        """	function changeItem(huh:Int = 0)
+	{
+		if (huh == 0 || menuItems.length == 0)
+			return;
 
-\t\tcurSelected = (curSelected + huh) % menuItems.length;
-\t\tif (curSelected < 0)
-\t\t\tcurSelected += menuItems.length;
+		FlxG.sound.play(Paths.sound('scrollMenu'));
+		curSelected = (curSelected + huh) % menuItems.length;
+		if (curSelected < 0)
+			curSelected += menuItems.length;
 
-\t\tfor (i in 0...menuItems.length)
-\t\t{
-\t\t\tvar selected:Bool = (i == curSelected);
-\t\t\tvar label:FlxText = cast menuItems.members[i];
-\t\t\tlabel.color = selected ? FlxColor.WHITE : 0xFF85838A;
-\t\t\tFlxTween.cancelTweensOf(label);\n\t\t\tlabel.alpha = selected ? 0.48 : 0.82;\n\t\t\tFlxTween.tween(label, {alpha: selected ? 1 : 0.82}, 0.16, {ease: FlxEase.quadOut});
-\t\t\tvar plate:FlxSprite = menuPlates.members[i];
-\t\t\t// Swapping idle/selected art resets its bitmap dimensions. Restore the
-\t\t\t// original layout width and height every time selection changes.
-\t\t\tvar plateWidth:Int = Std.int(plate.width);
-\t\t\tvar plateX:Float = plate.x;
-\t\t\tvar plateY:Float = plate.y;
-\t\t\tplate.loadGraphic(Paths.image(selected ? 'sonicexe-menu/options/box' : 'sonicexe-menu/options/box-idle'));
-\t\t\tplate.setGraphicSize(plateWidth, Std.int(plateWidth * (322.0 / 1673.0)));
-\t\t\tplate.updateHitbox();
-\t\t\tplate.setPosition(plateX, plateY);
-\t\t\t// The original PNGs already contain their intended colors.
-\t\t\tplate.color = FlxColor.WHITE;
-\t\t\tplate.alpha = 1;
-\t\t\tFlxTween.cancelTweensOf(plate);\n\t\t\tplate.alpha = selected ? 0.72 : 1;\n\t\t\tFlxTween.tween(plate, {alpha: 1}, 0.14, {ease: FlxEase.quadOut});\n\t\t\tvar shadow:FlxSprite = menuHighlights.members[i];\n\t\t\tFlxTween.cancelTweensOf(shadow);\n\t\t\tvar shadowBaseY:Float = plate.y + plate.height * 0.22;\n\t\t\tshadow.y = shadowBaseY + (selected ? 7 : 0);\n\t\t\tFlxTween.tween(shadow, {alpha: selected ? 0.95 : 0, y: shadowBaseY}, 0.18, {ease: FlxEase.quadOut});\t\t}
+		// The reference menu is a circular five-item wheel. The active choice stays
+		// in the middle while the other options scroll around it.
+		var leftFactors:Array<Float> = [0.63, 0.545, 0.43, 0.545, 0.63];
+		var widthFactors:Array<Float> = [0.32, 0.39, 0.47, 0.39, 0.32];
+		var topFactors:Array<Float> = [0.085, 0.255, 0.455, 0.655, 0.845];
+		var labelSizeFactors:Array<Float> = [0.065, 0.072, 0.078, 0.072, 0.065];
 
-\t\tcamFollow.setPosition(FlxG.width * 0.75, FlxG.height * 0.5);
-\t}""",
+		for (i in 0...menuItems.length)
+		{
+			var slot:Int = (i - curSelected + 2 + menuItems.length) % menuItems.length;
+			var selected:Bool = (slot == 2);
+			var targetX:Float = FlxG.width * leftFactors[slot];
+			var targetY:Float = FlxG.height * topFactors[slot];
+			var targetWidth:Float = FlxG.width * widthFactors[slot];
+			var targetHeight:Float = targetWidth * (322.0 / 1673.0);
+			var targetPlateScale:Float = targetWidth / 1673.0;
+			var duration:Float = 0.27;
+
+			var plate:FlxSprite = menuPlates.members[i];
+			FlxTween.cancelTweensOf(plate);
+			FlxTween.cancelTweensOf(plate.scale);
+			var plateScaleNow:Float = plate.scale.x;
+			plate.loadGraphic(Paths.image(selected ? 'sonicexe-menu/options/box' : 'sonicexe-menu/options/box-idle'));
+			plate.scale.set(plateScaleNow, plateScaleNow);
+			plate.updateHitbox();
+			plate.color = FlxColor.WHITE;
+			FlxTween.tween(plate, {x: targetX, y: targetY}, duration, {ease: FlxEase.quadOut});
+			FlxTween.tween(plate.scale, {x: targetPlateScale, y: targetPlateScale}, duration, {ease: FlxEase.quadOut});
+			plate.alpha = selected ? 0.72 : 1;
+			FlxTween.tween(plate, {alpha: 1}, 0.14, {ease: FlxEase.quadOut});
+
+			var shadow:FlxSprite = menuHighlights.members[i];
+			FlxTween.cancelTweensOf(shadow);
+			FlxTween.cancelTweensOf(shadow.scale);
+			var shadowWidth:Float = targetWidth * 0.952;
+			var shadowHeight:Float = targetHeight * 0.896;
+			var targetShadowScaleX:Float = shadowWidth / shadow.frameWidth;
+			var targetShadowScaleY:Float = shadowHeight / shadow.frameHeight;
+			var shadowX:Float = targetX + targetWidth * 0.083;
+			var shadowY:Float = targetY + targetHeight * 0.22;
+			FlxTween.tween(shadow, {x: shadowX, y: shadowY, alpha: selected ? 0.95 : 0}, duration, {ease: FlxEase.quadOut});
+			FlxTween.tween(shadow.scale, {x: targetShadowScaleX, y: targetShadowScaleY}, duration, {ease: FlxEase.quadOut});
+
+			var hitbox:FlxSprite = menuHitboxes.members[i];
+			FlxTween.cancelTweensOf(hitbox);
+			FlxTween.cancelTweensOf(hitbox.scale);
+			var targetHitboxWidth:Float = targetWidth * (1478.0 / 1673.0);
+			var targetHitboxHeight:Float = targetHeight * (231.0 / 322.0);
+			var targetHitboxScaleX:Float = targetHitboxWidth / hitbox.frameWidth;
+			var targetHitboxScaleY:Float = targetHitboxHeight / hitbox.frameHeight;
+			var hitboxX:Float = targetX + (targetWidth - targetHitboxWidth) * 0.5;
+			var hitboxY:Float = targetY + (targetHeight - targetHitboxHeight) * 0.5;
+			FlxTween.tween(hitbox, {x: hitboxX, y: hitboxY}, duration, {ease: FlxEase.quadOut});
+			FlxTween.tween(hitbox.scale, {x: targetHitboxScaleX, y: targetHitboxScaleY}, duration, {ease: FlxEase.quadOut});
+
+			var label:FlxText = cast menuItems.members[i];
+			FlxTween.cancelTweensOf(label);
+			FlxTween.cancelTweensOf(label.scale);
+			var targetLabelScale:Float = labelSizeFactors[slot] / labelSizeFactors[i];
+			var baseLabelWidth:Float = FlxG.width * widthFactors[i] - 48;
+			var targetLabelWidth:Float = baseLabelWidth * targetLabelScale;
+			var labelX:Float = targetX + (targetWidth - targetLabelWidth) * 0.5;
+			var labelY:Float = targetY + (targetHeight - label.height * targetLabelScale) * 0.5 - 2;
+			label.color = selected ? FlxColor.WHITE : 0xFF85838A;
+			label.alpha = selected ? 1 : 0.82;
+			FlxTween.tween(label, {x: labelX, y: labelY}, duration, {ease: FlxEase.quadOut});
+			FlxTween.tween(label.scale, {x: targetLabelScale, y: targetLabelScale}, duration, {ease: FlxEase.quadOut});
+		}
+
+		camFollow.setPosition(FlxG.width * 0.75, FlxG.height * 0.5);
+	}""",
         "update selection using original yellow sprite",
     )
 
