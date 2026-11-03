@@ -45,7 +45,8 @@ jobs:
 
           keywords = re.compile(
               r'menu|title|logo|button|prompt|story|freeplay|option|week|background|'
-              r'bg|cursor|confirm|select|start|intro|press|transition|trans|wipe|iris|fade|flash|'\n              r'close|open|exit|enter|eye|spike|sonic|logo',
+              r'bg|cursor|confirm|select|start|intro|press|transition|trans|wipe|iris|fade|flash|'
+              r'close|open|exit|enter|eye|spike|sonic|logo',
               re.I
           )
           report = [
