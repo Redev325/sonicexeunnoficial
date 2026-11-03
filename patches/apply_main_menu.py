@@ -75,7 +75,7 @@ def main() -> None:
     source = replace_once(
         source,
         "\t\tadd(magenta);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
-        "\t\tadd(magenta);\n\n\t\tvar menuLogo:FlxSprite = new FlxSprite(FlxG.width * 0.005, FlxG.height * 0.095);\n\t\tmenuLogo.loadGraphic(Paths.image('sonicexe-logo'));\n\t\tmenuLogo.setGraphicSize(Std.int(FlxG.width * 0.21));\n\t\tmenuLogo.updateHitbox();\n\t\tmenuLogo.antialiasing = ClientPrefs.data.antialiasing;\n\t\tmenuLogo.scrollFactor.set(0, 0);\n\t\tadd(menuLogo);\n\n\t\tmenuHighlights = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHighlights);\n\n\t\tmenuPlates = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuPlates);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuItems); // Keep the five English labels visible.\n\t\tmenuHitboxes = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHitboxes);",
+        "\t\tadd(magenta);\n\n\t\tvar menuLogo:FlxSprite = new FlxSprite(FlxG.width * 0.045, FlxG.height * 0.035);\n\t\tmenuLogo.loadGraphic(Paths.image('sonicexe-logo'));\n\t\tmenuLogo.setGraphicSize(Std.int(FlxG.width * 0.14));\n\t\tmenuLogo.updateHitbox();\n\t\tmenuLogo.antialiasing = ClientPrefs.data.antialiasing;\n\t\tmenuLogo.scrollFactor.set(0, 0);\n\t\tadd(menuLogo);\n\n\t\tmenuHighlights = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHighlights);\n\n\t\tmenuPlates = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuPlates);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuItems); // Keep the five English labels visible.\n\t\tmenuHitboxes = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHitboxes);",
         "menu plates behind menu labels",
     )
 
@@ -96,60 +96,69 @@ def main() -> None:
 \t\t\tmenuItem.updateHitbox();
 \t\t\tmenuItem.screenCenter(X);
 \t\t}"""
-    new_loop = """\t\tvar buttonX:Int = Std.int(FlxG.width * 0.505);
-\t\tvar buttonWidth:Int = Std.int(FlxG.width * 0.47);
-\t\tvar buttonHeight:Int = Std.int(buttonWidth * (322.0 / 1673.0));
-\t\tvar labelSize:Int = Std.int(FlxG.height * 0.065);
+    new_loop = """\t\tvar buttonLeftFactors:Array<Float> = [0.63, 0.545, 0.43, 0.545, 0.63];
+\t\tvar buttonWidthFactors:Array<Float> = [0.32, 0.39, 0.47, 0.39, 0.32];
+\t\tvar buttonTopFactors:Array<Float> = [0.085, 0.255, 0.455, 0.655, 0.845];
+\t\tvar labelSizeFactors:Array<Float> = [0.065, 0.072, 0.078, 0.072, 0.065];
+
 \t\tfor (i in 0...optionShit.length)
 \t\t{
-\t\t\tvar buttonY:Int = Std.int(FlxG.height * (0.06 + i * 0.18));
+\t\t\t// The reference uses a staggered hourglass arrangement instead of a straight column.
+\t\t\tvar buttonX:Int = Std.int(FlxG.width * buttonLeftFactors[i]);
+\t\t\tvar buttonWidth:Int = Std.int(FlxG.width * buttonWidthFactors[i]);
+\t\t\tvar buttonY:Int = Std.int(FlxG.height * buttonTopFactors[i]);
+\t\t\tvar buttonHeight:Int = Std.int(buttonWidth * (322.0 / 1673.0));
+\t\t\tvar labelSize:Int = Std.int(FlxG.height * labelSizeFactors[i]);
 
 \t\t\tvar shadowWidth:Int = Std.int(buttonWidth * (1833.0 / 1673.0));
-			var shadowHeight:Int = Std.int(buttonHeight * (324.0 / 322.0));
+\t\t\tvar shadowHeight:Int = Std.int(buttonHeight * (324.0 / 322.0));
 
-			// Layer 1: original yellow hover shadow, wider than the button frame.
-			var highlight:FlxSprite = new FlxSprite(
-				buttonX - (shadowWidth - buttonWidth) * 0.5,
-				buttonY - (shadowHeight - buttonHeight) * 0.5
-			);
-			highlight.loadGraphic(Paths.image('sonicexe-menu/options/shadow'));
-			highlight.antialiasing = false;
-			highlight.setGraphicSize(shadowWidth, shadowHeight);
-			highlight.updateHitbox();
-			highlight.scrollFactor.set(0, 0);
-			highlight.alpha = (i == curSelected) ? 0.95 : 0;
-			menuHighlights.add(highlight);
+\t\t\t// Layer 1: original yellow hover shadow, behind the frame.
+\t\t\tvar highlight:FlxSprite = new FlxSprite(
+\t\t\t\tbuttonX - (shadowWidth - buttonWidth) * 0.5,
+\t\t\t\tbuttonY - (shadowHeight - buttonHeight) * 0.5
+\t\t\t);
+\t\t\thighlight.loadGraphic(Paths.image('sonicexe-menu/options/shadow'));
+\t\t\thighlight.antialiasing = false;
+\t\t\thighlight.setGraphicSize(shadowWidth, shadowHeight);
+\t\t\thighlight.updateHitbox();
+\t\t\thighlight.scrollFactor.set(0, 0);
+\t\t\thighlight.alpha = (i == curSelected) ? 0.95 : 0;
+\t\t\tmenuHighlights.add(highlight);
 
-			// Layer 2: original black-backed purple frame.
-			var plate:FlxSprite = new FlxSprite(buttonX, buttonY);
-			plate.loadGraphic(Paths.image('sonicexe-menu/options/box'));
-			plate.antialiasing = false;
-			plate.setGraphicSize(buttonWidth, buttonHeight);
-			plate.updateHitbox();
-			plate.scrollFactor.set(0, 0);
-			menuPlates.add(plate);
+\t\t\t// Layer 2: original menu frame; idle rows are gray and the selected row is purple.
+\t\t\tvar plate:FlxSprite = new FlxSprite(buttonX, buttonY);
+\t\t\tplate.loadGraphic(Paths.image('sonicexe-menu/options/box'));
+\t\t\tplate.antialiasing = false;
+\t\t\tplate.setGraphicSize(buttonWidth, buttonHeight);
+\t\t\tplate.updateHitbox();
+\t\t\tplate.scrollFactor.set(0, 0);
+\t\t\tplate.color = (i == curSelected) ? 0xFF7D00B5 : 0xFF85838A;
+\t\t\tmenuPlates.add(plate);
 
-			var label:FlxText = new FlxText(buttonX + 24, buttonY + 8, buttonWidth - 48, menuLabel(i), labelSize);
-			label.antialiasing = false;
-			label.scrollFactor.set(0, 0);
-			label.setFormat(Paths.font('sonichud.ttf'), labelSize, FlxColor.GRAY, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-			label.y = buttonY + (buttonHeight - label.height) * 0.5 - 2;
-			menuItems.add(label);
+\t\t\t// Layer 3: English pixel-font labels centered in each original frame.
+\t\t\tvar label:FlxText = new FlxText(buttonX + 24, buttonY + 8, buttonWidth - 48, menuLabel(i), labelSize);
+\t\t\tlabel.antialiasing = false;
+\t\t\tlabel.scrollFactor.set(0, 0);
+\t\t\tlabel.setFormat(Paths.font('sonichud.ttf'), labelSize, FlxColor.GRAY, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\t\tlabel.color = (i == curSelected) ? FlxColor.WHITE : 0xFF85838A;
+\t\t\tlabel.y = buttonY + (buttonHeight - label.height) * 0.5 - 2;
+\t\t\tmenuItems.add(label);
 
-			// Layer 3: original invisible hitbox sprite (the red pixels in the source are not drawn).
-			var hitbox:FlxSprite = new FlxSprite();
-			hitbox.loadGraphic(Paths.image('sonicexe-menu/options/hitbox'));
-			hitbox.antialiasing = false;
-			hitbox.setGraphicSize(
-				Std.int(buttonWidth * (1478.0 / 1673.0)),
-				Std.int(buttonHeight * (231.0 / 322.0))
-			);
-			hitbox.updateHitbox();
-			hitbox.x = buttonX + (buttonWidth - hitbox.width) * 0.5;
-			hitbox.y = buttonY + (buttonHeight - hitbox.height) * 0.5;
-			hitbox.alpha = 0;
-			hitbox.scrollFactor.set(0, 0);
-			menuHitboxes.add(hitbox);
+\t\t\t// Layer 4: original invisible hitbox sprite.
+\t\t\tvar hitbox:FlxSprite = new FlxSprite();
+\t\t\thitbox.loadGraphic(Paths.image('sonicexe-menu/options/hitbox'));
+\t\t\thitbox.antialiasing = false;
+\t\t\thitbox.setGraphicSize(
+\t\t\t\tStd.int(buttonWidth * (1478.0 / 1673.0)),
+\t\t\t\tStd.int(buttonHeight * (231.0 / 322.0))
+\t\t\t);
+\t\t\thitbox.updateHitbox();
+\t\t\thitbox.x = buttonX + (buttonWidth - hitbox.width) * 0.5;
+\t\t\thitbox.y = buttonY + (buttonHeight - hitbox.height) * 0.5;
+\t\t\thitbox.alpha = 0;
+\t\t\thitbox.scrollFactor.set(0, 0);
+\t\t\tmenuHitboxes.add(hitbox);
 \t\t}"""
     source = replace_once(source, old_loop, new_loop, "replace standard icon row with angled pixel menu")
 
@@ -360,6 +369,7 @@ def main() -> None:
 \t\t\tvar label:FlxText = cast menuItems.members[i];
 \t\t\tlabel.color = selected ? FlxColor.WHITE : 0xFF85838A;
 \t\t\tlabel.alpha = selected ? 1 : 0.82;
+\t\t\tmenuPlates.members[i].color = selected ? 0xFF7D00B5 : 0xFF85838A;
 \t\t\tvar shadow:FlxSprite = menuHighlights.members[i];\n\t\t\tFlxTween.cancelTweensOf(shadow);\n\t\t\tFlxTween.tween(shadow, {alpha: selected ? 0.95 : 0}, 0.14, {ease: FlxEase.quadOut});
 \t\t}
 
