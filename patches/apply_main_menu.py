@@ -117,13 +117,15 @@ def main() -> None:
 \t\t\tvar buttonHeight:Int = Std.int(buttonWidth * (322.0 / 1673.0));
 \t\t\tvar labelSize:Int = Std.int(FlxG.height * labelSizeFactors[i]);
 
-\t\t\tvar shadowWidth:Int = Std.int(buttonWidth * (1833.0 / 1673.0));
-\t\t\tvar shadowHeight:Int = Std.int(buttonHeight * (324.0 / 322.0));
+\t\t\t// Match the reference's offset backplate: narrower and shorter than the
+\t\t\t// purple frame, shifted right and down so it only shows along those edges.
+\t\t\tvar shadowWidth:Int = Std.int(buttonWidth * 0.952);
+\t\t\tvar shadowHeight:Int = Std.int(buttonHeight * 0.896);
 
-\t\t\t// Layer 1: original yellow hover shadow, behind the frame.
+\t\t\t// Layer 1: original yellow shadow, offset down-right behind the frame.
 \t\t\tvar highlight:FlxSprite = new FlxSprite(
-\t\t\t\tbuttonX - (shadowWidth - buttonWidth) * 0.5,
-\t\t\t\tbuttonY - (shadowHeight - buttonHeight) * 0.5
+\t\t\t\tbuttonX + Std.int(buttonWidth * 0.083),
+\t\t\t\tbuttonY + Std.int(buttonHeight * 0.22)
 \t\t\t);
 \t\t\thighlight.loadGraphic(Paths.image('sonicexe-menu/options/shadow'));
 \t\t\thighlight.antialiasing = false;
