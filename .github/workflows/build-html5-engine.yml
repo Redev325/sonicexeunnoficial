@@ -308,15 +308,16 @@ jobs:
                       image.convert("RGBA").save(destination, format="PNG", optimize=True)
                   print(f"Prepared original settings artwork: {destination} ({destination.stat().st_size:,} bytes)")
 
-              # The original sanic.webp is an alpha-mask transition; tint its opaque pixels red.
-              transition_output = Path("engine/assets/shared/images/sonicexe-transitions/sanic-red.png")
+              # The original head.webp is the Sonic silhouette transition mask.
+              # Preserve its alpha exactly and tint the opaque pixels red for the wipe.
+              transition_output = Path("engine/assets/shared/images/sonicexe-transitions/head-red.png")
               transition_output.parent.mkdir(parents=True, exist_ok=True)
-              with z.open("assets/exe/transitions/sanic.webp") as source, Image.open(source) as image:
+              with z.open("assets/exe/transitions/head.webp") as source, Image.open(source) as image:
                   transition_rgba = image.convert("RGBA")
                   red_mask = Image.new("RGBA", transition_rgba.size, (235, 0, 0, 255))
                   red_mask.putalpha(transition_rgba.getchannel("A"))
                   red_mask.save(transition_output, format="PNG", optimize=True)
-              print(f"Prepared original Sonic-shaped red transition: {transition_output}")
+              print(f"Prepared original Sonic head red transition: {transition_output}")
 
               font_files = (
                   "vcr.ttf", "pixel-latin.ttf", "NiseSega.ttf", "NiseSegaSonic.TTF",
