@@ -282,7 +282,7 @@ def main() -> None:
 \t\tadd(darken);
 
 \t\tvar sonicWipe:FlxSprite = new FlxSprite();
-\t\tsonicWipe.loadGraphic(Paths.image('sonicexe-transitions/sanic-red'));
+\t\tsonicWipe.loadGraphic(Paths.image('sonicexe-transitions/head-red'));
 \t\tsonicWipe.setGraphicSize(Std.int(FlxG.width * 0.18), Std.int(FlxG.height * 0.18));
 \t\tsonicWipe.updateHitbox();
 \t\tsonicWipe.screenCenter();
