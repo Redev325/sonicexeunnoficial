@@ -27,6 +27,7 @@ jobs:
             --pattern 'unofficial-windows.1.zip.002'
           cat unofficial-windows.1.zip.001 unofficial-windows.1.zip.002 > ../release.zip
           cd ..
+          python3 -m pip install --user pillow
 
       - name: Inspect menu-related asset metadata and executable strings
         run: |
