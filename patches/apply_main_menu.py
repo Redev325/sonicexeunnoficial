@@ -27,7 +27,7 @@ def main() -> None:
     source = replace_once(
         source,
         "import lime.app.Application;",
-        "import lime.app.Application;",
+        "import lime.app.Application;\nimport flixel.util.FlxTimer;",
         "OpenFL drawing imports",
     )
 
@@ -210,6 +210,13 @@ def main() -> None:
         "sound test and extras menu actions",
     )
 
+    source = replace_once(
+        source,
+        "case 'options':\n\t\t\t\t\t\t\t\tMusicBeatState.switchState(new OptionsState());",
+        "case 'options':\n\t\t\t\t\t\t\t\tMusicBeatState.switchState(new SonicEXESettingsState());",
+        "open the original Sonic.EXE settings hub",
+    )
+
     # Fade the button outlines along with the selected labels when changing screens.
     source = replace_once(
         source,
@@ -245,7 +252,52 @@ def main() -> None:
         "fade original menu option sprites on transition",
     )
 
-    helper_methods = """\tfunction menuLabel(index:Int):String
+    helper_methods = """\tfunction flashSelectedButton():Void
+\t{
+\t\tvar label:FlxText = cast menuItems.members[curSelected];
+\t\tvar plate:FlxSprite = menuPlates.members[curSelected];
+\t\tvar shadow:FlxSprite = menuHighlights.members[curSelected];
+\t\tvar flashes:Int = 0;
+\t\tnew FlxTimer().start(0.075, function(timer:FlxTimer)
+\t\t{
+\t\t\tvar redFlash:Bool = (flashes % 2 == 0);
+\t\t\tlabel.color = redFlash ? 0xFFFF2929 : FlxColor.WHITE;
+\t\t\tplate.alpha = redFlash ? 0.28 : 1;
+\t\t\tshadow.alpha = redFlash ? 0.18 : 0.95;
+\t\t\tflashes++;
+\t\t\tif (flashes >= 12)
+\t\t\t{
+\t\t\t\tlabel.color = FlxColor.WHITE;
+\t\t\t\tplate.alpha = 1;
+\t\t\t\tshadow.alpha = 0.95;
+\t\t\t}
+\t\t}, 12);
+\t}
+
+\tfunction beginSonicConfirmWipe():Void
+\t{
+\t\tvar darken:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
+\t\tdarken.scrollFactor.set(0, 0);
+\t\tdarken.alpha = 0;
+\t\tadd(darken);
+
+\t\tvar sonicWipe:FlxSprite = new FlxSprite();
+\t\tsonicWipe.loadGraphic(Paths.image('sonicexe-transitions/sanic-red'));
+\t\tsonicWipe.setGraphicSize(Std.int(FlxG.width * 0.18), Std.int(FlxG.height * 0.18));
+\t\tsonicWipe.updateHitbox();
+\t\tsonicWipe.screenCenter();
+\t\tsonicWipe.scrollFactor.set(0, 0);
+\t\tsonicWipe.alpha = 0;
+\t\tadd(sonicWipe);
+
+\t\tvar targetScaleX:Float = sonicWipe.scale.x * 6.4;
+\t\tvar targetScaleY:Float = sonicWipe.scale.y * 6.4;
+\t\tFlxTween.tween(sonicWipe, {alpha: 1}, 0.12, {ease: FlxEase.quadOut});
+\t\tFlxTween.tween(sonicWipe.scale, {x: targetScaleX, y: targetScaleY}, 0.78, {ease: FlxEase.quadIn});
+\t\tFlxTween.tween(darken, {alpha: 1}, 0.34, {startDelay: 0.48, ease: FlxEase.quadIn});
+\t}
+
+\tfunction menuLabel(index:Int):String
 \t{
 \t\treturn switch (index)
 \t\t{
@@ -416,6 +468,9 @@ def main() -> None:
         """\t\t\t\telse
 \t\t\t\t{
 \t\t\t\t\tselectedSomethin = true;
+\t\t\t\t\tsetMenuBackdropVisible(false);
+\t\t\t\t\tflashSelectedButton();
+\t\t\t\t\tbeginSonicConfirmWipe();
 
 \t\t\t\t\tif (ClientPrefs.data.flashing)""",
         """\t\t\t\telse
