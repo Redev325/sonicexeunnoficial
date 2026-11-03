@@ -26,7 +26,7 @@ def patch_title_state(source: str) -> str:
         "var swagShader:ColorSwap = null;",
         "var swagShader:ColorSwap = null;\n"
         "\tvar postIntroGroup:FlxGroup;\n"
-        "\tvar postIntroPlaying:Bool = false;\n\tvar sonicTitleLogo:FlxSprite;\n\tvar sonicLogoBaseY:Float = 0;\n\tvar sonicLogoFloatTime:Float = 0;",
+        "\tvar postIntroPlaying:Bool = false;\n\tvar sonicTitleLogo:FlxSprite;\n\tvar sonicTitleSpikes:FlxSprite;\n\tvar sonicLogoBaseY:Float = 0;\n\tvar sonicLogoFloatTime:Float = 0;",
         "postIntro state fields",
     )
 
@@ -48,7 +48,7 @@ def patch_title_state(source: str) -> str:
 
 \t\t// Use the original, already-composited Sonic.EXE logo artwork.
 \t\t// The separate ring/eyes/bandana/sonic files are component layers, not centered standalone sprites.
-\t\tvar sonicTitleLogo:FlxSprite = new FlxSprite();
+\t\tsonicTitleLogo = new FlxSprite();
 \t\tsonicTitleLogo.loadGraphic(Paths.image('sonicexe-logo'));
 \t\tsonicTitleLogo.setGraphicSize(Std.int(FlxG.width * 0.50));
 \t\tsonicTitleLogo.updateHitbox();
@@ -59,7 +59,7 @@ def patch_title_state(source: str) -> str:
 \t\tsonicTitleLogo.scrollFactor.set(0, 0);
 \t\tpostIntroGroup.add(sonicTitleLogo);
 
-\t\t// The original 1280x720 atlas already includes the prompt's placement.
+\t\t// Separate original spiked trim under the title emblem.\n\t\tsonicTitleSpikes = new FlxSprite();\n\t\tsonicTitleSpikes.loadGraphic(Paths.image('sonicexe-title/spikesdown'));\n\t\tsonicTitleSpikes.setGraphicSize(Std.int(sonicTitleLogo.width));\n\t\tsonicTitleSpikes.updateHitbox();\n\t\tsonicTitleSpikes.x = sonicTitleLogo.x;\n\t\tsonicTitleSpikes.y = sonicTitleLogo.y + sonicTitleLogo.height - sonicTitleSpikes.height * 0.72;\n\t\tsonicTitleSpikes.antialiasing = ClientPrefs.data.antialiasing;\n\t\tsonicTitleSpikes.scrollFactor.set(0, 0);\n\t\tpostIntroGroup.add(sonicTitleSpikes);\n\n\t\t// The original 1280x720 atlas already includes the prompt's placement.
 \t\ttitleText = new FlxSprite(0, 0);
 \t\ttitleText.frames = Paths.getSparrowAtlas('sonicexe-title/titleEnterNEW');
 \t\ttitleText.animation.addByPrefix('idle', 'Press Enter to Begin instance', 24, true);
@@ -159,7 +159,7 @@ def patch_title_state(source: str) -> str:
     title_logo_update = """\t\tif (sonicTitleLogo != null && postIntroGroup != null && postIntroGroup.visible)
 \t\t{
 \t\t\tsonicLogoFloatTime += elapsed;
-\t\t\tsonicTitleLogo.y = sonicLogoBaseY + Math.sin(sonicLogoFloatTime * 1.6) * 10;
+\t\t\tvar floatOffset:Float = Math.sin(sonicLogoFloatTime * 1.6) * 10;\n\t\t\tsonicTitleLogo.y = sonicLogoBaseY + floatOffset;\n\t\t\tif (sonicTitleSpikes != null)\n\t\t\t\tsonicTitleSpikes.y = sonicLogoBaseY + floatOffset + sonicTitleLogo.height - sonicTitleSpikes.height * 0.72;
 \t\t}
 
 """
