@@ -463,24 +463,9 @@ def main() -> None:
         "hide menu video when returning to title screen",
     )
 
-    source = replace_once(
-        source,
-        """\t\t\t\telse
-\t\t\t\t{
-\t\t\t\t\tselectedSomethin = true;
-\t\t\t\t\tsetMenuBackdropVisible(false);
-\t\t\t\t\tflashSelectedButton();
-\t\t\t\t\tbeginSonicConfirmWipe();
-
-\t\t\t\t\tif (ClientPrefs.data.flashing)""",
-        """\t\t\t\telse
-\t\t\t\t{
-\t\t\t\t\tselectedSomethin = true;
-\t\t\t\t\tsetMenuBackdropVisible(false);
-
-\t\t\t\t\tif (ClientPrefs.data.flashing)""",
-        "hide menu video when opening another menu",
-    )
+    # The confirmation hook above already hides the menu backdrop before starting
+    # the red label/plate flash and Sonic-shaped wipe. Do not patch this same else
+    # branch a second time; that would erase the confirmation hook.
 
     source = replace_once(
         source,
