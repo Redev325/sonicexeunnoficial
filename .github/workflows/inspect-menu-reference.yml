@@ -198,6 +198,7 @@ jobs:
               "assets/exe/mainmenu/",
               "assets/exe/title/",
               "assets/exe/options/",
+              "assets/exe/transitions/",
           )
           explicit_paths = {
               "assets/exe/backButton.webp",
