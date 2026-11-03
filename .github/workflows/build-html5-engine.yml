@@ -374,13 +374,19 @@ jobs:
             #sonicexe-menu-bg {
               position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
               object-fit: contain; display: none; z-index: 0;
-              pointer-events: none; mix-blend-mode: screen;
+              pointer-events: none;
             }
+            /* The OpenFL canvas clears to black on some HTML5 browsers even when
+               FlxG.camera.bgColor is transparent. Blend the complete game layer
+               over the actual Sonic.EXE MP4 so black clear pixels reveal the video. */
             #openfl-content {
               position: relative; z-index: 1; width: 100%; height: 100%;
               background: transparent !important;
+              mix-blend-mode: screen;
             }
-            #openfl-content canvas { background: transparent !important; }
+            #openfl-content canvas {
+              background: transparent !important;
+            }
             #sonicexe-postintro-video {
               position: fixed; inset: 0; width: 100vw; height: 100vh;
               object-fit: contain; display: none; z-index: 5;
