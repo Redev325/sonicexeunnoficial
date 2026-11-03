@@ -397,6 +397,25 @@ def main() -> None:
         "allow mouse clicks on original menu hitboxes",
     )
 
+    # Animate the selected label and both layers before the engine switches screens.
+    source = replace_once(
+        source,
+        """\t\t\t\telse
+\t\t\t\t{
+\t\t\t\t\tselectedSomethin = true;
+
+\t\t\t\t\tif (ClientPrefs.data.flashing)""",
+        """\t\t\t\telse
+\t\t\t\t{
+\t\t\t\t\tselectedSomethin = true;
+\t\t\t\t\tsetMenuBackdropVisible(false);
+\t\t\t\t\tflashSelectedButton();
+\t\t\t\t\tbeginSonicConfirmWipe();
+
+\t\t\t\t\tif (ClientPrefs.data.flashing)""",
+        "start red button confirmation and Sonic-shaped transition",
+    )
+
     # Rebuild menu selection colors and plate treatment whenever the selected row changes.
     source = replace_once(
         source,
