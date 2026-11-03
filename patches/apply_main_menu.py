@@ -54,6 +54,13 @@ def main() -> None:
 
     source = replace_once(
         source,
+        "public static var curSelected:Int = 0;",
+        "public static var curSelected:Int = 2;",
+        "start on the reference's Story Mode selection",
+    )
+
+    source = replace_once(
+        source,
         "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;",
         "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;\n\tvar menuHighlights:FlxTypedGroup<FlxSprite>;\n\tvar menuPlates:FlxTypedGroup<FlxSprite>;\n\tvar menuHitboxes:FlxTypedGroup<FlxSprite>;\n\tvar lastMouseX:Float = -99999;\n\tvar lastMouseY:Float = -99999;",
         "menu button plate group",
