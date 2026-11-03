@@ -555,6 +555,8 @@ jobs:
             };
             window.setSonicEXEMenuVideo = function(show) {
               var video = document.getElementById("sonicexe-menu-bg");
+              var titleSpikes = document.getElementById("sonicexe-title-spikes");
+              if (show && titleSpikes) titleSpikes.style.display = "none";
               if (!video) return;
               video.style.display = show ? "block" : "none";
               if (show) {
