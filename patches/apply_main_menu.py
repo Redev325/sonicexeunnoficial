@@ -456,10 +456,16 @@ def main() -> None:
 \t\t\tlabel.alpha = selected ? 1 : 0.82;
 \t\t\tvar plate:FlxSprite = menuPlates.members[i];
 \t\t\tplate.loadGraphic(Paths.image(selected ? 'sonicexe-menu/options/box' : 'sonicexe-menu/options/box-idle'));
-\t\t\tplate.color = FlxColor.WHITE;
-\t\t\tmenuPlates.members[i].color = selected ? 0xFF7D00B5 : 0xFF85838A;
-\t\t\tvar shadow:FlxSprite = menuHighlights.members[i];\n\t\t\tFlxTween.cancelTweensOf(shadow);\n\t\t\tFlxTween.tween(shadow, {alpha: selected ? 0.95 : 0}, 0.14, {ease: FlxEase.quadOut});
-\t\t}
+\t\t\tplate.color = selected ? 0xFF7D00B5 : 0xFF85838A;
+\t\t\t// Elastic selection pop, synchronized across the original frame and label.
+\t\t\tFlxTween.cancelTweensOf(plate.scale);
+\t\t\tFlxTween.cancelTweensOf(label.scale);
+\t\t\tvar targetScale:Float = selected ? 1.035 : 1.0;
+\t\t\tFlxTween.tween(plate.scale, {x: targetScale, y: targetScale}, 0.13,
+\t\t\t\t{ease: selected ? FlxEase.backOut : FlxEase.quadOut});
+\t\t\tFlxTween.tween(label.scale, {x: targetScale, y: targetScale}, 0.13,
+\t\t\t\t{ease: selected ? FlxEase.backOut : FlxEase.quadOut});
+\t\t\tvar shadow:FlxSprite = menuHighlights.members[i];\n\t\t\tFlxTween.cancelTweensOf(shadow);\n\t\t\tFlxTween.tween(shadow, {alpha: selected ? 0.95 : 0}, 0.14, {ease: FlxEase.quadOut});\t\t}
 
 \t\tcamFollow.setPosition(FlxG.width * 0.75, FlxG.height * 0.5);
 \t}""",
