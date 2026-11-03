@@ -453,7 +453,7 @@ def main() -> None:
 \t\t\tvar selected:Bool = (i == curSelected);
 \t\t\tvar label:FlxText = cast menuItems.members[i];
 \t\t\tlabel.color = selected ? FlxColor.WHITE : 0xFF85838A;
-\t\t\tlabel.alpha = selected ? 1 : 0.82;
+\t\t\tFlxTween.cancelTweensOf(label);\n\t\t\tlabel.alpha = selected ? 0.48 : 0.82;\n\t\t\tFlxTween.tween(label, {alpha: selected ? 1 : 0.82}, 0.16, {ease: FlxEase.quadOut});
 \t\t\tvar plate:FlxSprite = menuPlates.members[i];
 \t\t\t// Swapping idle/selected art resets its bitmap dimensions. Restore the
 \t\t\t// original layout width and height every time selection changes.
@@ -467,7 +467,7 @@ def main() -> None:
 \t\t\t// The original PNGs already contain their intended colors.
 \t\t\tplate.color = FlxColor.WHITE;
 \t\t\tplate.alpha = 1;
-\t\t\tvar shadow:FlxSprite = menuHighlights.members[i];\n\t\t\tFlxTween.cancelTweensOf(shadow);\n\t\t\tFlxTween.tween(shadow, {alpha: selected ? 0.95 : 0}, 0.14, {ease: FlxEase.quadOut});\t\t}
+\t\t\tFlxTween.cancelTweensOf(plate);\n\t\t\tplate.alpha = selected ? 0.72 : 1;\n\t\t\tFlxTween.tween(plate, {alpha: 1}, 0.14, {ease: FlxEase.quadOut});\n\t\t\tvar shadow:FlxSprite = menuHighlights.members[i];\n\t\t\tFlxTween.cancelTweensOf(shadow);\n\t\t\tvar shadowBaseY:Float = plate.y + plate.height * 0.22;\n\t\t\tshadow.y = shadowBaseY + (selected ? 7 : 0);\n\t\t\tFlxTween.tween(shadow, {alpha: selected ? 0.95 : 0, y: shadowBaseY}, 0.18, {ease: FlxEase.quadOut});\t\t}
 
 \t\tcamFollow.setPosition(FlxG.width * 0.75, FlxG.height * 0.5);
 \t}""",
