@@ -62,7 +62,7 @@ def main() -> None:
     source = replace_once(
         source,
         "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;",
-        "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;\n\tvar menuHighlights:FlxTypedGroup<FlxSprite>;\n\tvar menuPlates:FlxTypedGroup<FlxSprite>;\n\tvar menuHitboxes:FlxTypedGroup<FlxSprite>;\n\tvar lastMouseX:Float = -99999;\n\tvar lastMouseY:Float = -99999;",
+        "var magenta:FlxSprite;\n\tvar camFollow:FlxObject;\n\tvar menuHighlights:FlxTypedGroup<FlxSprite>;\n\tvar menuPlates:FlxTypedGroup<FlxSprite>;\n\tvar menuHitboxes:FlxTypedGroup<FlxSprite>;\n\tvar lastMouseX:Float = -99999;\n\tvar lastMouseY:Float = -99999;\n\tvar sonicMenuLogo:FlxSprite;\n\tvar sonicMenuLogoBaseY:Float = 0;\n\tvar sonicMenuFloatTime:Float = 0;",
         "menu button plate group",
     )
 
@@ -82,7 +82,7 @@ def main() -> None:
     source = replace_once(
         source,
         "\t\tadd(magenta);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();",
-        "\t\tadd(magenta);\n\n\t\tvar menuLogo:FlxSprite = new FlxSprite(FlxG.width * 0.045, FlxG.height * 0.035);\n\t\tmenuLogo.loadGraphic(Paths.image('sonicexe-logo'));\n\t\tmenuLogo.setGraphicSize(Std.int(FlxG.width * 0.14));\n\t\tmenuLogo.updateHitbox();\n\t\tmenuLogo.antialiasing = ClientPrefs.data.antialiasing;\n\t\tmenuLogo.scrollFactor.set(0, 0);\n\t\tadd(menuLogo);\n\n\t\tmenuHighlights = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHighlights);\n\n\t\tmenuPlates = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuPlates);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuItems); // Keep the five English labels visible.\n\t\tmenuHitboxes = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHitboxes);",
+        "\t\tadd(magenta);\n\n\t\tsonicMenuLogo = new FlxSprite(FlxG.width * 0.045, FlxG.height * 0.035);\n\t\tsonicMenuLogo.loadGraphic(Paths.image('sonicexe-logo'));\n\t\tsonicMenuLogo.setGraphicSize(Std.int(FlxG.width * 0.14));\n\t\tsonicMenuLogo.updateHitbox();\n\t\tsonicMenuLogo.antialiasing = ClientPrefs.data.antialiasing;\n\t\tsonicMenuLogo.scrollFactor.set(0, 0);\n\t\tsonicMenuLogoBaseY = sonicMenuLogo.y;\n\t\tadd(sonicMenuLogo);\n\n\t\tmenuHighlights = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHighlights);\n\n\t\tmenuPlates = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuPlates);\n\n\t\tmenuItems = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuItems); // Keep the five English labels visible.\n\t\tmenuHitboxes = new FlxTypedGroup<FlxSprite>();\n\t\tadd(menuHitboxes);",
         "menu plates behind menu labels",
     )
 
@@ -135,12 +135,12 @@ def main() -> None:
 
 \t\t\t// Layer 2: original menu frame; idle rows are gray and the selected row is purple.
 \t\t\tvar plate:FlxSprite = new FlxSprite(buttonX, buttonY);
-\t\t\tplate.loadGraphic(Paths.image('sonicexe-menu/options/box'));
+\t\t\tplate.loadGraphic(Paths.image((i == curSelected) ? 'sonicexe-menu/options/box' : 'sonicexe-menu/options/box-idle'));
 \t\t\tplate.antialiasing = false;
 \t\t\tplate.setGraphicSize(buttonWidth, buttonHeight);
 \t\t\tplate.updateHitbox();
 \t\t\tplate.scrollFactor.set(0, 0);
-\t\t\tplate.color = (i == curSelected) ? 0xFF7D00B5 : 0xFF85838A;
+\t\t\tplate.color = FlxColor.WHITE;
 \t\t\tmenuPlates.add(plate);
 
 \t\t\t// Layer 3: English pixel-font labels centered in each original frame.
@@ -281,6 +281,11 @@ def main() -> None:
 \t\tif (FlxG.sound.music.volume < 0.8)""",
         """\toverride function update(elapsed:Float)
 \t{
+\t\tif (sonicMenuLogo != null)
+\t\t{
+\t\t\tsonicMenuFloatTime += elapsed;
+\t\t\tsonicMenuLogo.y = sonicMenuLogoBaseY + Math.sin(sonicMenuFloatTime * 1.6) * 9;
+\t\t}
 \t\tif (FlxG.sound.music.volume < 0.8)""",
         "use original looping MP4 menu background",
     )
@@ -376,6 +381,9 @@ def main() -> None:
 \t\t\tvar label:FlxText = cast menuItems.members[i];
 \t\t\tlabel.color = selected ? FlxColor.WHITE : 0xFF85838A;
 \t\t\tlabel.alpha = selected ? 1 : 0.82;
+\t\t\tvar plate:FlxSprite = menuPlates.members[i];
+\t\t\tplate.loadGraphic(Paths.image(selected ? 'sonicexe-menu/options/box' : 'sonicexe-menu/options/box-idle'));
+\t\t\tplate.color = FlxColor.WHITE;
 \t\t\tmenuPlates.members[i].color = selected ? 0xFF7D00B5 : 0xFF85838A;
 \t\t\tvar shadow:FlxSprite = menuHighlights.members[i];\n\t\t\tFlxTween.cancelTweensOf(shadow);\n\t\t\tFlxTween.tween(shadow, {alpha: selected ? 0.95 : 0}, 0.14, {ease: FlxEase.quadOut});
 \t\t}

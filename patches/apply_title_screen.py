@@ -26,7 +26,7 @@ def patch_title_state(source: str) -> str:
         "var swagShader:ColorSwap = null;",
         "var swagShader:ColorSwap = null;\n"
         "\tvar postIntroGroup:FlxGroup;\n"
-        "\tvar postIntroPlaying:Bool = false;",
+        "\tvar postIntroPlaying:Bool = false;\n\tvar sonicTitleLogo:FlxSprite;\n\tvar sonicLogoBaseY:Float = 0;\n\tvar sonicLogoFloatTime:Float = 0;",
         "postIntro state fields",
     )
 
@@ -48,15 +48,16 @@ def patch_title_state(source: str) -> str:
 
 \t\t// Use the original, already-composited Sonic.EXE logo artwork.
 \t\t// The separate ring/eyes/bandana/sonic files are component layers, not centered standalone sprites.
-\t\tvar titleLogo:FlxSprite = new FlxSprite();
-\t\ttitleLogo.loadGraphic(Paths.image('sonicexe-logo'));
-\t\ttitleLogo.setGraphicSize(Std.int(FlxG.width * 0.50));
-\t\ttitleLogo.updateHitbox();
-\t\ttitleLogo.x = (FlxG.width - titleLogo.width) * 0.5;
-\t\ttitleLogo.y = FlxG.height * 0.075;
-\t\ttitleLogo.antialiasing = ClientPrefs.data.antialiasing;
-\t\ttitleLogo.scrollFactor.set(0, 0);
-\t\tpostIntroGroup.add(titleLogo);
+\t\tvar sonicTitleLogo:FlxSprite = new FlxSprite();
+\t\tsonicTitleLogo.loadGraphic(Paths.image('sonicexe-logo'));
+\t\tsonicTitleLogo.setGraphicSize(Std.int(FlxG.width * 0.50));
+\t\tsonicTitleLogo.updateHitbox();
+\t\tsonicTitleLogo.x = (FlxG.width - sonicTitleLogo.width) * 0.5;
+\t\tsonicTitleLogo.y = FlxG.height * 0.075;
+\t\tsonicLogoBaseY = sonicTitleLogo.y;
+\t\tsonicTitleLogo.antialiasing = ClientPrefs.data.antialiasing;
+\t\tsonicTitleLogo.scrollFactor.set(0, 0);
+\t\tpostIntroGroup.add(sonicTitleLogo);
 
 \t\t// The original 1280x720 atlas already includes the prompt's placement.
 \t\ttitleText = new FlxSprite(0, 0);
@@ -155,6 +156,13 @@ def patch_title_state(source: str) -> str:
         "startIntro",
     )
 
+    title_logo_update = """\t\tif (sonicTitleLogo != null && postIntroGroup != null && postIntroGroup.visible)
+\t\t{
+\t\t\tsonicLogoFloatTime += elapsed;
+\t\t\tsonicTitleLogo.y = sonicLogoBaseY + Math.sin(sonicLogoFloatTime * 1.6) * 10;
+\t\t}
+
+"""
     post_intro_update = """\t\tif (postIntroPlaying)
 \t\t{
 \t\t\tif (postIntroVideoFinished() || pressedEnter)
@@ -168,7 +176,7 @@ def patch_title_state(source: str) -> str:
     source = replace_once(
         source,
         "\t\tif (newTitle) {",
-        post_intro_update + "\t\tif (newTitle) {",
+        post_intro_update + title_logo_update + "\t\tif (newTitle) {",
         "postIntro video completion and skip handling",
     )
 
