@@ -455,16 +455,18 @@ def main() -> None:
 \t\t\tlabel.color = selected ? FlxColor.WHITE : 0xFF85838A;
 \t\t\tlabel.alpha = selected ? 1 : 0.82;
 \t\t\tvar plate:FlxSprite = menuPlates.members[i];
+\t\t\t// Swapping idle/selected art resets its bitmap dimensions. Restore the
+\t\t\t// original layout width and height every time selection changes.
+\t\t\tvar plateWidth:Int = Std.int(plate.width);
+\t\t\tvar plateX:Float = plate.x;
+\t\t\tvar plateY:Float = plate.y;
 \t\t\tplate.loadGraphic(Paths.image(selected ? 'sonicexe-menu/options/box' : 'sonicexe-menu/options/box-idle'));
-\t\t\tplate.color = selected ? 0xFF7D00B5 : 0xFF85838A;
-\t\t\t// Elastic selection pop, synchronized across the original frame and label.
-\t\t\tFlxTween.cancelTweensOf(plate.scale);
-\t\t\tFlxTween.cancelTweensOf(label.scale);
-\t\t\tvar targetScale:Float = selected ? 1.035 : 1.0;
-\t\t\tFlxTween.tween(plate.scale, {x: targetScale, y: targetScale}, 0.13,
-\t\t\t\t{ease: selected ? FlxEase.backOut : FlxEase.quadOut});
-\t\t\tFlxTween.tween(label.scale, {x: targetScale, y: targetScale}, 0.13,
-\t\t\t\t{ease: selected ? FlxEase.backOut : FlxEase.quadOut});
+\t\t\tplate.setGraphicSize(plateWidth, Std.int(plateWidth * (322.0 / 1673.0)));
+\t\t\tplate.updateHitbox();
+\t\t\tplate.setPosition(plateX, plateY);
+\t\t\t// The original PNGs already contain their intended colors.
+\t\t\tplate.color = FlxColor.WHITE;
+\t\t\tplate.alpha = 1;
 \t\t\tvar shadow:FlxSprite = menuHighlights.members[i];\n\t\t\tFlxTween.cancelTweensOf(shadow);\n\t\t\tFlxTween.tween(shadow, {alpha: selected ? 0.95 : 0}, 0.14, {ease: FlxEase.quadOut});\t\t}
 
 \t\tcamFollow.setPosition(FlxG.width * 0.75, FlxG.height * 0.5);
