@@ -445,17 +445,17 @@ jobs:
               object-fit: cover; display: none; z-index: 2;
               pointer-events: none; mix-blend-mode: screen;
             }
-            /* Original black downward spikes are a separate overlay so the
-               title video screen blend cannot wash their black pixels away. */
+            /* Original black spikes rise from the bottom edge of the title screen.
+               Keep this separate from the blended title video so their black pixels
+               remain visible against the animated background. */
             #sonicexe-title-spikes {
-              position: fixed; left: 0; top: -12.8vh; width: 100vw; height: auto;
+              position: fixed; left: 0; bottom: -12.8vh; width: 100vw; height: auto;
               display: none; z-index: 4; pointer-events: none;
-              transform: scaleY(-1); transform-origin: center center;
-              animation: sonicexe-title-spikes-drop 1.25s ease-in-out infinite alternate;
+              animation: sonicexe-title-spikes-rise 1.25s ease-in-out infinite alternate;
             }
-            @keyframes sonicexe-title-spikes-drop {
-              from { top: -12.8vh; }
-              to { top: -11.2vh; }
+            @keyframes sonicexe-title-spikes-rise {
+              from { bottom: -12.8vh; }
+              to { bottom: -11.2vh; }
             }
           </style>
           <script>
