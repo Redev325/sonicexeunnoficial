@@ -240,6 +240,46 @@ jobs:
           print(f"Extracted {len(copied)} original UI assets.")
           PY
 
+      - name: Build original UI asset contact sheet
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageDraw, ImageFont
+
+          root = Path("original-game-ui-assets/assets/exe")
+          files = []
+          for folder in ("title", "mainmenu"):
+              base = root / folder
+              if base.exists():
+                  files.extend(path for path in base.rglob("*") if path.suffix.casefold() in {".webp", ".png", ".jpg", ".jpeg"})
+
+          cell_w, cell_h, columns = 340, 270, 3
+          rows = max(1, (len(files) + columns - 1) // columns)
+          sheet = Image.new("RGB", (columns * cell_w, rows * cell_h), "#242424")
+          draw = ImageDraw.Draw(sheet)
+          try:
+              font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 13)
+          except Exception:
+              font = ImageFont.load_default()
+
+          for index, path in enumerate(sorted(files)):
+              with Image.open(path) as source:
+                  rgba = source.convert("RGBA")
+                  size = rgba.size
+                  rgba.thumbnail((cell_w - 24, cell_h - 58), Image.Resampling.LANCZOS)
+                  x, y = (index % columns) * cell_w, (index // columns) * cell_h
+                  preview = Image.new("RGBA", rgba.size, "#555555")
+                  preview.alpha_composite(rgba)
+                  sheet.paste(preview.convert("RGB"), (x + (cell_w - rgba.width) // 2, y + 8))
+                  label = f"{path.relative_to(root)} [{size[0]}x{size[1]}]"
+                  draw.text((x + 8, y + cell_h - 44), label[:52], fill="white", font=font)
+                  draw.text((x + 8, y + cell_h - 25), label[52:104], fill="#cccccc", font=font)
+
+          output = Path("sonicexe-original-ui-contact-sheet.jpg")
+          sheet.save(output, quality=90)
+          print(f"Created {output} for {len(files)} original menu/title images.")
+          PY
+
       - name: Upload original menu artwork
         uses: actions/upload-artifact@v4
         with:
@@ -247,5 +287,6 @@ jobs:
           path: |
             menu-reference-report.txt
             original-game-ui-assets/
+            sonicexe-original-ui-contact-sheet.jpg
           if-no-files-found: error
           retention-days: 7
