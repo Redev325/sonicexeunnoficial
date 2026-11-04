@@ -385,7 +385,7 @@ jobs:
               # standard sounds directory so Paths.sound() resolves the names.
               sound_dir = Path("engine/assets/shared/sounds")
               sound_dir.mkdir(parents=True, exist_ok=True)
-              for sound_name in ("sonic.ogg", "menulaugh.ogg", "menumomentclick.ogg", "menuConfirm.ogg"):
+              for sound_name in ("sonic.ogg", "menulaugh.ogg", "menumomentclick.ogg", "menuConfirm.ogg", "scrollmenu.ogg"):
                   output = sound_dir / sound_name
                   with z.open("assets/shared/sounds/" + sound_name) as source, output.open("wb") as target:
                       shutil.copyfileobj(source, target)
@@ -425,7 +425,7 @@ jobs:
         run: |
           sound_dir="engine/assets/shared/sounds"
           mkdir -p "$sound_dir"
-          for name in sonic menulaugh menumomentclick menuConfirm; do
+          for name in sonic menulaugh menumomentclick menuConfirm scrollmenu; do
             source="$sound_dir/$name.ogg"
             output="$sound_dir/$name.mp3"
             test -s "$source"

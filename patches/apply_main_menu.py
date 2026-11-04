@@ -548,7 +548,7 @@ def main() -> None:
     source = replace_once(
         source,
         "FlxG.sound.play(Paths.sound('scrollMenu'));",
-        "FlxG.sound.play(Paths.sound('menumomentclick'));",
+        "FlxG.sound.play(Paths.sound('scrollmenu'));",
         "use original Sonic.EXE hover sound during menu navigation",
     )
     source = replace_once(
