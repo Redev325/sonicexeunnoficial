@@ -52,18 +52,10 @@ def patch_freeplay(path: Path) -> None:
 
     source = replace_once(
         source,
+        'var leText:String = "Press SPACE to listen to the Song / Press CTRL to open the Gameplay Changers Menu / Press RESET to Reset your Score and Accuracy."; ',
         'var leText:String = sonicExeCustomSongMode ? "SPACE: PREVIEW TRACK  /  ENTER: PLAY  /  LEFT OR RIGHT: DIFFICULTY  /  ESC: BACK" : "SPACE: PREVIEW  /  ENTER: PLAY  /  CTRL: GAMEPLAY CHANGERS  /  RESET: CLEAR SCORE";',
-        'var leText:String = sonicExeCustomSongMode ? "SPACE: PREVIEW TRACK  /  ENTER: PLAY  /  LEFT OR RIGHT: DIFFICULTY  /  ESC: BACK" : "SPACE: PREVIEW  /  ENTER: PLAY  /  CTRL: GAMEPLAY CHANGERS  /  RESET: CLEAR SCORE"; ',
         "Freeplay versus Sound Test control hints",
-    ) if 'var leText:String = "Press SPACE to listen to the Song / Press CTRL to open the Gameplay Changers Menu / Press RESET to Reset your Score and Accuracy."; ' in source else source
-
-    if 'var leText:String = "Press SPACE to listen to the Song / Press CTRL to open the Gameplay Changers Menu / Press RESET to Reset your Score and Accuracy."; ' not in source:
-        source = replace_once(
-            source,
-            'var leText:String = "Press SPACE to listen to the Song / Press CTRL to open the Gameplay Changers Menu / Press RESET to Reset your Score and Accuracy."; ',
-            'var leText:String = sonicExeCustomSongMode ? "SPACE: PREVIEW TRACK  /  ENTER: PLAY  /  LEFT OR RIGHT: DIFFICULTY  /  ESC: BACK" : "SPACE: PREVIEW  /  ENTER: PLAY  /  CTRL: GAMEPLAY CHANGERS  /  RESET: CLEAR SCORE"; ',
-            "Freeplay versus Sound Test control hints",
-        )
+    )
 
     source = replace_once(
         source,
