@@ -30,6 +30,17 @@ jobs:
       - name: Check out this repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js 25
+        uses: actions/setup-node@v7
+        with:
+          node-version: "25"
+          package-manager-cache: false
+
+      - name: Verify Node.js runtime
+        run: |
+          node --version
+          node -e "if (process.versions.node.split('.')[0] !== '25') process.exit(1)"
+
       - name: Install system packages
         run: |
           sudo apt-get update
@@ -598,20 +609,41 @@ jobs:
                   shutil.copyfileobj(source, target)
               print(f"Extracted original Options music source ({options_music_output.stat().st_size:,} bytes)")
 
-              video_output = Path("engine/sonicexe-menu.mp4")
-              with z.open("assets/exe/mainmenu/menu.mp4") as source, video_output.open("wb") as target:
+              video_source = Path("engine/sonicexe-menu-source.mp4")
+              with z.open("assets/exe/mainmenu/menu.mp4") as source, video_source.open("wb") as target:
                   shutil.copyfileobj(source, target)
-              print(f"Prepared original animated menu background ({video_output.stat().st_size:,} bytes)")
+              print(f"Extracted original menu background source ({video_source.stat().st_size:,} bytes)")
+
+              # Find the original introexe movie by filename instead of guessing
+              # its directory or filename capitalization.
+              intro_candidates = [
+                  name for name in z.namelist()
+                  if Path(name).suffix.casefold() in {".mp4", ".m4v", ".mov", ".webm"}
+                  and re.sub(r"[^a-z0-9]", "", Path(name).stem.casefold()) == "introexe"
+              ]
+              if not intro_candidates:
+                  raise SystemExit("Could not find the original introexe video in the release archive.")
+              intro_candidates.sort(key=lambda name: (
+                  not name.casefold().startswith("assets/videos/"),
+                  Path(name).suffix.casefold() != ".mp4",
+                  len(name),
+                  name.casefold()
+              ))
+              introexe_archive_path = intro_candidates[0]
+              introexe_source = Path("engine/introexe-source" + Path(introexe_archive_path).suffix.lower())
+              with z.open(introexe_archive_path) as source, introexe_source.open("wb") as target:
+                  shutil.copyfileobj(source, target)
+              print(f"Extracted introexe video from {introexe_archive_path} ({introexe_source.stat().st_size:,} bytes)")
 
               post_intro_source = Path("engine/postIntro-source.mp4")
               with z.open("assets/videos/postIntro.mp4") as source, post_intro_source.open("wb") as target:
                   shutil.copyfileobj(source, target)
               print(f"Extracted original postIntro video ({post_intro_source.stat().st_size:,} bytes)")
 
-              title_bg_source = Path("engine/sonicexe-title-bg.mp4")
+              title_bg_source = Path("engine/sonicexe-title-bg-source.mp4")
               with z.open("assets/exe/title/statictitlemenu.mp4") as source, title_bg_source.open("wb") as target:
                   shutil.copyfileobj(source, target)
-              print(f"Extracted original animated title background ({title_bg_source.stat().st_size:,} bytes)")
+              print(f"Extracted original animated title background source ({title_bg_source.stat().st_size:,} bytes)")
           PY
           rm -rf package
 
@@ -641,6 +673,48 @@ jobs:
             rm "$source"
             echo "Installed HTML5 Sonic.EXE sound: $output"
           done
+
+      - name: Optimize menu and title videos for faster browser streaming
+        run: |
+          convert_video() {
+            source="$1"
+            output="$2"
+            optimized="${output%.mp4}.optimized.mp4"
+            test -s "$source"
+            ffmpeg -y -i "$source" -map 0:v:0 -map '0:a?' \
+              -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p \
+              -c:a aac -b:a 128k -movflags +faststart "$optimized"
+            test -s "$optimized"
+            source_bytes="$(stat -c%s "$source")"
+            optimized_bytes="$(stat -c%s "$optimized")"
+            # Keep the browser-friendly encode if it is no more than 5% larger;
+            # otherwise preserve the original rather than increasing download size.
+            if [ "$optimized_bytes" -le "$((source_bytes + source_bytes / 20))" ]; then
+              mv "$optimized" "$output"
+              echo "Optimized $output: $source_bytes -> $optimized_bytes bytes"
+            else
+              cp "$source" "$output"
+              rm -f "$optimized"
+              echo "Kept original $source (optimized version was larger)."
+            fi
+          }
+          convert_video engine/sonicexe-menu-source.mp4 engine/sonicexe-menu.mp4
+          convert_video engine/sonicexe-title-bg-source.mp4 engine/sonicexe-title-bg.mp4
+          rm -f engine/sonicexe-menu-source.mp4 engine/sonicexe-title-bg-source.mp4
+          test -s engine/sonicexe-menu.mp4
+          test -s engine/sonicexe-title-bg.mp4
+
+      - name: Convert introexe video for HTML5 playback
+        run: |
+          source="$(find engine -maxdepth 1 -type f -name 'introexe-source.*' -print -quit)"
+          test -n "$source"
+          ffmpeg -y -i "$source" -map 0:v:0 -map '0:a?' \
+            -c:v libx264 -preset veryfast -crf 21 -pix_fmt yuv420p \
+            -c:a aac -b:a 160k -movflags +faststart engine/introexe.mp4
+          rm -f "$source"
+          test -s engine/introexe.mp4
+          ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height -of default=noprint_wrappers=1 engine/introexe.mp4
+          ffprobe -v error -show_entries format=duration -of csv=p=0 engine/introexe.mp4
 
       - name: Convert original postIntro video for HTML5 playback
         run: |
@@ -707,9 +781,11 @@ jobs:
           cp engine/sonicexe-menu.mp4 "$output/sonicexe-menu.mp4"
           cp engine/sonicexe-title-bg.mp4 "$output/sonicexe-title-bg.mp4"
           cp engine/assets/shared/images/sonicexe-title/spikesdown.png "$output/sonicexe-title-spikes.png"
+          cp engine/introexe.mp4 "$output/introexe.mp4"
           cp engine/postIntro.mp4 "$output/postIntro.mp4"
           mkdir -p "$output/sonicexe-soundtest-videos"
           cp engine/sonicexe-soundtest-videos/*.mp4 "$output/sonicexe-soundtest-videos/"
+          test -s "$output/introexe.mp4"
           test -s "$output/postIntro.mp4"
           test -s "$output/sonicexe-title-bg.mp4"
           test -s "$output/sonicexe-title-spikes.png"
@@ -744,6 +820,7 @@ jobs:
             #openfl-content canvas {
               background: transparent !important;
             }
+            #sonicexe-introexe-video,
             #sonicexe-postintro-video {
               position: fixed; inset: 0; width: 100vw; height: 100vh;
               object-fit: contain; display: none; z-index: 5;
@@ -768,6 +845,47 @@ jobs:
             }
           </style>
           <script>
+            window.sonicEXEIntroExeFinished = true;
+            window.setSonicEXEIntroExe = function(show) {
+              var video = document.getElementById("sonicexe-introexe-video");
+              if (!video) {
+                window.sonicEXEIntroExeFinished = true;
+                return;
+              }
+              if (show) {
+                window.sonicEXEIntroExeFinished = false;
+                video.currentTime = 0;
+                var audioUnlocked = window.sonicEXEAudioUnlocked === true;
+                video.defaultMuted = !audioUnlocked;
+                video.muted = !audioUnlocked;
+                if (audioUnlocked) video.removeAttribute("muted");
+                video.volume = 1;
+                video.style.display = "block";
+                var playPromise = video.play();
+                if (playPromise && playPromise.catch) {
+                  playPromise.catch(function() {
+                    if (!video.muted) {
+                      video.defaultMuted = true;
+                      video.muted = true;
+                      video.setAttribute("muted", "");
+                      var retryPromise = video.play();
+                      if (retryPromise && retryPromise.catch) {
+                        retryPromise.catch(function() {
+                          window.sonicEXEIntroExeFinished = true;
+                          video.style.display = "none";
+                        });
+                      }
+                    } else {
+                      window.sonicEXEIntroExeFinished = true;
+                      video.style.display = "none";
+                    }
+                  });
+                }
+              } else {
+                video.pause();
+                video.style.display = "none";
+              }
+            };
             window.sonicEXEPostIntroFinished = true;
             window.setSonicEXEPostIntro = function(show) {
               var video = document.getElementById("sonicexe-postintro-video");
@@ -812,17 +930,19 @@ jobs:
             window.sonicEXEAudioUnlocked = false;
             window.unlockSonicEXEAudio = function() {
               window.sonicEXEAudioUnlocked = true;
-              var video = document.getElementById("sonicexe-postintro-video");
-              if (!video) return;
-              video.defaultMuted = false;
-              video.muted = false;
-              video.removeAttribute("muted");
-              video.volume = 1;
-              // Calling play() from the gesture lets browsers resume the audio track.
-              if (!video.paused) {
-                var resumePromise = video.play();
-                if (resumePromise && resumePromise.catch) resumePromise.catch(function() {});
-              }
+              ["sonicexe-introexe-video", "sonicexe-postintro-video"].forEach(function(id) {
+                var video = document.getElementById(id);
+                if (!video) return;
+                video.defaultMuted = false;
+                video.muted = false;
+                video.removeAttribute("muted");
+                video.volume = 1;
+                // Resume only a video that is already active.
+                if (!video.paused) {
+                  var resumePromise = video.play();
+                  if (resumePromise && resumePromise.catch) resumePromise.catch(function() {});
+                }
+              });
             };
             ["pointerdown", "touchstart", "keydown"].forEach(function(eventName) {
               window.addEventListener(eventName, window.unlockSonicEXEAudio, {
@@ -831,6 +951,23 @@ jobs:
               });
             });
             window.addEventListener("DOMContentLoaded", function() {
+              var introExeVideo = document.getElementById("sonicexe-introexe-video");
+              if (introExeVideo) {
+                introExeVideo.addEventListener("ended", function() {
+                  window.sonicEXEIntroExeFinished = true;
+                });
+                introExeVideo.addEventListener("error", function() {
+                  window.sonicEXEIntroExeFinished = true;
+                });
+                introExeVideo.addEventListener("loadedmetadata", function() {
+                  if (window.sonicEXEAudioUnlocked) {
+                    introExeVideo.defaultMuted = false;
+                    introExeVideo.muted = false;
+                    introExeVideo.removeAttribute("muted");
+                    introExeVideo.volume = 1;
+                  }
+                });
+              }
               var video = document.getElementById("sonicexe-postintro-video");
               if (!video) return;
               video.addEventListener("ended", function() {
@@ -918,15 +1055,18 @@ jobs:
           </script>
           """
           body_markup = """
-          <video id="sonicexe-menu-bg" muted loop playsinline preload="none" aria-hidden="true">
+          <video id="sonicexe-menu-bg" muted loop playsinline preload="metadata" aria-hidden="true">
             <source src="sonicexe-menu.mp4" type="video/mp4">
           </video>
-          <video id="sonicexe-title-bg" muted loop playsinline preload="none" aria-hidden="true">
+          <video id="sonicexe-title-bg" muted loop playsinline preload="metadata" aria-hidden="true">
             <source src="sonicexe-title-bg.mp4" type="video/mp4">
           </video>
           <video id="sonicexe-soundtest-bg" muted loop playsinline preload="metadata" aria-hidden="true"></video>
           <img id="sonicexe-title-spikes" src="sonicexe-title-spikes.png" alt="" aria-hidden="true">
-          <video id="sonicexe-postintro-video" muted playsinline preload="none" aria-hidden="true">
+          <video id="sonicexe-introexe-video" muted playsinline preload="metadata" aria-hidden="true">
+            <source src="introexe.mp4" type="video/mp4">
+          </video>
+          <video id="sonicexe-postintro-video" muted playsinline preload="metadata" aria-hidden="true">
             <source src="postIntro.mp4" type="video/mp4">
           </video>
           """
