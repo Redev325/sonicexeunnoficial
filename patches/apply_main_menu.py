@@ -582,12 +582,10 @@ def main() -> None:
     source = replace_once(
         source,
         """\t\tsuper.create();
-\t\tFlxG.mouse.visible = true;
-\t\tFlxG.camera.bgColor = FlxColor.TRANSPARENT;
-\t\tsetMenuBackdropVisible(true);
 
 \t\tFlxG.camera.follow(camFollow, null, 9);""",
         """\t\tsuper.create();
+\t\tFlxG.mouse.visible = true;
 \t\tFlxG.camera.bgColor = FlxColor.TRANSPARENT;
 \t\tsetMenuBackdropVisible(true);
 
