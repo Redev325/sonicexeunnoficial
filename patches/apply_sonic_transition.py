@@ -45,6 +45,8 @@ SONIC_SWITCH_TO_WITH_SONIC = """\t// Play the Sonic close on the current screen,
 \t\t\tFlxG.switchState(nextState);
 \t\t\treturn;
 \t\t}
+\t\t// Reset any stale direction flag before a fresh close -> outward reveal.
+\t\tsonicExeTransitionIn = false;
 \t\tcurrentState.openSubState(new SonicEXETransitionSubState(true, function():Void
 \t\t{
 \t\t\tsonicExeTransitionIn = true;
@@ -63,6 +65,7 @@ class SonicEXETransitionSubState extends FlxSubState
 \tvar closeAfter:Bool = false;
 \tvar finishCallback:Void->Void;
 \tvar finished:Bool = false;
+\tvar elapsedTime:Float = 0;
 
 \tpublic function new(closeAfter:Bool = false, finishCallback:Void->Void = null)
 \t{
@@ -73,8 +76,11 @@ class SonicEXETransitionSubState extends FlxSubState
 
 \toverride function create():Void
 \t{
-\t\tcameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 \t\tsuper.create();
+\t\t// Bind the wipe to the active camera so the outward reveal renders above
+\t\t// the destination state instead of depending on camera-list ordering.
+\t\tif (FlxG.camera != null)
+\t\t\tcameras = [FlxG.camera];
 
 \t\twipe = new FlxSprite();
 \t\twipe.loadGraphic(Paths.image('sonicexe-transitions/head-wipe'), true, 640, 360);
@@ -101,7 +107,9 @@ class SonicEXETransitionSubState extends FlxSubState
 \toverride function update(elapsed:Float):Void
 \t{
 \t\tsuper.update(elapsed);
-\t\tif (!finished && wipe != null && wipe.animation.finished)
+\t\telapsedTime += elapsed;
+\t\t// A dropped browser frame must not strand the state behind a finished wipe.
+\t\tif (!finished && wipe != null && (wipe.animation.finished || elapsedTime >= 1.35))
 \t\t{
 \t\t\tfinished = true;
 \t\t\tif (finishCallback != null)
