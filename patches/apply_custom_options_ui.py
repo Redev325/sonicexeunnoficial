@@ -529,6 +529,13 @@ def patch_client_prefs(path: Path) -> None:
 
     source = replace_once(
         source,
+        "\tpublic static var defaultData:SaveVariables = {};",
+        "\tpublic static var defaultData:SaveVariables = {noteSkin: 'Default'};",
+        "keep the base note skin as the no-suffix fallback",
+    )
+
+    source = replace_once(
+        source,
         """\t\tfor (key in Reflect.fields(data))
 \t\t\tif (key != 'gameplaySettings' && Reflect.hasField(FlxG.save.data, key))
 \t\t\t\tReflect.setField(data, key, Reflect.field(FlxG.save.data, key));""",

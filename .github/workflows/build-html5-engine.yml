@@ -299,7 +299,7 @@ jobs:
 
               pixel_note_files = (
                   ("assets/shared/images/pixelUI/noteSkins/NOTE_assets.webp", f"NOTE_assets{skin_suffix}.png"),
-                  ("assets/shared/images/pixelUI/noteSkins/NOTE_assetsENDS.webp", f"NOTE_assetsENDS{skin_suffix}.png"),
+                  ("assets/shared/images/pixelUI/noteSkins/NOTE_assetsENDS.webp", f"NOTE_assets{skin_suffix}ENDS.png"),
               )
               for source_name, output_name in pixel_note_files:
                   with z.open(source_name) as source, Image.open(source) as image:
