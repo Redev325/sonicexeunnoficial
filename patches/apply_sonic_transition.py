@@ -134,8 +134,8 @@ def patch_music_beat(path: Path) -> None:
     source = replace_once(source, SWITCH_OLD, SWITCH_NEW, "chain Sonic close directly to reverse reveal")
     source = replace_once(
         source,
-        "\\tpublic static function resetState() {",
-        SONIC_SWITCH_TO_WITH_SONIC + "\\tpublic static function resetState() {",
+        "\tpublic static function resetState() {",
+        SONIC_SWITCH_TO_WITH_SONIC + "\tpublic static function resetState() {",
         "two-part Sonic transition switch helper",
     )
     if "class SonicEXETransitionSubState extends FlxSubState" in source:
