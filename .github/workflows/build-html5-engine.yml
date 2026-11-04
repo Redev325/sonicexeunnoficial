@@ -658,7 +658,7 @@ jobs:
 
       - name: Apply Sonic.EXE styling to settings submenus
         run: |
-          python3 patches/apply_custom_options_ui.py engine/source/options/BaseOptionsMenu.hx engine/source/options/ControlsSubState.hx engine/source/options/VisualsUISubState.hx engine/source/backend/ClientPrefs.hx
+          python3 patches/apply_custom_options_ui.py engine/source/options/BaseOptionsMenu.hx engine/source/options/ControlsSubState.hx engine/source/options/VisualsUISubState.hx engine/source/backend/ClientPrefs.hx engine/source/objects/NoteSplash.hx
 
       - name: Add reverse Sonic transition on destination screens
         run: |

@@ -486,6 +486,28 @@ def patch_visuals(path: Path) -> None:
 
     source = replace_once(
         source,
+        """\t\tvar noteSplashes:Array<String> = Mods.mergeAllTextsNamed('images/noteSplashes/list.txt');
+\t\tif(noteSplashes.length > 0)
+\t\t{
+\t\t\tif(!noteSplashes.contains(ClientPrefs.data.splashSkin))
+\t\t\t\tClientPrefs.data.splashSkin = ClientPrefs.defaultData.splashSkin; //Reset to default if saved splashskin couldnt be found
+
+\t\t\tnoteSplashes.insert(0, ClientPrefs.defaultData.splashSkin); //Default skin always comes first""",
+        """\t\tvar noteSplashes:Array<String> = Mods.mergeAllTextsNamed('images/noteSplashes/list.txt');
+\t\tif(noteSplashes.length > 0)
+\t\t{
+\t\t\tif(!noteSplashes.contains(ClientPrefs.data.splashSkin))
+\t\t\t\tClientPrefs.data.splashSkin = ClientPrefs.defaultData.splashSkin; //Reset to default if saved splashskin couldnt be found
+
+\t\t\t// Keep Sonic.EXE first as the default splash.
+\t\t\tif (noteSplashes.contains(ClientPrefs.defaultData.splashSkin))
+\t\t\t\tnoteSplashes.remove(ClientPrefs.defaultData.splashSkin);
+\t\t\tnoteSplashes.insert(0, ClientPrefs.defaultData.splashSkin);""",
+        "make Sonic.EXE the first and reset-default note splash",
+    )
+
+    source = replace_once(
+        source,
         """\tfunction onChangePauseMusic()
 \t{
 \t\tif(ClientPrefs.data.pauseMusic == 'None')
@@ -529,8 +551,15 @@ def patch_client_prefs(path: Path) -> None:
 
     source = replace_once(
         source,
+        "\tpublic var splashSkin:String = 'Psych';",
+        "\tpublic var splashSkin:String = 'Sonic.EXE';",
+        "make Sonic.EXE the fresh-profile note splash",
+    )
+
+    source = replace_once(
+        source,
         "\tpublic static var defaultData:SaveVariables = {};",
-        "\tpublic static var defaultData:SaveVariables = {noteSkin: 'Default'};",
+        "\tpublic static var defaultData:SaveVariables = {noteSkin: 'Default', splashSkin: 'Sonic.EXE'};",
         "keep the base note skin as the no-suffix fallback",
     )
 
@@ -545,21 +574,53 @@ def patch_client_prefs(path: Path) -> None:
 
 \t\t// Move existing browser saves from the engine default to the game skin.
 \t\tif (data.noteSkin == null || data.noteSkin == 'Default')
-\t\t\tdata.noteSkin = 'Sonic.EXE';""",
-        "migrate existing browser saves to the Sonic.EXE note skin",
+\t\t\tdata.noteSkin = 'Sonic.EXE';
+\t\tif (data.splashSkin == null || data.splashSkin == 'Psych')
+\t\t\tdata.splashSkin = 'Sonic.EXE';""",
+        "migrate existing browser saves to the Sonic.EXE note and splash skins",
     )
 
     path.write_text(source, encoding="utf-8")
     print(f"Set Sonic.EXE as the fresh and migrated note skin in {path}")
 
 
+def patch_note_splash(path: Path) -> None:
+    source = path.read_text(encoding="utf-8")
+
+    source = replace_once(
+        source,
+        """\tpublic static function getSplashSkinPostfix()
+\t{
+\t\tvar skin:String = '';
+\t\tif(ClientPrefs.data.splashSkin != ClientPrefs.defaultData.splashSkin)
+\t\t\tskin = '-' + ClientPrefs.data.splashSkin.trim().toLowerCase().replace(' ', '_');
+\t\treturn skin;
+\t}""",
+        """\tpublic static function getSplashSkinPostfix()
+\t{
+\t\tvar skin:String = '';
+\t\t// Sonic.EXE is the saved default, but its artwork uses a named atlas suffix.
+\t\tif (ClientPrefs.data.splashSkin == 'Sonic.EXE')
+\t\t\tskin = '-sonic.exe';
+\t\telse if(ClientPrefs.data.splashSkin != ClientPrefs.defaultData.splashSkin)
+\t\t\tskin = '-' + ClientPrefs.data.splashSkin.trim().toLowerCase().replace(' ', '_');
+\t\treturn skin;
+\t}""",
+        "resolve the default Sonic.EXE splash to its named atlas",
+    )
+
+    path.write_text(source, encoding="utf-8")
+    print(f"Set the default Sonic.EXE splash atlas in {path}")
+
+
 def main() -> None:
-    if len(sys.argv) != 5:
-        raise SystemExit("Usage: apply_custom_options_ui.py path/to/BaseOptionsMenu.hx path/to/ControlsSubState.hx path/to/VisualsUISubState.hx path/to/ClientPrefs.hx")
+    if len(sys.argv) != 6:
+        raise SystemExit("Usage: apply_custom_options_ui.py path/to/BaseOptionsMenu.hx path/to/ControlsSubState.hx path/to/VisualsUISubState.hx path/to/ClientPrefs.hx path/to/NoteSplash.hx")
     patch_base_options(Path(sys.argv[1]))
     patch_controls(Path(sys.argv[2]))
     patch_visuals(Path(sys.argv[3]))
     patch_client_prefs(Path(sys.argv[4]))
+    patch_note_splash(Path(sys.argv[5]))
 
 
 if __name__ == "__main__":
