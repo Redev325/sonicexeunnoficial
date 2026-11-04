@@ -196,6 +196,7 @@ class SonicEXESettingsState extends MusicBeatState
 	override public function update(elapsed:Float):Void
 	{
 		super.update(elapsed);
+		var browserBackPressed:Bool = FlxG.keys.justPressed.BACKSPACE;
 		pulseTime += elapsed;
 		// Animate the original red artwork with a gentle camera-like zoom, pan, and rotation.
 		// The artwork has generous overscan, so the movement never exposes empty edges.
@@ -221,13 +222,13 @@ class SonicEXESettingsState extends MusicBeatState
 
 		if (infoMode)
 		{
-			if (controls.BACK || controls.ACCEPT)
+			if (controls.BACK || browserBackPressed || controls.ACCEPT)
 				closeInfo();
 			return;
 		}
 
 		categoryShadows[selected].alpha = 0.82 + Math.sin(pulseTime * 3.0) * 0.18;
-		if (controls.BACK)
+		if (controls.BACK || browserBackPressed)
 		{
 			FlxG.sound.play(Paths.sound("cancelMenu"));
 			FlxG.sound.playMusic(Paths.music("menu"), 0.7, true);
