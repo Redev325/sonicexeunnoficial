@@ -89,6 +89,15 @@ jobs:
                   if x.filename.casefold().startswith("assets/exe/")
               ]
               add(f"ALL assets/exe files: {len(exe_paths)}")
+              audio_extensions = {".ogg", ".mp3", ".wav", ".flac", ".m4a"}
+              audio_candidates = [
+                  x for x in infos
+                  if PurePosixPath(x.filename).suffix.casefold() in audio_extensions
+                  and re.search(r"laugh|select|confirm|click|scroll|hover|button|enter|start|menu|title|exe|sonic", x.filename, re.I)
+              ]
+              add(f"MENU/TITLE SOUND CANDIDATES: {len(audio_candidates)}")
+              for x in sorted(audio_candidates, key=lambda v:v.filename.casefold()):
+                  add(f"  {x.file_size:>10,} bytes  {x.filename}")
               add("ASSETS/EXE PATHS (all filenames and sizes):")
               for x in sorted(exe_paths, key=lambda v:v.filename.casefold()):
                   add(f"  {x.file_size:>10,} bytes  {x.filename}")
