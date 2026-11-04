@@ -196,20 +196,22 @@ def patch_extras_screen(path: Path) -> None:
         raise SystemExit(f"Extras cleanup stopped: stock credits list was not found in {path}")
     end += len(end_marker)
     replacement = (
-        "\t\t// Do not show the stock Psych Engine or base-game credits here.\n"
-        "\t\t// Credits supplied by the mod itself are kept above.\n"
-        "\t\tvar hasSelectableModCredits:Bool = false;\n"
-        "\t\tfor (entry in creditsStuff)\n"
-        "\t\t\tif (entry.length > 1) hasSelectableModCredits = true;\n"
-        "\t\tif (!hasSelectableModCredits)\n"
-        "\t\t{\n"
-        "\t\t\tcreditsStuff = [];\n"
-        "\t\t\tcreditsStuff.push(['EXTRAS', '', 'Additional content will appear here.', '', '000000']);\n"
+        "\t\t// Remove the Psych Engine team, former members, and engine-contributor sections.\n"
+        "\t\t// Keep the separate original Friday Night Funkin' Crew attribution.\n"
+        "\t\tvar defaultList:Array<Array<String>> = [\n"
+        "\t\t\t[\"Funkin' Crew\"],\n"
+        "\t\t\t['ninjamuffin99', 'ninjamuffin99', \"Programmer of Friday Night Funkin'\", 'https://twitter.com/ninja_muffin99', 'CF2D2D'],\n"
+        "\t\t\t['PhantomArcade', 'PhantomArcade3K', \"Animator of Friday Night Funkin'\", 'https://twitter.com/PhantomArcade3K', 'FADC45'],\n"
+        "\t\t\t['evilsk8r', 'evilsk8r', \"Artist of Friday Night Funkin'\", 'https://twitter.com/evilsk8r', '5ABD4B'],\n"
+        "\t\t\t['kawaisprite', 'kawaisprite', \"Composer of Friday Night Funkin'\", 'https://twitter.com/kawaisprite', '378FC7']\n"
+        "\t\t];\n"
+        "\t\tfor(i in defaultList) {\n"
+        "\t\t\tcreditsStuff.push(i);\n"
         "\t\t}\n"
     )
     source = source[:start] + replacement + source[end:]
     path.write_text(source, encoding="utf-8")
-    print(f"Removed stock Psych Engine/FNF credits from {path}")
+    print(f"Removed Psych Engine credit sections from {path} while preserving Funkin' Crew attribution.")
 
 
 
