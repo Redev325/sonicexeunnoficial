@@ -9,6 +9,7 @@ on:
       - "patches/apply_title_screen.py"
       - "patches/SonicEXESettingsState.hx"
       - "patches/apply_soundtest_backgrounds.py"
+      - "patches/apply_sonic_transition.py"
   workflow_dispatch:
 
 permissions:
@@ -496,6 +497,10 @@ jobs:
           mkdir -p engine/source/states
           cp patches/SonicEXESettingsState.hx engine/source/states/SonicEXESettingsState.hx
           test -s engine/source/states/SonicEXESettingsState.hx
+
+      - name: Add reverse Sonic transition on destination screens
+        run: |
+          python3 patches/apply_sonic_transition.py engine/source/backend/MusicBeatState.hx engine/source/states/MainMenuState.hx
 
       - name: Compile browser target
         working-directory: engine
