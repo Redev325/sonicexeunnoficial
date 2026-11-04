@@ -186,6 +186,37 @@ def patch_return_to_main_menu(path: Path, state_label: str, old_back_condition: 
     print(f"Installed the Sonic close + outward reveal when leaving {state_label}.")
 
 
+def patch_extras_screen(path: Path) -> None:
+    source = path.read_text(encoding="utf-8")
+    pattern = re.compile(
+        r"\\t\\tvar defaultList:Array<Array<String>> = \\[.*?\\n"
+        r"\\t\\tfor\\(i in defaultList\\) \\{\\n"
+        r"\\t\\t\\tcreditsStuff.push\\(i\\);\\n"
+        r"\\t\\t\\}\\n",
+        re.S,
+    )
+    replacement = (
+        "\\t\\t// Do not show the stock Psych Engine or base-game credits here.\\n"
+        "\\t\\t// Credits supplied by the mod itself are kept above.\\n"
+        "\\t\\tvar hasSelectableModCredits:Bool = false;\\n"
+        "\\t\\tfor (entry in creditsStuff)\\n"
+        "\\t\\t\\tif (entry.length > 1) hasSelectableModCredits = true;\\n"
+        "\\t\\tif (!hasSelectableModCredits)\\n"
+        "\\t\\t{\\n"
+        "\\t\\t\\tcreditsStuff = [];\\n"
+        "\\t\\t\\tcreditsStuff.push(['EXTRAS', '', 'Additional content will appear here.', '', '000000']);\\n"
+        "\\t\\t}\\n"
+    )
+    patched, count = pattern.subn(replacement, source, count=1)
+    if count != 1:
+        raise SystemExit(
+            f"Extras cleanup stopped: expected one stock credits list in {path}, found {count}"
+        )
+    path.write_text(patched, encoding="utf-8")
+    print(f"Removed stock Psych Engine/FNF credits from {path}")
+
+
+
 def main() -> None:
     if len(sys.argv) != 6:
         raise SystemExit("Usage: apply_sonic_transition.py path/to/MusicBeatState.hx path/to/MainMenuState.hx path/to/FreeplayState.hx path/to/StoryMenuState.hx path/to/CreditsState.hx")
@@ -196,6 +227,7 @@ def main() -> None:
     patch_return_to_main_menu(Path(sys.argv[3]), "Freeplay / Sound Test", "if (controls.BACK)")
     patch_return_to_main_menu(Path(sys.argv[4]), "Story Mode", "if (controls.BACK && !movedBack && !selectedWeek)")
     patch_return_to_main_menu(Path(sys.argv[5]), "Extras", "if (controls.BACK)")
+    patch_extras_screen(Path(sys.argv[5]))
 
 
 if __name__ == "__main__":
