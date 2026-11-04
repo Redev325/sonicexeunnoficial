@@ -437,7 +437,9 @@ jobs:
           sound_dir="engine/assets/shared/sounds"
           mkdir -p "$sound_dir"
           for name in sonic menulaugh menumomentclick menuConfirm scrollmenu; do
-            source="$sound_dir/$name.ogg"
+            # Extraction normalizes source filenames to lowercase; keep the
+            # output filename's original spelling for Paths.sound() lookups.
+            source="$sound_dir/${name,,}.ogg"
             output="$sound_dir/$name.mp3"
             test -s "$source"
             ffmpeg -y -i "$source" -vn -c:a libmp3lame -q:a 2 "$output"
