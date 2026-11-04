@@ -8,6 +8,7 @@ on:
       - "patches/apply_main_menu.py"
       - "patches/apply_title_screen.py"
       - "patches/SonicEXESettingsState.hx"
+      - "patches/apply_soundtest_backgrounds.py"
   workflow_dispatch:
 
 permissions:
@@ -346,6 +347,27 @@ jobs:
                       image.convert("RGBA").save(destination, format="PNG", optimize=True)
                   print(f"Prepared original settings artwork: {destination} ({destination.stat().st_size:,} bytes)")
 
+              # Keep the original Sound Test backdrop and its original song-preview videos.
+              soundtest_prefix = "assets/exe/soundtest/"
+              soundtest_output = Path("engine/assets/shared/images/sonicexe-soundtest")
+              video_source_dir = Path("engine/sonicexe-soundtest-source")
+              for name in z.namelist():
+                  if not name.startswith(soundtest_prefix) or name.endswith("/"):
+                      continue
+                  suffix = Path(name).suffix.casefold()
+                  if suffix == ".webp" and Path(name).name.casefold() == "bgtest.webp":
+                      destination = soundtest_output / "bgtest.png"
+                      destination.parent.mkdir(parents=True, exist_ok=True)
+                      with z.open(name) as source, Image.open(source) as image:
+                          image.convert("RGBA").save(destination, format="PNG", optimize=True)
+                      print(f"Prepared original Sound Test background: {destination}")
+                  elif suffix == ".mp4" and "/videos/" in name.casefold():
+                      destination = video_source_dir / Path(name).name
+                      destination.parent.mkdir(parents=True, exist_ok=True)
+                      with z.open(name) as source, destination.open("wb") as target:
+                          shutil.copyfileobj(source, target)
+                      print(f"Extracted original custom-song preview: {destination}")
+
               font_files = (
                   "vcr.ttf", "pixel-latin.ttf", "NiseSega.ttf", "NiseSegaSonic.TTF",
                   "SonicFont.ttf", "SonicCD.ttf", "sonic4.ttf", "sonichud.ttf",
@@ -411,6 +433,17 @@ jobs:
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 engine/postIntro.mp4 | grep -q .
           ffprobe -v error -show_entries format=duration -of csv=p=0 engine/postIntro.mp4
 
+      - name: Convert original custom-song preview videos for HTML5
+        run: |
+          mkdir -p engine/sonicexe-soundtest-videos
+          for source in engine/sonicexe-soundtest-source/*.mp4; do
+            [ -f "$source" ] || continue
+            name="$(basename "$source")"
+            ffmpeg -y -i "$source" -an -c:v libx264 -preset veryfast -crf 24 -pix_fmt yuv420p -movflags +faststart "engine/sonicexe-soundtest-videos/$name"
+          done
+          test -s engine/sonicexe-soundtest-videos/tripletrouble.mp4
+          echo "Prepared original custom-song preview videos for HTML5."
+
       - name: Apply original Sonic.EXE title and intro artwork
         run: |
           python3 patches/apply_title_screen.py engine/source/states/TitleState.hx
@@ -418,6 +451,9 @@ jobs:
       - name: Apply original browser main menu layout
         run: |
           python3 patches/apply_main_menu.py engine/source/states/MainMenuState.hx
+
+      - name: Install animated Sonic.EXE custom-song backgrounds
+        run: python3 patches/apply_soundtest_backgrounds.py engine/source/states/FreeplayState.hx
 
       - name: Install custom Sonic.EXE settings category screen
         run: |
@@ -443,6 +479,8 @@ jobs:
           cp engine/sonicexe-title-bg.mp4 "$output/sonicexe-title-bg.mp4"
           cp engine/assets/shared/images/sonicexe-title/spikesdown.png "$output/sonicexe-title-spikes.png"
           cp engine/postIntro.mp4 "$output/postIntro.mp4"
+          mkdir -p "$output/sonicexe-soundtest-videos"
+          cp engine/sonicexe-soundtest-videos/*.mp4 "$output/sonicexe-soundtest-videos/"
           test -s "$output/postIntro.mp4"
           test -s "$output/sonicexe-title-bg.mp4"
           test -s "$output/sonicexe-title-spikes.png"
@@ -460,6 +498,11 @@ jobs:
               position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
               object-fit: contain; display: none; z-index: 0;
               pointer-events: none;
+            }
+            #sonicexe-soundtest-bg {
+              position: fixed; inset: 0; width: 100vw; height: 100vh;
+              object-fit: cover; display: none; z-index: 0;
+              pointer-events: none; background: #000;
             }
             /* The OpenFL canvas clears to black on some HTML5 browsers even when
                FlxG.camera.bgColor is transparent. Blend the complete game layer
@@ -594,6 +637,8 @@ jobs:
             window.setSonicEXEMenuVideo = function(show) {
               var video = document.getElementById("sonicexe-menu-bg");
               var titleSpikes = document.getElementById("sonicexe-title-spikes");
+              var soundTestVideo = document.getElementById("sonicexe-soundtest-bg");
+              if (show && soundTestVideo) { soundTestVideo.pause(); soundTestVideo.style.display = "none"; }
               if (show && titleSpikes) titleSpikes.style.display = "none";
               if (!video) return;
               video.style.display = show ? "block" : "none";
@@ -606,6 +651,37 @@ jobs:
                 video.pause();
               }
             };
+            window.setSonicEXESoundTestVideo = function(songName) {
+              var video = document.getElementById("sonicexe-soundtest-bg");
+              if (!video) return;
+              var key = String(songName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+              var videoNames = {
+                tooslowencore: "tooslowencore",
+                tripletrouble: "tripletrouble",
+                sanic: "sanicvid", sanicvid: "sanicvid",
+                starvedarg1: "starvedarg1final", starvedarg1final: "starvedarg1final",
+                predesign: "predesign", elpan: "elpan", mattpro: "mattpro",
+                nebros: "nebros", darwinunofficial: "darwinunofficial", ttripl: "ttripl"
+              };
+              var name = videoNames[key];
+              if (!name) {
+                video.pause();
+                video.style.display = "none";
+                return;
+              }
+              var menuVideo = document.getElementById("sonicexe-menu-bg");
+              var titleVideo = document.getElementById("sonicexe-title-bg");
+              if (menuVideo) { menuVideo.pause(); menuVideo.style.display = "none"; }
+              if (titleVideo) { titleVideo.pause(); titleVideo.style.display = "none"; }
+              var nextSource = "sonicexe-soundtest-videos/" + name + ".mp4";
+              if (video.getAttribute("src") !== nextSource) {
+                video.src = nextSource;
+                video.load();
+              }
+              video.style.display = "block";
+              var playPromise = video.play();
+              if (playPromise && playPromise.catch) playPromise.catch(function() {});
+            };
           </script>
           """
           body_markup = """
@@ -615,6 +691,7 @@ jobs:
           <video id="sonicexe-title-bg" muted loop playsinline preload="auto" aria-hidden="true">
             <source src="sonicexe-title-bg.mp4" type="video/mp4">
           </video>
+          <video id="sonicexe-soundtest-bg" muted loop playsinline preload="metadata" aria-hidden="true"></video>
           <img id="sonicexe-title-spikes" src="sonicexe-title-spikes.png" alt="" aria-hidden="true">
           <video id="sonicexe-postintro-video" muted playsinline preload="auto" aria-hidden="true">
             <source src="postIntro.mp4" type="video/mp4">

@@ -204,10 +204,18 @@ def main() -> None:
         "\t\t\t\t\t\tswitch (optionShit[curSelected])\n\t\t\t\t\t\t{\n"
         "\t\t\t\t\t\t\tcase 'sound_test':\n"
         "\t\t\t\t\t\t\t\tFlxG.sound.play(Paths.sound('confirmMenu'));\n"
+        "\t\t\t\t\t\t\t\tFreeplayState.sonicExeCustomSongMode = true;\n"
         "\t\t\t\t\t\t\t\tMusicBeatState.switchState(new FreeplayState());\n"
         "\t\t\t\t\t\t\tcase 'extras':\n"
         "\t\t\t\t\t\t\t\tMusicBeatState.switchState(new CreditsState());\n",
         "sound test and extras menu actions",
+    )
+
+    source = replace_once(
+        source,
+        "\t\t\t\t\t\t\tcase 'freeplay':\n\t\t\t\t\t\t\t\tMusicBeatState.switchState(new FreeplayState());",
+        "\t\t\t\t\t\t\tcase 'freeplay':\n\t\t\t\t\t\t\t\tFreeplayState.sonicExeCustomSongMode = false;\n\t\t\t\t\t\t\t\tMusicBeatState.switchState(new FreeplayState());",
+        "keep regular Freeplay separate from custom songs",
     )
 
     source = replace_once(

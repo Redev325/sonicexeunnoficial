@@ -19,26 +19,35 @@ class SonicEXESettingsState extends MusicBeatState
 	var infoShade:FlxSprite;
 	var infoText:FlxText;
 	var pulseTime:Float = 0;
+	var background:FlxSprite;
+	var backgroundBaseX:Float = 0;
+	var backgroundBaseY:Float = 0;
+	var watermark:FlxSprite;
+	var watermarkBaseY:Float = 0;
 
 	override public function create():Void
 	{
 		super.create();
 		FlxG.mouse.visible = false;
 
-		var background:FlxSprite = new FlxSprite();
+		background = new FlxSprite();
 		background.loadGraphic(Paths.image("sonicexe-options/bg"));
-		background.setGraphicSize(FlxG.width, FlxG.height);
+		background.setGraphicSize(Std.int(FlxG.width * 1.08), Std.int(FlxG.height * 1.08));
 		background.updateHitbox();
+		background.screenCenter();
+		backgroundBaseX = background.x;
+		backgroundBaseY = background.y;
 		background.color = 0xFFB02C2C;
 		background.scrollFactor.set(0, 0);
 		add(background);
 
-		var watermark:FlxSprite = new FlxSprite();
+		watermark = new FlxSprite();
 		watermark.loadGraphic(Paths.image("sonicexe-title/logo/ring"));
 		watermark.setGraphicSize(Std.int(FlxG.width * 0.58));
 		watermark.updateHitbox();
 		watermark.screenCenter();
 		watermark.y = FlxG.height * 0.18;
+		watermarkBaseY = watermark.y;
 		watermark.color = 0xFF641919;
 		watermark.alpha = 0.19;
 		watermark.scrollFactor.set(0, 0);
@@ -149,6 +158,12 @@ class SonicEXESettingsState extends MusicBeatState
 	{
 		super.update(elapsed);
 		pulseTime += elapsed;
+		// Keep the original Options artwork in motion with a slow, seamless parallax drift.
+		background.x = backgroundBaseX + Math.sin(pulseTime * 0.31) * FlxG.width * 0.012;
+		background.y = backgroundBaseY + Math.cos(pulseTime * 0.23) * FlxG.height * 0.009;
+		background.angle = Math.sin(pulseTime * 0.16) * 0.28;
+		watermark.y = watermarkBaseY + Math.sin(pulseTime * 0.42) * 7;
+		watermark.alpha = 0.16 + (Math.sin(pulseTime * 0.72) + 1) * 0.025;
 
 		if (infoMode)
 		{
