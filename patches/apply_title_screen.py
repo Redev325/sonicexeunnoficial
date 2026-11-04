@@ -204,7 +204,6 @@ def patch_title_state(source: str) -> str:
 \t\t\t\twarningPrompt.alpha = 0.58 + Math.sin(warningPulseTime * 3.2) * 0.42;
 \t\t\tif (pressedEnter)
 \t\t\t{
-\t\t\t\tFlxG.sound.play(Paths.sound('sonic'));
 \t\t\t\tbeginPostIntro();
 \t\t\t}
 \t\t\tsuper.update(elapsed);
