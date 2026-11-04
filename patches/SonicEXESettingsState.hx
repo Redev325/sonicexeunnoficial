@@ -20,8 +20,7 @@ class SonicEXESettingsState extends MusicBeatState
 	var infoText:FlxText;
 	var pulseTime:Float = 0;
 	var background:FlxSprite;
-	var backgroundBaseX:Float = 0;
-	var backgroundBaseY:Float = 0;
+	var backgroundTint:FlxSprite;
 	var watermark:FlxSprite;
 	var watermarkBaseY:Float = 0;
 
@@ -29,17 +28,25 @@ class SonicEXESettingsState extends MusicBeatState
 	{
 		super.create();
 		FlxG.mouse.visible = false;
+		// Use the original Options track, replacing the main-menu theme while this state is open.
+		FlxG.sound.playMusic(Paths.music("options"), 0.72, true);
 
 		background = new FlxSprite();
 		background.loadGraphic(Paths.image("sonicexe-options/bg"));
 		background.setGraphicSize(Std.int(FlxG.width * 1.08), Std.int(FlxG.height * 1.08));
 		background.updateHitbox();
 		background.screenCenter();
-		backgroundBaseX = background.x;
-		backgroundBaseY = background.y;
 		background.color = 0xFFB02C2C;
 		background.scrollFactor.set(0, 0);
 		add(background);
+
+		// A restrained red overlay pulses over the original still artwork to animate the backdrop.
+		backgroundTint = new FlxSprite().makeGraphic(1, 1, 0xFF9D0D1D);
+		backgroundTint.setGraphicSize(FlxG.width, FlxG.height);
+		backgroundTint.updateHitbox();
+		backgroundTint.alpha = 0.09;
+		backgroundTint.scrollFactor.set(0, 0);
+		add(backgroundTint);
 
 		watermark = new FlxSprite();
 		watermark.loadGraphic(Paths.image("sonicexe-title/logo/ring"));
@@ -158,10 +165,15 @@ class SonicEXESettingsState extends MusicBeatState
 	{
 		super.update(elapsed);
 		pulseTime += elapsed;
-		// Keep the original Options artwork in motion with a slow, seamless parallax drift.
-		background.x = backgroundBaseX + Math.sin(pulseTime * 0.31) * FlxG.width * 0.012;
-		background.y = backgroundBaseY + Math.cos(pulseTime * 0.23) * FlxG.height * 0.009;
-		background.angle = Math.sin(pulseTime * 0.16) * 0.28;
+		// Animate the original red artwork with a gentle camera-like zoom, pan, and rotation.
+		// The artwork has generous overscan, so the movement never exposes empty edges.
+		var backgroundZoom:Float = 1.0 + Math.sin(pulseTime * 0.34) * 0.008;
+		background.scale.set(backgroundZoom, backgroundZoom);
+		background.updateHitbox();
+		background.x = (FlxG.width - background.width) * 0.5 + Math.sin(pulseTime * 0.31) * FlxG.width * 0.022;
+		background.y = (FlxG.height - background.height) * 0.5 + Math.cos(pulseTime * 0.23) * FlxG.height * 0.016;
+		background.angle = Math.sin(pulseTime * 0.16) * 0.45;
+		backgroundTint.alpha = 0.065 + (Math.sin(pulseTime * 0.78) + 1) * 0.035;
 		watermark.y = watermarkBaseY + Math.sin(pulseTime * 0.42) * 7;
 		watermark.alpha = 0.16 + (Math.sin(pulseTime * 0.72) + 1) * 0.025;
 
@@ -176,6 +188,7 @@ class SonicEXESettingsState extends MusicBeatState
 		if (controls.BACK)
 		{
 			FlxG.sound.play(Paths.sound("cancelMenu"));
+			FlxG.sound.playMusic(Paths.music("menu"), 0.7, true);
 			MusicBeatState.switchState(new MainMenuState());
 			return;
 		}

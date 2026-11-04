@@ -408,6 +408,11 @@ jobs:
                   shutil.copyfileobj(source, target)
               print(f"Extracted original menu music source ({music_output.stat().st_size:,} bytes)")
 
+              options_music_output = Path("engine/assets/shared/music/options-source.ogg")
+              with z.open("assets/exe/music/options.ogg") as source, options_music_output.open("wb") as target:
+                  shutil.copyfileobj(source, target)
+              print(f"Extracted original Options music source ({options_music_output.stat().st_size:,} bytes)")
+
               video_output = Path("engine/sonicexe-menu.mp4")
               with z.open("assets/exe/mainmenu/menu.mp4") as source, video_output.open("wb") as target:
                   shutil.copyfileobj(source, target)
@@ -425,12 +430,16 @@ jobs:
           PY
           rm -rf package
 
-      - name: Convert original game menu music for HTML5
+      - name: Convert original game menu and Options music for HTML5
         run: |
           ffmpeg -y -i engine/assets/shared/music/menu-source.ogg -vn -c:a libmp3lame -q:a 2 engine/assets/shared/music/menu.mp3
           rm -f engine/assets/shared/music/menu-source.ogg
           test -s engine/assets/shared/music/menu.mp3
           echo "Prepared original menu.mp3 for the HTML5-only asset library."
+          ffmpeg -y -i engine/assets/shared/music/options-source.ogg -vn -c:a libmp3lame -q:a 2 engine/assets/shared/music/options.mp3
+          rm -f engine/assets/shared/music/options-source.ogg
+          test -s engine/assets/shared/music/options.mp3
+          echo "Prepared original options.mp3 for the HTML5-only asset library."
 
       - name: Convert original Sonic.EXE UI sounds for HTML5
         run: |
