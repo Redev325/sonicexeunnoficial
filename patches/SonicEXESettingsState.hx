@@ -20,6 +20,8 @@ class SonicEXESettingsState extends MusicBeatState
 	var infoText:FlxText;
 	var pulseTime:Float = 0;
 	var background:FlxSprite;
+	var backgroundBaseScaleX:Float = 1;
+	var backgroundBaseScaleY:Float = 1;
 	var backgroundTint:FlxSprite;
 	var watermark:FlxSprite;
 	var watermarkBaseY:Float = 0;
@@ -35,6 +37,8 @@ class SonicEXESettingsState extends MusicBeatState
 		background.loadGraphic(Paths.image("sonicexe-options/bg"));
 		background.setGraphicSize(Std.int(FlxG.width * 1.08), Std.int(FlxG.height * 1.08));
 		background.updateHitbox();
+		backgroundBaseScaleX = background.scale.x;
+		backgroundBaseScaleY = background.scale.y;
 		background.screenCenter();
 		background.color = 0xFFB02C2C;
 		background.scrollFactor.set(0, 0);
@@ -168,7 +172,7 @@ class SonicEXESettingsState extends MusicBeatState
 		// Animate the original red artwork with a gentle camera-like zoom, pan, and rotation.
 		// The artwork has generous overscan, so the movement never exposes empty edges.
 		var backgroundZoom:Float = 1.0 + Math.sin(pulseTime * 0.34) * 0.008;
-		background.scale.set(backgroundZoom, backgroundZoom);
+		background.scale.set(backgroundBaseScaleX * backgroundZoom, backgroundBaseScaleY * backgroundZoom);
 		background.updateHitbox();
 		background.x = (FlxG.width - background.width) * 0.5 + Math.sin(pulseTime * 0.31) * FlxG.width * 0.022;
 		background.y = (FlxG.height - background.height) * 0.5 + Math.cos(pulseTime * 0.23) * FlxG.height * 0.016;
