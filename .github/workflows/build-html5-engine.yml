@@ -247,6 +247,7 @@ jobs:
           from zipfile import ZipFile
           from PIL import Image, ImageEnhance, ImageOps
           import shutil
+          import re
 
           archive = Path("package/release.zip")
           images = {
@@ -271,6 +272,44 @@ jobs:
                   print("  " + name)
               if not note_related:
                   print("  No explicitly named note-skin files found in release archive.")
+
+              # Install the original game's regular and pixel note sheets as one
+              # selectable skin. Psych Engine appends "-sonic.exe" from the
+              # saved "Sonic.EXE" preference, including for pixel sustain ends.
+              note_skin_dir = Path("engine/assets/shared/images/noteSkins")
+              note_skin_dir.mkdir(parents=True, exist_ok=True)
+              pixel_note_skin_dir = Path("engine/assets/shared/images/pixelUI/noteSkins")
+              pixel_note_skin_dir.mkdir(parents=True, exist_ok=True)
+              skin_suffix = "-sonic.exe"
+
+              with z.open("assets/shared/images/noteSkins/NOTE_assets.webp") as source, Image.open(source) as image:
+                  image.convert("RGBA").save(note_skin_dir / f"NOTE_assets{skin_suffix}.png", format="PNG", optimize=True)
+
+              with z.open("assets/shared/images/noteSkins/NOTE_assets.xml") as source:
+                  atlas_xml = source.read().decode("utf-8-sig")
+              atlas_xml, replaced = re.subn(
+                  r'imagePath\s*=\s*"[^"]+"',
+                  f'imagePath="NOTE_assets{skin_suffix}.png"',
+                  atlas_xml,
+                  count=1
+              )
+              if replaced != 1:
+                  raise SystemExit("Could not update the original Sonic.EXE note atlas imagePath.")
+              (note_skin_dir / f"NOTE_assets{skin_suffix}.xml").write_text(atlas_xml, encoding="utf-8")
+
+              pixel_note_files = (
+                  ("assets/shared/images/pixelUI/noteSkins/NOTE_assets.webp", f"NOTE_assets{skin_suffix}.png"),
+                  ("assets/shared/images/pixelUI/noteSkins/NOTE_assetsENDS.webp", f"NOTE_assetsENDS{skin_suffix}.png"),
+              )
+              for source_name, output_name in pixel_note_files:
+                  with z.open(source_name) as source, Image.open(source) as image:
+                      image.convert("RGBA").save(pixel_note_skin_dir / output_name, format="PNG", optimize=True)
+
+              note_list = note_skin_dir / "list.txt"
+              existing_skins = note_list.read_text(encoding="utf-8-sig") if note_list.exists() else ""
+              if "sonic.exe" not in {line.strip().casefold() for line in existing_skins.splitlines()}:
+                  note_list.write_text(existing_skins.rstrip() + ("\n" if existing_skins.strip() else "") + "Sonic.EXE\n", encoding="utf-8")
+              print("Installed original Sonic.EXE note atlases and registered the Sonic.EXE Visuals skin.")
 
               for source_name, output in images.items():
                   output.parent.mkdir(parents=True, exist_ok=True)
@@ -516,7 +555,7 @@ jobs:
 
       - name: Apply Sonic.EXE styling to settings submenus
         run: |
-          python3 patches/apply_custom_options_ui.py engine/source/options/BaseOptionsMenu.hx engine/source/options/ControlsSubState.hx engine/source/options/VisualsUISubState.hx
+          python3 patches/apply_custom_options_ui.py engine/source/options/BaseOptionsMenu.hx engine/source/options/ControlsSubState.hx engine/source/options/VisualsUISubState.hx engine/source/backend/ClientPrefs.hx
 
       - name: Add reverse Sonic transition on destination screens
         run: |

@@ -468,6 +468,24 @@ def patch_visuals(path: Path) -> None:
 
     source = replace_once(
         source,
+        """			if(!noteSkins.contains(ClientPrefs.data.noteSkin))
+				ClientPrefs.data.noteSkin = ClientPrefs.defaultData.noteSkin; //Reset to default if saved noteskin couldnt be found
+
+			noteSkins.insert(0, ClientPrefs.defaultData.noteSkin); //Default skin always comes first""",
+        """			if(!noteSkins.contains(ClientPrefs.data.noteSkin))
+				ClientPrefs.data.noteSkin = 'Sonic.EXE';
+
+			// Make the original Sonic.EXE arrows the first option and the option reset value.
+			if (noteSkins.contains('Sonic.EXE'))
+				noteSkins.remove('Sonic.EXE');
+			noteSkins.insert(0, 'Sonic.EXE');
+			if (!noteSkins.contains(ClientPrefs.defaultData.noteSkin))
+				noteSkins.insert(1, ClientPrefs.defaultData.noteSkin);""",
+        "make Sonic.EXE the first and reset-default note skin",
+    )
+
+    source = replace_once(
+        source,
         """\tfunction onChangePauseMusic()
 \t{
 \t\tif(ClientPrefs.data.pauseMusic == 'None')
@@ -497,12 +515,44 @@ def patch_visuals(path: Path) -> None:
     print(f"Kept the Options soundtrack active in {path}")
 
 
+
+
+def patch_client_prefs(path: Path) -> None:
+    source = path.read_text(encoding="utf-8")
+
+    source = replace_once(
+        source,
+        "\tpublic var noteSkin:String = 'Default';",
+        "\tpublic var noteSkin:String = 'Sonic.EXE';",
+        "make Sonic.EXE the fresh-profile note skin",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tfor (key in Reflect.fields(data))
+\t\t\tif (key != 'gameplaySettings' && Reflect.hasField(FlxG.save.data, key))
+\t\t\t\tReflect.setField(data, key, Reflect.field(FlxG.save.data, key));""",
+        """\t\tfor (key in Reflect.fields(data))
+\t\t\tif (key != 'gameplaySettings' && Reflect.hasField(FlxG.save.data, key))
+\t\t\t\tReflect.setField(data, key, Reflect.field(FlxG.save.data, key));
+
+\t\t// Move existing browser saves from the engine default to the game skin.
+\t\tif (data.noteSkin == null || data.noteSkin == 'Default')
+\t\t\tdata.noteSkin = 'Sonic.EXE';""",
+        "migrate existing browser saves to the Sonic.EXE note skin",
+    )
+
+    path.write_text(source, encoding="utf-8")
+    print(f"Set Sonic.EXE as the fresh and migrated note skin in {path}")
+
+
 def main() -> None:
-    if len(sys.argv) != 4:
-        raise SystemExit("Usage: apply_custom_options_ui.py path/to/BaseOptionsMenu.hx path/to/ControlsSubState.hx path/to/VisualsUISubState.hx")
+    if len(sys.argv) != 5:
+        raise SystemExit("Usage: apply_custom_options_ui.py path/to/BaseOptionsMenu.hx path/to/ControlsSubState.hx path/to/VisualsUISubState.hx path/to/ClientPrefs.hx")
     patch_base_options(Path(sys.argv[1]))
     patch_controls(Path(sys.argv[2]))
     patch_visuals(Path(sys.argv[3]))
+    patch_client_prefs(Path(sys.argv[4]))
 
 
 if __name__ == "__main__":
