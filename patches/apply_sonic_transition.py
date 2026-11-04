@@ -201,7 +201,7 @@ def patch_extras_screen(path: Path) -> None:
         "\t\tvar defaultList:Array<Array<String>> = [\n"
         "\t\t\t[\"Funkin' Crew\"],\n"
         "\t\t\t['ninjamuffin99', 'ninjamuffin99', \"Programmer of Friday Night Funkin'\", 'https://twitter.com/ninja_muffin99', 'CF2D2D'],\n"
-        "\t\t\t['PhantomArcade', 'PhantomArcade3K', \"Animator of Friday Night Funkin'\", 'https://twitter.com/PhantomArcade3K', 'FADC45'],\n"
+        "\t\t\t['PhantomArcade', 'phantomarcade', \"Animator of Friday Night Funkin'\", 'https://twitter.com/PhantomArcade3K', 'FADC45'],\n"
         "\t\t\t['evilsk8r', 'evilsk8r', \"Artist of Friday Night Funkin'\", 'https://twitter.com/evilsk8r', '5ABD4B'],\n"
         "\t\t\t['kawaisprite', 'kawaisprite', \"Composer of Friday Night Funkin'\", 'https://twitter.com/kawaisprite', '378FC7']\n"
         "\t\t];\n"
