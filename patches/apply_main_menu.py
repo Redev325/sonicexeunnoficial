@@ -463,7 +463,10 @@ def main() -> None:
 			plate.updateHitbox();
 			plate.color = FlxColor.WHITE;
 			FlxTween.tween(plate, {x: targetX, y: targetY}, duration, {ease: FlxEase.quadOut});
-			FlxTween.tween(plate.scale, {x: targetPlateScale, y: targetPlateScale}, duration, {ease: FlxEase.quadOut});
+			FlxTween.tween(plate.scale, {x: targetPlateScale, y: targetPlateScale}, duration, {
+				ease: FlxEase.quadOut,
+				onUpdate: function(twn:FlxTween) plate.updateHitbox()
+			});
 			plate.alpha = selected ? 0.72 : 1;
 			FlxTween.tween(plate, {alpha: 1}, 0.14, {ease: FlxEase.quadOut});
 
@@ -477,7 +480,10 @@ def main() -> None:
 			var shadowX:Float = targetX + targetWidth * 0.083;
 			var shadowY:Float = targetY + targetHeight * 0.22;
 			FlxTween.tween(shadow, {x: shadowX, y: shadowY, alpha: selected ? 0.95 : 0}, duration, {ease: FlxEase.quadOut});
-			FlxTween.tween(shadow.scale, {x: targetShadowScaleX, y: targetShadowScaleY}, duration, {ease: FlxEase.quadOut});
+			FlxTween.tween(shadow.scale, {x: targetShadowScaleX, y: targetShadowScaleY}, duration, {
+				ease: FlxEase.quadOut,
+				onUpdate: function(twn:FlxTween) shadow.updateHitbox()
+			});
 
 			var hitbox:FlxSprite = menuHitboxes.members[i];
 			FlxTween.cancelTweensOf(hitbox);
@@ -489,7 +495,10 @@ def main() -> None:
 			var hitboxX:Float = targetX + (targetWidth - targetHitboxWidth) * 0.5;
 			var hitboxY:Float = targetY + (targetHeight - targetHitboxHeight) * 0.5;
 			FlxTween.tween(hitbox, {x: hitboxX, y: hitboxY}, duration, {ease: FlxEase.quadOut});
-			FlxTween.tween(hitbox.scale, {x: targetHitboxScaleX, y: targetHitboxScaleY}, duration, {ease: FlxEase.quadOut});
+			FlxTween.tween(hitbox.scale, {x: targetHitboxScaleX, y: targetHitboxScaleY}, duration, {
+				ease: FlxEase.quadOut,
+				onUpdate: function(twn:FlxTween) hitbox.updateHitbox()
+			});
 
 			var label:FlxText = cast menuItems.members[i];
 			FlxTween.cancelTweensOf(label);
