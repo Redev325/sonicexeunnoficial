@@ -153,11 +153,11 @@ def patch_extras(path: Path) -> None:
 \t\tvar sonicExtrasLine:FlxSprite = new FlxSprite(0, 55).makeGraphic(FlxG.width, 4, 0xFFE00024);
 \t\tsonicExtrasLine.scrollFactor.set();
 \t\tadd(sonicExtrasLine);
-\t\tvar sonicExtrasTitle:FlxText = new FlxText(24, 8, 520, "EXTRAS", 30);
+\t\tvar sonicExtrasTitle:FlxText = new FlxText(24, 8, 520, "CREDITS", 30);
 \t\tsonicExtrasTitle.setFormat(Paths.font("sonichud.ttf"), 30, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\tsonicExtrasTitle.scrollFactor.set();
 \t\tadd(sonicExtrasTitle);
-\t\tvar sonicExtrasSubtitle:FlxText = new FlxText(FlxG.width - 370, 17, 340, "ENCORE  /  BONUS SONGS", 15);
+\t\tvar sonicExtrasSubtitle:FlxText = new FlxText(FlxG.width - 370, 17, 340, "PSYCH ENGINE CONTRIBUTORS", 15);
 \t\tsonicExtrasSubtitle.setFormat(Paths.font("sonichud.ttf"), 15, 0xFFFFB8C2, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\tsonicExtrasSubtitle.scrollFactor.set();
 \t\tadd(sonicExtrasSubtitle);
@@ -181,7 +181,7 @@ def patch_extras(path: Path) -> None:
 \t\tvar sonicExtrasFooterLine:FlxSprite = new FlxSprite(0, FlxG.height - 34).makeGraphic(FlxG.width, 3, 0xFF9D001B);
 \t\tsonicExtrasFooterLine.scrollFactor.set();
 \t\tadd(sonicExtrasFooterLine);
-\t\tvar sonicExtrasHints:FlxText = new FlxText(0, FlxG.height - 26, FlxG.width, "UP / DOWN: SELECT    ENTER: PLAY SONG    ESC: BACK", 14);
+\t\tvar sonicExtrasHints:FlxText = new FlxText(0, FlxG.height - 26, FlxG.width, "UP / DOWN: SELECT    ENTER: OPEN LINK    ESC: BACK", 14);
 \t\tsonicExtrasHints.setFormat(Paths.font("sonichud.ttf"), 14, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\tsonicExtrasHints.scrollFactor.set();
 \t\tadd(sonicExtrasHints);
