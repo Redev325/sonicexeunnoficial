@@ -353,6 +353,11 @@ def main() -> None:
 \t\t{
 \t\t\tvar mouseAccept:Bool = false;
 \t\t\tvar mouseMoved:Bool = (FlxG.mouse.x != lastMouseX || FlxG.mouse.y != lastMouseY);
+\t\t\t// Browser-safe keyboard fallback: don't rely only on the Controls mapping.
+\t\t\tvar keyboardUp:Bool = FlxG.keys.justPressed.UP || FlxG.keys.justPressed.W;
+\t\t\tvar keyboardDown:Bool = FlxG.keys.justPressed.DOWN || FlxG.keys.justPressed.S;
+\t\t\tvar keyboardLeft:Bool = FlxG.keys.justPressed.LEFT || FlxG.keys.justPressed.A;
+\t\t\tvar keyboardRight:Bool = FlxG.keys.justPressed.RIGHT || FlxG.keys.justPressed.D;
 
 \t\t\t// Only let hover change selection when the pointer actually moves.
 \t\t\t// A stationary cursor must not fight keyboard navigation.
@@ -386,7 +391,7 @@ def main() -> None:
 \t\t\t\t}
 \t\t\t}
 
-\t\t\tif (controls.UI_UP_P)""",
+\t\t\tif (controls.UI_UP_P || keyboardUp)""",
         "wire original hitboxes to hover and click input",
     )
 
@@ -396,6 +401,11 @@ def main() -> None:
         "if (controls.ACCEPT || mouseAccept)",
         "allow mouse clicks on original menu hitboxes",
     )
+
+    # Add direct browser keyboard fallbacks for every menu direction.
+    source = replace_once(source, "if (controls.UI_DOWN_P)", "if (controls.UI_DOWN_P || keyboardDown)", "browser DOWN key fallback")
+    source = replace_once(source, "if (controls.UI_LEFT_P)", "if (controls.UI_LEFT_P || keyboardLeft)", "browser LEFT key fallback")
+    source = replace_once(source, "if (controls.UI_RIGHT_P)", "if (controls.UI_RIGHT_P || keyboardRight)", "browser RIGHT key fallback")
 
     # Animate the selected label and both layers before the engine switches screens.
     source = replace_once(
@@ -572,6 +582,9 @@ def main() -> None:
     source = replace_once(
         source,
         """\t\tsuper.create();
+\t\tFlxG.mouse.visible = true;
+\t\tFlxG.camera.bgColor = FlxColor.TRANSPARENT;
+\t\tsetMenuBackdropVisible(true);
 
 \t\tFlxG.camera.follow(camFollow, null, 9);""",
         """\t\tsuper.create();

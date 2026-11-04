@@ -383,7 +383,7 @@ jobs:
 
               # Original Sonic.EXE menu/title effects. Install them in the engine's
               # standard sounds directory so Paths.sound() resolves the names.
-              sound_dir = Path("engine/assets/sounds")
+              sound_dir = Path("engine/assets/shared/sounds")
               sound_dir.mkdir(parents=True, exist_ok=True)
               for sound_name in ("sonic.ogg", "menulaugh.ogg", "menumomentclick.ogg", "menuConfirm.ogg"):
                   output = sound_dir / sound_name
@@ -420,6 +420,20 @@ jobs:
           rm -f engine/assets/shared/music/menu-source.ogg
           test -s engine/assets/shared/music/menu.mp3
           echo "Prepared original menu.mp3 for the HTML5-only asset library."
+
+      - name: Convert original Sonic.EXE UI sounds for HTML5
+        run: |
+          sound_dir="engine/assets/shared/sounds"
+          mkdir -p "$sound_dir"
+          for name in sonic menulaugh menumomentclick menuConfirm; do
+            source="$sound_dir/$name.ogg"
+            output="$sound_dir/$name.mp3"
+            test -s "$source"
+            ffmpeg -y -i "$source" -vn -c:a libmp3lame -q:a 2 "$output"
+            test -s "$output"
+            rm "$source"
+            echo "Installed HTML5 Sonic.EXE sound: $output"
+          done
 
       - name: Convert original postIntro video for HTML5 playback
         run: |
