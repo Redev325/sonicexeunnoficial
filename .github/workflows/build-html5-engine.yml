@@ -689,15 +689,15 @@ jobs:
           </script>
           """
           body_markup = """
-          <video id="sonicexe-menu-bg" muted loop playsinline preload="auto" aria-hidden="true">
+          <video id="sonicexe-menu-bg" muted loop playsinline preload="none" aria-hidden="true">
             <source src="sonicexe-menu.mp4" type="video/mp4">
           </video>
-          <video id="sonicexe-title-bg" muted loop playsinline preload="auto" aria-hidden="true">
+          <video id="sonicexe-title-bg" muted loop playsinline preload="none" aria-hidden="true">
             <source src="sonicexe-title-bg.mp4" type="video/mp4">
           </video>
           <video id="sonicexe-soundtest-bg" muted loop playsinline preload="metadata" aria-hidden="true"></video>
           <img id="sonicexe-title-spikes" src="sonicexe-title-spikes.png" alt="" aria-hidden="true">
-          <video id="sonicexe-postintro-video" muted playsinline preload="auto" aria-hidden="true">
+          <video id="sonicexe-postintro-video" muted playsinline preload="none" aria-hidden="true">
             <source src="postIntro.mp4" type="video/mp4">
           </video>
           """
