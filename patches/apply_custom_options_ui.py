@@ -17,6 +17,13 @@ def patch_base_options(path: Path) -> None:
 
     source = replace_once(
         source,
+        "\t\tsuper();\n\n\t\tif(title == null) title = 'Options';",
+        "\t\tsuper();\n\t\t// The Options theme must remain active on every settings page.\n\t\tFlxG.sound.playMusic(Paths.music('options'), 0.72, true);\n\n\t\tif(title == null) title = 'Options';",
+        "keep Options music active on shared settings pages",
+    )
+
+    source = replace_once(
+        source,
         "private var descBox:FlxSprite;\n\tprivate var descText:FlxText;",
         """private var descBox:FlxSprite;
 \tprivate var descText:FlxText;
@@ -285,6 +292,13 @@ def patch_controls(path: Path) -> None:
 
     source = replace_once(
         source,
+        "\t\tsuper();\n\n\t\t#if DISCORD_ALLOWED",
+        "\t\tsuper();\n\t\t// Controls is part of Options, so keep its dedicated theme playing too.\n\t\tFlxG.sound.playMusic(Paths.music('options'), 0.72, true);\n\n\t\t#if DISCORD_ALLOWED",
+        "keep Options music active on the Controls page",
+    )
+
+    source = replace_once(
+        source,
         "\tvar bg:FlxSprite;",
         """\tvar bg:FlxSprite;
 \tvar customRowPanels:FlxTypedGroup<AttachedSprite>;
@@ -448,11 +462,47 @@ def patch_controls(path: Path) -> None:
     print(f"Applied custom Sonic.EXE key-binding panels to {path}")
 
 
+
+def patch_visuals(path: Path) -> None:
+    source = path.read_text(encoding="utf-8")
+
+    source = replace_once(
+        source,
+        """\tfunction onChangePauseMusic()
+\t{
+\t\tif(ClientPrefs.data.pauseMusic == 'None')
+\t\t\tFlxG.sound.music.volume = 0;
+\t\telse
+\t\t\tFlxG.sound.playMusic(Paths.music(Paths.formatToSongPath(ClientPrefs.data.pauseMusic)));
+
+\t\tchangedMusic = true;
+\t}""",
+        """\tfunction onChangePauseMusic()
+\t{
+\t\t// Save the selected pause-screen track without interrupting the Options theme.
+\t\tchangedMusic = true;
+\t}""",
+        "keep Options music while changing pause-screen song preference",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tif(changedMusic && !OptionsState.onPlayState) FlxG.sound.playMusic(Paths.music('freakyMenu'), 1, true);""",
+        """\t\tif(changedMusic && !OptionsState.onPlayState)
+\t\t\tFlxG.sound.playMusic(Paths.music('options'), 0.72, true);""",
+        "restore Options music after closing Visuals settings",
+    )
+
+    path.write_text(source, encoding="utf-8")
+    print(f"Kept the Options soundtrack active in {path}")
+
+
 def main() -> None:
-    if len(sys.argv) != 3:
-        raise SystemExit("Usage: apply_custom_options_ui.py path/to/BaseOptionsMenu.hx path/to/ControlsSubState.hx")
+    if len(sys.argv) != 4:
+        raise SystemExit("Usage: apply_custom_options_ui.py path/to/BaseOptionsMenu.hx path/to/ControlsSubState.hx path/to/VisualsUISubState.hx")
     patch_base_options(Path(sys.argv[1]))
     patch_controls(Path(sys.argv[2]))
+    patch_visuals(Path(sys.argv[3]))
 
 
 if __name__ == "__main__":
