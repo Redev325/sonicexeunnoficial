@@ -188,31 +188,27 @@ def patch_return_to_main_menu(path: Path, state_label: str, old_back_condition: 
 
 def patch_extras_screen(path: Path) -> None:
     source = path.read_text(encoding="utf-8")
-    pattern = re.compile(
-        r"\\t\\tvar defaultList:Array<Array<String>> = \\[.*?\\n"
-        r"\\t\\tfor\\(i in defaultList\\) \\{\\n"
-        r"\\t\\t\\tcreditsStuff.push\\(i\\);\\n"
-        r"\\t\\t\\}\\n",
-        re.S,
-    )
+    start_marker = "\t\tvar defaultList:Array<Array<String>> = ["
+    end_marker = "\t\tfor(i in defaultList) {\n\t\t\tcreditsStuff.push(i);\n\t\t}\n"
+    start = source.find(start_marker)
+    end = source.find(end_marker, start + len(start_marker)) if start >= 0 else -1
+    if start < 0 or end < 0:
+        raise SystemExit(f"Extras cleanup stopped: stock credits list was not found in {path}")
+    end += len(end_marker)
     replacement = (
-        "\\t\\t// Do not show the stock Psych Engine or base-game credits here.\\n"
-        "\\t\\t// Credits supplied by the mod itself are kept above.\\n"
-        "\\t\\tvar hasSelectableModCredits:Bool = false;\\n"
-        "\\t\\tfor (entry in creditsStuff)\\n"
-        "\\t\\t\\tif (entry.length > 1) hasSelectableModCredits = true;\\n"
-        "\\t\\tif (!hasSelectableModCredits)\\n"
-        "\\t\\t{\\n"
-        "\\t\\t\\tcreditsStuff = [];\\n"
-        "\\t\\t\\tcreditsStuff.push(['EXTRAS', '', 'Additional content will appear here.', '', '000000']);\\n"
-        "\\t\\t}\\n"
+        "\t\t// Do not show the stock Psych Engine or base-game credits here.\n"
+        "\t\t// Credits supplied by the mod itself are kept above.\n"
+        "\t\tvar hasSelectableModCredits:Bool = false;\n"
+        "\t\tfor (entry in creditsStuff)\n"
+        "\t\t\tif (entry.length > 1) hasSelectableModCredits = true;\n"
+        "\t\tif (!hasSelectableModCredits)\n"
+        "\t\t{\n"
+        "\t\t\tcreditsStuff = [];\n"
+        "\t\t\tcreditsStuff.push(['EXTRAS', '', 'Additional content will appear here.', '', '000000']);\n"
+        "\t\t}\n"
     )
-    patched, count = pattern.subn(replacement, source, count=1)
-    if count != 1:
-        raise SystemExit(
-            f"Extras cleanup stopped: expected one stock credits list in {path}, found {count}"
-        )
-    path.write_text(patched, encoding="utf-8")
+    source = source[:start] + replacement + source[end:]
+    path.write_text(source, encoding="utf-8")
     print(f"Removed stock Psych Engine/FNF credits from {path}")
 
 
