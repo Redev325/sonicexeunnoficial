@@ -77,12 +77,12 @@ class SonicEXESettingsState extends MusicBeatState
 		{
 			var column:Int = i % 2;
 			var row:Int = Std.int(i / 2);
-			var panelWidth:Int = Std.int(FlxG.width * 0.29);
-			var panelHeight:Int = Std.int(FlxG.height * 0.09);
-			var x:Float = FlxG.width * (column == 0 ? 0.16 : 0.55);
-			var y:Float = FlxG.height * (0.245 + row * 0.215);
+			var panelWidth:Int = Std.int(FlxG.width * 0.245);
+			var panelHeight:Int = Std.int(FlxG.height * 0.07);
+			var x:Float = FlxG.width * (column == 0 ? 0.225 : 0.53);
+			var y:Float = FlxG.height * (0.27 + row * 0.155);
 
-			var shadow:FlxSprite = new FlxSprite(x + 5, y + 6);
+			var shadow:FlxSprite = new FlxSprite(x + 4, y + 4);
 			shadow.loadGraphic(Paths.image("sonicexe-options/sectionBGWhite"));
 			shadow.setGraphicSize(panelWidth, panelHeight);
 			shadow.updateHitbox();
@@ -99,8 +99,8 @@ class SonicEXESettingsState extends MusicBeatState
 			plate.scrollFactor.set(0, 0);
 			add(plate);
 
-			var label:FlxText = new FlxText(x + 4, y + 1, panelWidth - 8, categories[i], Std.int(FlxG.height * 0.039));
-			label.setFormat(Paths.font("sonichud.ttf"), Std.int(FlxG.height * 0.039), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			var label:FlxText = new FlxText(x + 4, y + 1, panelWidth - 8, categories[i], Std.int(FlxG.height * 0.033));
+			label.setFormat(Paths.font("sonichud.ttf"), Std.int(FlxG.height * 0.033), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			label.scrollFactor.set(0, 0);
 			label.y = y + (panelHeight - label.height) * 0.5 - 1;
 			categoryLabels.push(label);
@@ -131,13 +131,13 @@ class SonicEXESettingsState extends MusicBeatState
 	function openInfo(title:String, message:String):Void
 	{
 		infoMode = true;
-		infoShade = new FlxSprite(FlxG.width * 0.16, FlxG.height * 0.29);
-		infoShade.makeGraphic(Std.int(FlxG.width * 0.68), Std.int(FlxG.height * 0.40), 0xEE080808);
+		infoShade = new FlxSprite(FlxG.width * 0.21, FlxG.height * 0.34);
+		infoShade.makeGraphic(Std.int(FlxG.width * 0.58), Std.int(FlxG.height * 0.32), 0xEE080808);
 		infoShade.scrollFactor.set(0, 0);
 		add(infoShade);
 
-		infoText = new FlxText(FlxG.width * 0.20, FlxG.height * 0.34, FlxG.width * 0.60, title + "\n\n" + message + "\n\nPRESS BACK TO RETURN", Std.int(FlxG.height * 0.035));
-		infoText.setFormat(Paths.font("sonichud.ttf"), Std.int(FlxG.height * 0.035), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		infoText = new FlxText(FlxG.width * 0.25, FlxG.height * 0.375, FlxG.width * 0.50, title + "\n\n" + message + "\n\nPRESS BACK TO RETURN", Std.int(FlxG.height * 0.03));
+		infoText.setFormat(Paths.font("sonichud.ttf"), Std.int(FlxG.height * 0.03), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		infoText.scrollFactor.set(0, 0);
 		add(infoText);
 	}

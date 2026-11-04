@@ -110,15 +110,15 @@ def patch_base_options(path: Path) -> None:
 
 \t\tcustomTitlePanel = new FlxSprite();
 \t\tcustomTitlePanel.loadGraphic(Paths.image('sonicexe-options/titleBG'));
-\t\tcustomTitlePanel.setGraphicSize(Std.int(FlxG.width * 0.74), Std.int(FlxG.height * 0.115));
+\t\tcustomTitlePanel.setGraphicSize(Std.int(FlxG.width * 0.64), Std.int(FlxG.height * 0.10));
 \t\tcustomTitlePanel.updateHitbox();
 \t\tcustomTitlePanel.x = (FlxG.width - customTitlePanel.width) * 0.5;
 \t\tcustomTitlePanel.y = FlxG.height * 0.015;
 \t\tcustomTitlePanel.scrollFactor.set(0, 0);
 \t\tadd(customTitlePanel);
 
-\t\tcustomTitle = new FlxText(0, FlxG.height * 0.035, FlxG.width, title.toUpperCase(), Std.int(FlxG.height * 0.047));
-\t\tcustomTitle.setFormat(Paths.font('sonichud.ttf'), Std.int(FlxG.height * 0.047), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\tcustomTitle = new FlxText(0, FlxG.height * 0.035, FlxG.width, title.toUpperCase(), Std.int(FlxG.height * 0.040));
+\t\tcustomTitle.setFormat(Paths.font('sonichud.ttf'), Std.int(FlxG.height * 0.040), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\tcustomTitle.scrollFactor.set(0, 0);
 \t\tadd(customTitle);
 
@@ -127,7 +127,7 @@ def patch_base_options(path: Path) -> None:
 \t\tdescBox.alpha = 0.82;
 \t\tadd(descBox);
 
-\t\tdescText = new FlxText(90, 600, FlxG.width - 180, "", Std.int(FlxG.height * 0.026));
+\t\tdescText = new FlxText(120, 600, FlxG.width - 240, "", Std.int(FlxG.height * 0.023));
 \t\tdescText.setFormat(Paths.font("sonichud.ttf"), Std.int(FlxG.height * 0.026), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\tdescText.scrollFactor.set();
 \t\tdescText.borderSize = 1.5;
@@ -145,7 +145,7 @@ def patch_base_options(path: Path) -> None:
         """\t\t\t//optionText.snapToPosition(); //Don't ignore me when i ask for not making a fucking pull request to uncomment this line ok
 \t\t\tupdateTextFrom(optionsArray[i]);
 
-\t\t\tvar rowWidth:Int = Std.int(FlxG.width * 0.70);
+\t\t\tvar rowWidth:Int = Std.int(FlxG.width * 0.58);
 \t\t\tvar rowHeight:Int = Std.int(rowWidth * (164.0 / 972.0));
 \t\t\tvar row:FlxSprite = new FlxSprite();
 \t\t\trow.loadGraphic(Paths.image('sonicexe-options/sectionBGClone'));
@@ -162,7 +162,7 @@ def patch_base_options(path: Path) -> None:
 \t\t\tselectedFrame.scrollFactor.set(0, 0);
 \t\t\tcustomHighlights.add(selectedFrame);
 
-\t\t\tvar labelSize:Int = Std.int(FlxG.height * 0.034);
+\t\t\tvar labelSize:Int = Std.int(FlxG.height * 0.029);
 \t\t\tvar label:FlxText = new FlxText(0, 0, rowWidth * 0.62, optionsArray[i].name, labelSize);
 \t\t\tlabel.setFormat(Paths.font('sonichud.ttf'), labelSize, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\t\tlabel.scrollFactor.set(0, 0);
@@ -175,7 +175,7 @@ def patch_base_options(path: Path) -> None:
 
 \t\t\tvar arrow:FlxSprite = new FlxSprite();
 \t\t\tarrow.loadGraphic(Paths.image('sonicexe-options/optionArrow'));
-\t\t\tarrow.setGraphicSize(Std.int(FlxG.width * 0.055), Std.int(FlxG.height * 0.018));
+\t\t\tarrow.setGraphicSize(Std.int(FlxG.width * 0.047), Std.int(FlxG.height * 0.015));
 \t\t\tarrow.updateHitbox();
 \t\t\tarrow.alpha = 0.72;
 \t\t\tarrow.scrollFactor.set(0, 0);
@@ -245,7 +245,7 @@ def patch_base_options(path: Path) -> None:
 \t\tcustomBackgroundTint.alpha = 0.055 + (Math.sin(customBackgroundTime * 0.72) + 1) * 0.028;
 
 \t\tif (grpOptions == null || customRows == null) return;
-\t\tvar rowWidth:Float = FlxG.width * 0.70;
+\t\tvar rowWidth:Float = FlxG.width * 0.58;
 \t\tfor (i in 0...customRows.length)
 \t\t{
 \t\t\tvar anchor:Alphabet = grpOptions.members[i];
@@ -345,14 +345,14 @@ def patch_controls(path: Path) -> None:
 
 \t\tcustomTitlePanel = new FlxSprite();
 \t\tcustomTitlePanel.loadGraphic(Paths.image('sonicexe-options/titleBG'));
-\t\tcustomTitlePanel.setGraphicSize(Std.int(FlxG.width * 0.60), Std.int(FlxG.height * 0.095));
+\t\tcustomTitlePanel.setGraphicSize(Std.int(FlxG.width * 0.52), Std.int(FlxG.height * 0.082));
 \t\tcustomTitlePanel.updateHitbox();
 \t\tcustomTitlePanel.x = (FlxG.width - customTitlePanel.width) * 0.5;
 \t\tcustomTitlePanel.y = FlxG.height * 0.02;
 \t\tcustomTitlePanel.scrollFactor.set(0, 0);
 \t\tadd(customTitlePanel);
-\t\tcustomTitle = new FlxText(0, FlxG.height * 0.035, FlxG.width, 'CONTROLS', Std.int(FlxG.height * 0.042));
-\t\tcustomTitle.setFormat(Paths.font('sonichud.ttf'), Std.int(FlxG.height * 0.042), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\tcustomTitle = new FlxText(0, FlxG.height * 0.035, FlxG.width, 'CONTROLS', Std.int(FlxG.height * 0.037));
+\t\tcustomTitle.setFormat(Paths.font('sonichud.ttf'), Std.int(FlxG.height * 0.037), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\tcustomTitle.scrollFactor.set(0, 0);
 \t\tadd(customTitle);
 
@@ -373,9 +373,9 @@ def patch_controls(path: Path) -> None:
 \t\tadd(selectSpr);""",
         """\t\tselectSpr = new AttachedSprite();
 \t\tselectSpr.loadGraphic(Paths.image('sonicexe-options/sectionBGWhite'));
-\t\tselectSpr.setGraphicSize(Std.int(FlxG.width * 0.88), Std.int(FlxG.height * 0.105));
+\t\tselectSpr.setGraphicSize(Std.int(FlxG.width * 0.76), Std.int(FlxG.height * 0.09));
 \t\tselectSpr.updateHitbox();
-\t\tselectSpr.xAdd = -470;
+\t\tselectSpr.xAdd = -395;
 \t\tselectSpr.yAdd = -10;
 \t\tselectSpr.copyAlpha = false;
 \t\tselectSpr.alpha = 0.82;
@@ -412,10 +412,10 @@ def patch_controls(path: Path) -> None:
         """\t\t\t\t\telse {
 \t\t\t\t\t\tvar rowPanel:AttachedSprite = new AttachedSprite();
 \t\t\t\t\t\trowPanel.loadGraphic(Paths.image('sonicexe-options/sectionBGClone'));
-\t\t\t\t\t\trowPanel.setGraphicSize(Std.int(FlxG.width * 0.72), Std.int(FlxG.height * 0.095));
+\t\t\t\t\t\trowPanel.setGraphicSize(Std.int(FlxG.width * 0.62), Std.int(FlxG.height * 0.08));
 \t\t\t\t\t\trowPanel.updateHitbox();
 \t\t\t\t\t\trowPanel.sprTracker = text;
-\t\t\t\t\t\trowPanel.xAdd = -105;
+\t\t\t\t\t\trowPanel.xAdd = -41;
 \t\t\t\t\t\trowPanel.yAdd = -12;
 \t\t\t\t\t\trowPanel.alphaMult = 0.78;
 \t\t\t\t\t\tcustomRowPanels.add(rowPanel);
@@ -433,7 +433,7 @@ def patch_controls(path: Path) -> None:
 \t\t\tblack.alphaMult = 0.4;""",
         """\t\t\tvar black:AttachedSprite = new AttachedSprite();
 \t\t\tblack.loadGraphic(Paths.image('sonicexe-options/propertyBG'));
-\t\t\tblack.setGraphicSize(250, 78);
+\t\t\tblack.setGraphicSize(215, 68);
 \t\t\tblack.updateHitbox();
 \t\t\tblack.alphaMult = 0.84;""",
         "original key binding value panels",
