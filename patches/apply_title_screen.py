@@ -204,7 +204,7 @@ def patch_title_state(source: str) -> str:
 \t\t\t\twarningPrompt.alpha = 0.58 + Math.sin(warningPulseTime * 3.2) * 0.42;
 \t\t\tif (pressedEnter)
 \t\t\t{
-\t\t\t\tFlxG.sound.play(Paths.sound('confirmMenu'));
+\t\t\t\tFlxG.sound.play(Paths.sound('sonic'));
 \t\t\t\tbeginPostIntro();
 \t\t\t}
 \t\t\tsuper.update(elapsed);
@@ -240,6 +240,12 @@ def patch_title_state(source: str) -> str:
     if beat_start < 0 or beat_end < 0:
         raise SystemExit("TitleState patch stopped: could not locate beatHit")
     source = source[:beat_start] + "\toverride function beatHit()\n\t{\n\t\tsuper.beatHit();\n\t}\n" + source[beat_end:]
+    source = replace_once(
+        source,
+        "FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);",
+        "FlxG.sound.play(Paths.sound('menulaugh'), 1.0);",
+        "play the original Sonic.EXE menu laugh on Enter",
+    )
     return source
 
 

@@ -525,6 +525,22 @@ def main() -> None:
         "update selection using original yellow sprite",
     )
 
+    # Replace Psych Engine's stock selection/confirmation tones with the
+    # original Sonic.EXE menu sound effect.
+    source = replace_once(
+        source,
+        "FlxG.sound.play(Paths.sound('scrollMenu'));",
+        "FlxG.sound.play(Paths.sound('sonic'));",
+        "use original Sonic button sound during menu navigation",
+    )
+    source = replace_once(
+        source,
+        "FlxG.sound.play(Paths.sound('confirmMenu'));",
+        "FlxG.sound.play(Paths.sound('sonic'));",
+        "use original Sonic button sound on click/confirm",
+        count=2,
+    )
+
 
 
     source = replace_once(

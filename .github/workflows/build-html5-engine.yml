@@ -359,6 +359,16 @@ jobs:
                       shutil.copyfileobj(source, target)
                   print(f"Installed original game font: {output} ({output.stat().st_size:,} bytes)")
 
+              # Original Sonic.EXE menu/title effects. Install them in the engine's
+              # standard sounds directory so Paths.sound() resolves the names.
+              sound_dir = Path("engine/assets/sounds")
+              sound_dir.mkdir(parents=True, exist_ok=True)
+              for sound_name in ("sonic.ogg", "menulaugh.ogg", "menumomentclick.ogg", "menuConfirm.ogg"):
+                  output = sound_dir / sound_name
+                  with z.open("assets/shared/sounds/" + sound_name) as source, output.open("wb") as target:
+                      shutil.copyfileobj(source, target)
+                  print(f"Installed original Sonic.EXE sound: {output} ({output.stat().st_size:,} bytes)")
+
               music_output = Path("engine/assets/shared/music/menu-source.ogg")
               music_output.parent.mkdir(parents=True, exist_ok=True)
               with z.open("assets/exe/music/menu.ogg") as source, music_output.open("wb") as target:
