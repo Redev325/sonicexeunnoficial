@@ -90,10 +90,10 @@ def patch_music_beat(path: Path) -> None:
 
 def patch_main_menu(path: Path) -> None:
     source = path.read_text(encoding="utf-8")
-    pattern = re.compile(r"(?m)^(\s*)switch \(optionShit\\[curSelected\\]\\)\\s*$")
+    pattern = re.compile(r"(?m)^(\s*)switch \(optionShit\[curSelected\]\)\s*$")
     # Match the menu's destination switch (called after the inward wipe has played).
     patched, count = pattern.subn(
-        lambda match: match.group(1) + "MusicBeatState.sonicExeTransitionIn = true;\\n" + match.group(0),
+        lambda match: match.group(1) + "MusicBeatState.sonicExeTransitionIn = true;\n" + match.group(0),
         source,
         count=1,
     )
