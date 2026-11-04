@@ -62,7 +62,8 @@ def main() -> None:
 \t\tif (!sonicExeCustomSongMode || songs.length == 0 || curSelected < 0 || curSelected >= songs.length)
 \t\t\treturn;
 \t\tvar videoKey:String = soundTestVideoKey(songs[curSelected].songName);
-\t\tbg.alpha = videoKey.length > 0 ? 0.18 : 1;
+\t\t// Keep the Sound Test artwork fully opaque; don't blend preview video through the game canvas.
+		bg.alpha = 1;
 \t\t#if js
 \t\tvar browserWindow:Dynamic = js.Browser.window;
 \t\tvar callback:Dynamic = Reflect.field(browserWindow, "setSonicEXESoundTestVideo");
