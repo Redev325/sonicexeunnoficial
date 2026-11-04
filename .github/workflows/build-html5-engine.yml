@@ -13,6 +13,12 @@ on:
       - "patches/apply_custom_options_ui.py"
   workflow_dispatch:
 
+# Keep only the newest pending build for this branch; don't interrupt a build
+# that has already started compiling.
+concurrency:
+  group: sonicexe-html5-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -506,6 +512,25 @@ jobs:
                   with z.open(name) as source, Image.open(source) as image:
                       image.convert("RGBA").save(destination, format="PNG", optimize=True)
                   print(f"Prepared original settings artwork: {destination} ({destination.stat().st_size:,} bytes)")
+
+              # Generate a reusable soft radial bloom for the animated Options backdrop.
+              # It is a transparent light layer, not a replacement for the original art.
+              glow_size = 512
+              glow_image = Image.new("RGBA", (glow_size, glow_size), (0, 0, 0, 0))
+              glow_pixels = glow_image.load()
+              glow_center = (glow_size - 1) * 0.5
+              for gy in range(glow_size):
+                  for gx in range(glow_size):
+                      dx = (gx - glow_center) / glow_center
+                      dy = (gy - glow_center) / glow_center
+                      distance = (dx * dx + dy * dy) ** 0.5
+                      falloff = max(0.0, 1.0 - distance)
+                      alpha = round(156 * (falloff ** 2.2))
+                      if alpha:
+                          glow_pixels[gx, gy] = (255, 220, 190, alpha)
+              glow_output = options_output / "ambientGlow.png"
+              glow_image.save(glow_output, format="PNG", optimize=True)
+              print(f"Prepared animated Options light layer: {glow_output}")
 
               # Keep the original Sound Test backdrop and its original song-preview videos.
               soundtest_prefix = "assets/exe/soundtest/"

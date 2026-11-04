@@ -23,6 +23,8 @@ class SonicEXESettingsState extends MusicBeatState
 	var backgroundBaseScaleX:Float = 1;
 	var backgroundBaseScaleY:Float = 1;
 	var backgroundTint:FlxSprite;
+	var ambientGlowA:FlxSprite;
+	var ambientGlowB:FlxSprite;
 	var watermark:FlxSprite;
 	var watermarkBaseY:Float = 0;
 
@@ -51,6 +53,32 @@ class SonicEXESettingsState extends MusicBeatState
 		backgroundTint.alpha = 0.09;
 		backgroundTint.scrollFactor.set(0, 0);
 		add(backgroundTint);
+
+		// Soft procedural light blooms drift behind the original artwork.
+		// They sit below the watermark, heading, and category controls.
+		ambientGlowA = new FlxSprite();
+		ambientGlowA.loadGraphic(Paths.image("sonicexe-options/ambientGlow"));
+		ambientGlowA.setGraphicSize(Std.int(FlxG.width * 1.05), Std.int(FlxG.height * 1.38));
+		ambientGlowA.updateHitbox();
+		ambientGlowA.x = -FlxG.width * 0.12;
+		ambientGlowA.y = -FlxG.height * 0.19;
+		ambientGlowA.color = 0xFFFF6548;
+		ambientGlowA.alpha = 0.20;
+		ambientGlowA.antialiasing = true;
+		ambientGlowA.scrollFactor.set(0, 0);
+		add(ambientGlowA);
+
+		ambientGlowB = new FlxSprite();
+		ambientGlowB.loadGraphic(Paths.image("sonicexe-options/ambientGlow"));
+		ambientGlowB.setGraphicSize(Std.int(FlxG.width * 0.88), Std.int(FlxG.height * 1.20));
+		ambientGlowB.updateHitbox();
+		ambientGlowB.x = FlxG.width * 0.24;
+		ambientGlowB.y = -FlxG.height * 0.10;
+		ambientGlowB.color = 0xFFFFC078;
+		ambientGlowB.alpha = 0.14;
+		ambientGlowB.antialiasing = true;
+		ambientGlowB.scrollFactor.set(0, 0);
+		add(ambientGlowB);
 
 		watermark = new FlxSprite();
 		watermark.loadGraphic(Paths.image("sonicexe-title/logo/ring"));
@@ -178,6 +206,16 @@ class SonicEXESettingsState extends MusicBeatState
 		background.y = (FlxG.height - background.height) * 0.5 + Math.cos(pulseTime * 0.23) * FlxG.height * 0.016;
 		background.angle = Math.sin(pulseTime * 0.16) * 0.45;
 		backgroundTint.alpha = 0.065 + (Math.sin(pulseTime * 0.78) + 1) * 0.035;
+
+		// Counter-moving warm light blooms create visible background motion
+		// without covering or intercepting any menu controls.
+		ambientGlowA.x = -FlxG.width * 0.12 + Math.sin(pulseTime * 0.18) * FlxG.width * 0.10;
+		ambientGlowA.y = -FlxG.height * 0.19 + Math.cos(pulseTime * 0.15) * FlxG.height * 0.045;
+		ambientGlowA.alpha = 0.16 + (Math.sin(pulseTime * 0.34) + 1) * 0.035;
+		ambientGlowB.x = FlxG.width * 0.24 + Math.cos(pulseTime * 0.14) * FlxG.width * 0.09;
+		ambientGlowB.y = -FlxG.height * 0.10 + Math.sin(pulseTime * 0.19) * FlxG.height * 0.05;
+		ambientGlowB.alpha = 0.10 + (Math.cos(pulseTime * 0.29) + 1) * 0.03;
+
 		watermark.y = watermarkBaseY + Math.sin(pulseTime * 0.42) * 7;
 		watermark.alpha = 0.16 + (Math.sin(pulseTime * 0.72) + 1) * 0.025;
 
