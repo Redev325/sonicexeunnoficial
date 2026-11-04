@@ -13,6 +13,7 @@ on:
       - "patches/apply_custom_options_ui.py"
   workflow_dispatch:
 
+# Trigger a full rebuild against the latest committed asset and intro pipeline.
 # Keep only the newest pending build for this branch; don't interrupt a build
 # that has already started compiling.
 concurrency:
