@@ -274,6 +274,13 @@ jobs:
                   idle_box.save(idle_box_output, format="PNG", optimize=True)
               print(f"Prepared neutral gray idle frame: {idle_box_output} ({idle_box_output.stat().st_size:,} bytes)")
 
+              # Preserve the original Sonic-head transition artwork as-is (no red recolor).
+              transition_output = Path("engine/assets/shared/images/sonicexe-transitions/head.png")
+              transition_output.parent.mkdir(parents=True, exist_ok=True)
+              with z.open("assets/exe/transitions/head.webp") as source, Image.open(source) as image:
+                  image.convert("RGBA").save(transition_output, format="PNG", optimize=True)
+              print(f"Prepared original non-red Sonic head transition: {transition_output} ({transition_output.stat().st_size:,} bytes)")
+
               # Copy original title-screen assets and matching atlas metadata.
               title_prefix = "assets/exe/title/"
               for name in z.namelist():
