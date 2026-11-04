@@ -193,7 +193,7 @@ class SonicEXESettingsState extends MusicBeatState
 		{
 			FlxG.sound.play(Paths.sound("cancelMenu"));
 			FlxG.sound.playMusic(Paths.music("menu"), 0.7, true);
-			MusicBeatState.switchState(new MainMenuState());
+			MusicBeatState.switchStateWithSonicTransition(new MainMenuState());
 			return;
 		}
 		if (controls.UI_UP_P) changeSelection(-2);

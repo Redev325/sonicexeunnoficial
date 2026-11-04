@@ -289,7 +289,7 @@ def main() -> None:
 \t\tvar sonicWipe:FlxSprite = new FlxSprite();
 \t\tsonicWipe.loadGraphic(Paths.image('sonicexe-transitions/head-wipe'), true, 640, 360);
 		sonicWipe.antialiasing = true;
-\t\tsonicWipe.animation.add('close', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], 24, false);
+\t\tsonicWipe.animation.add('close', [for (i in 0...36) i], 30, false);
 \t\tsonicWipe.animation.play('close');
 \t\tsonicWipe.setGraphicSize(FlxG.width, FlxG.height);
 \t\tsonicWipe.updateHitbox();

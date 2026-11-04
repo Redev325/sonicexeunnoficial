@@ -35,13 +35,41 @@ SWITCH_NEW = """\t\t// Keep the Sonic close and reverse reveal adjacent; don't i
 \t\telse
 \t\t\tstartTransition(nextState);"""
 
+SONIC_SWITCH_TO_WITH_SONIC = """\t// Play the Sonic close on the current screen, then open the destination in reverse.
+\tpublic static function switchStateWithSonicTransition(nextState:FlxState):Void
+\t{
+\t\tif (nextState == null) return;
+\t\tvar currentState:FlxState = FlxG.state;
+\t\tif (currentState == null)
+\t\t{
+\t\t\tFlxG.switchState(nextState);
+\t\t\treturn;
+\t\t}
+\t\tcurrentState.openSubState(new SonicEXETransitionSubState(true, function():Void
+\t\t{
+\t\t\tsonicExeTransitionIn = true;
+\t\t\tswitchState(nextState);
+\t\t}));
+\t}
+"""
+
 TRANSITION_CLASS = """
 
-// Transparent Sonic-head aperture used as the transition-in after the main-menu
-// close animation. Frames 19 -> 0 expand the aperture back across the screen.
+// Shared Sonic-head wipe. closeAfter=true plays the inward close on the current
+// state; otherwise the frames run in reverse to reveal the destination state.
 class SonicEXETransitionSubState extends FlxSubState
 {
 \tvar wipe:FlxSprite;
+\tvar closeAfter:Bool = false;
+\tvar finishCallback:Void->Void;
+\tvar finished:Bool = false;
+
+\tpublic function new(closeAfter:Bool = false, finishCallback:Void->Void = null)
+\t{
+\t\tsuper();
+\t\tthis.closeAfter = closeAfter;
+\t\tthis.finishCallback = finishCallback;
+\t}
 
 \toverride function create():Void
 \t{
@@ -50,11 +78,18 @@ class SonicEXETransitionSubState extends FlxSubState
 
 \t\twipe = new FlxSprite();
 \t\twipe.loadGraphic(Paths.image('sonicexe-transitions/head-wipe'), true, 640, 360);
-\t\twipe.animation.add('open', [
-\t\t\t19, 18, 17, 16, 15, 14, 13, 12, 11, 10,
-\t\t\t9, 8, 7, 6, 5, 4, 3, 2, 1, 0
-\t\t], 24, false);
-\t\twipe.animation.play('open');
+\t\twipe.antialiasing = true;
+\t\tvar frames:Array<Int> = [];
+\t\tif (closeAfter)
+\t\t{
+\t\t\tfor (i in 0...36) frames.push(i);
+\t\t}
+\t\telse
+\t\t{
+\t\t\tfor (i in 0...36) frames.push(35 - i);
+\t\t}
+\t\twipe.animation.add(closeAfter ? 'close' : 'open', frames, 30, false);
+\t\twipe.animation.play(closeAfter ? 'close' : 'open');
 \t\twipe.setGraphicSize(FlxG.width, FlxG.height);
 \t\twipe.updateHitbox();
 \t\twipe.setPosition(0, 0);
@@ -66,8 +101,14 @@ class SonicEXETransitionSubState extends FlxSubState
 \toverride function update(elapsed:Float):Void
 \t{
 \t\tsuper.update(elapsed);
-\t\tif (wipe != null && wipe.animation.finished)
-\t\t\tclose();
+\t\tif (!finished && wipe != null && wipe.animation.finished)
+\t\t{
+\t\t\tfinished = true;
+\t\t\tif (finishCallback != null)
+\t\t\t\tfinishCallback();
+\t\t\telse
+\t\t\t\tclose();
+\t\t}
 \t}
 }
 """
@@ -91,6 +132,12 @@ def patch_music_beat(path: Path) -> None:
     )
     source = replace_once(source, CREATE_OLD, CREATE_NEW, "default transition-in hook")
     source = replace_once(source, SWITCH_OLD, SWITCH_NEW, "chain Sonic close directly to reverse reveal")
+    source = replace_once(
+        source,
+        "\\tpublic static function resetState() {",
+        SONIC_SWITCH_TO_WITH_SONIC + "\\tpublic static function resetState() {",
+        "two-part Sonic transition switch helper",
+    )
     if "class SonicEXETransitionSubState extends FlxSubState" in source:
         raise SystemExit("Sonic transition patch stopped: transition substate is already installed.")
     source += TRANSITION_CLASS

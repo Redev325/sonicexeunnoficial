@@ -439,7 +439,7 @@ jobs:
               # the blue artwork is never drawn over the game.
               transition_output = Path("engine/assets/shared/images/sonicexe-transitions/head-wipe.png")
               transition_output.parent.mkdir(parents=True, exist_ok=True)
-              frame_width, frame_height, frame_count = 640, 360, 20
+              frame_width, frame_height, frame_count = 640, 360, 36
               with z.open("assets/exe/transitions/head.webp") as source, Image.open(source) as image:
                   source_rgba = image.convert("RGBA")
                   source_alpha = source_rgba.getchannel("A").resize((frame_width, frame_height), Image.Resampling.LANCZOS)
@@ -447,7 +447,8 @@ jobs:
                   for frame_index in range(frame_count):
                       # Begin with an oversized opening and close it smoothly to a point.
                       progress = frame_index / (frame_count - 1)
-                      scale = 1.32 * ((1.0 - progress) ** 1.7) + 0.006
+                      ease = progress ** 3 * (progress * (progress * 6 - 15) + 10)
+                      scale = 1.62 * (1.0 - ease) + 0.004
                       scaled_width = max(1, round(source_alpha.width * scale))
                       scaled_height = max(1, round(source_alpha.height * scale))
                       mask = source_alpha.resize((scaled_width, scaled_height), Image.Resampling.LANCZOS)
