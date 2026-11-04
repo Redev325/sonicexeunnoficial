@@ -84,7 +84,7 @@ def patch_story(path: Path) -> None:
     source = replace_once(
         source,
         'var bgYellow:FlxSprite = new FlxSprite(0, 56).makeGraphic(FlxG.width, 386, 0xFFF9CF51);',
-        'var bgYellow:FlxSprite = new FlxSprite(0, 56).makeGraphic(FlxG.width, 386, 0xC908060B);',
+        'var bgYellow:FlxSprite = new FlxSprite(0, 56).makeGraphic(FlxG.width, 386, 0xFFF9CF51);',
         "replace bright Story Mode slab with a translucent dark panel",
     )
     source = replace_once(
@@ -143,7 +143,7 @@ def patch_extras(path: Path) -> None:
         source,
         '\t\tbg.screenCenter();\n\t\t\n\t\tgrpOptions = new FlxTypedGroup<Alphabet>();',
         """\t\tbg.screenCenter();
-\t\tbg.color = 0xFF4A101A;
+\t\t// Keep the original Extras background colors and artwork unchanged.
 \t\tvar sonicExtrasPanel:FlxSprite = new FlxSprite(28, 72).makeGraphic(FlxG.width - 56, FlxG.height - 118, 0x6506000B);
 \t\tsonicExtrasPanel.scrollFactor.set();
 \t\tadd(sonicExtrasPanel);
