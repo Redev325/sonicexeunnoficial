@@ -168,11 +168,34 @@ def patch_main_menu(path: Path) -> None:
     print(f"Armed reverse Sonic-head reveal for menu destinations in {path}")
 
 
+def patch_return_to_main_menu(path: Path, state_label: str, old_back_condition: str) -> None:
+    source = path.read_text(encoding="utf-8")
+    source = replace_once(
+        source,
+        old_back_condition,
+        old_back_condition.replace("controls.BACK", "controls.BACK || FlxG.keys.justPressed.BACKSPACE"),
+        f"{state_label} browser Backspace exit",
+    )
+    source = replace_once(
+        source,
+        "MusicBeatState.switchState(new MainMenuState());",
+        "MusicBeatState.switchStateWithSonicTransition(new MainMenuState());",
+        f"{state_label} close + outward Sonic reveal",
+    )
+    path.write_text(source, encoding="utf-8")
+    print(f"Installed the Sonic close + outward reveal when leaving {state_label}.")
+
+
 def main() -> None:
-    if len(sys.argv) != 3:
-        raise SystemExit("Usage: apply_sonic_transition.py path/to/MusicBeatState.hx path/to/MainMenuState.hx")
+    if len(sys.argv) != 6:
+        raise SystemExit("Usage: apply_sonic_transition.py path/to/MusicBeatState.hx path/to/MainMenuState.hx path/to/FreeplayState.hx path/to/StoryMenuState.hx path/to/CreditsState.hx")
     patch_music_beat(Path(sys.argv[1]))
     patch_main_menu(Path(sys.argv[2]))
+    # FreeplayState is also used by the Sound Test, so its single exit handler
+    # covers both destinations without creating a separate or conflicting path.
+    patch_return_to_main_menu(Path(sys.argv[3]), "Freeplay / Sound Test", "if (controls.BACK)")
+    patch_return_to_main_menu(Path(sys.argv[4]), "Story Mode", "if (controls.BACK && !movedBack && !selectedWeek)")
+    patch_return_to_main_menu(Path(sys.argv[5]), "Extras", "if (controls.BACK)")
 
 
 if __name__ == "__main__":
