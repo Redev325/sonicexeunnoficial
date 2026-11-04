@@ -148,7 +148,7 @@ def patch_base_options(path: Path) -> None:
 \t\t\tvar rowWidth:Int = Std.int(FlxG.width * 0.70);
 \t\t\tvar rowHeight:Int = Std.int(rowWidth * (164.0 / 972.0));
 \t\t\tvar row:FlxSprite = new FlxSprite();
-\t\t\trow.loadGraphic(Paths.image('sonicexe-options/propertyBG'));
+\t\t\trow.loadGraphic(Paths.image('sonicexe-options/sectionBGClone'));
 \t\t\trow.setGraphicSize(rowWidth, rowHeight);
 \t\t\trow.updateHitbox();
 \t\t\trow.scrollFactor.set(0, 0);
@@ -411,7 +411,7 @@ def patch_controls(path: Path) -> None:
 \t\t\t\t\t}""",
         """\t\t\t\t\telse {
 \t\t\t\t\t\tvar rowPanel:AttachedSprite = new AttachedSprite();
-\t\t\t\t\t\trowPanel.loadGraphic(Paths.image('sonicexe-options/propertyBG'));
+\t\t\t\t\t\trowPanel.loadGraphic(Paths.image('sonicexe-options/sectionBGClone'));
 \t\t\t\t\t\trowPanel.setGraphicSize(Std.int(FlxG.width * 0.72), Std.int(FlxG.height * 0.095));
 \t\t\t\t\t\trowPanel.updateHitbox();
 \t\t\t\t\t\trowPanel.sprTracker = text;

@@ -77,12 +77,12 @@ class SonicEXESettingsState extends MusicBeatState
 		{
 			var column:Int = i % 2;
 			var row:Int = Std.int(i / 2);
-			var panelWidth:Int = Std.int(FlxG.width * 0.255);
-			var panelHeight:Int = Std.int(FlxG.height * 0.075);
-			var x:Float = FlxG.width * (column == 0 ? 0.20 : 0.55);
-			var y:Float = FlxG.height * (0.26 + row * 0.245);
+			var panelWidth:Int = Std.int(FlxG.width * 0.29);
+			var panelHeight:Int = Std.int(FlxG.height * 0.09);
+			var x:Float = FlxG.width * (column == 0 ? 0.16 : 0.55);
+			var y:Float = FlxG.height * (0.245 + row * 0.215);
 
-			var shadow:FlxSprite = new FlxSprite(x + 6, y + 7);
+			var shadow:FlxSprite = new FlxSprite(x + 5, y + 6);
 			shadow.loadGraphic(Paths.image("sonicexe-options/sectionBGWhite"));
 			shadow.setGraphicSize(panelWidth, panelHeight);
 			shadow.updateHitbox();
@@ -99,8 +99,8 @@ class SonicEXESettingsState extends MusicBeatState
 			plate.scrollFactor.set(0, 0);
 			add(plate);
 
-			var label:FlxText = new FlxText(x + 4, y + 1, panelWidth - 8, categories[i], Std.int(FlxG.height * 0.043));
-			label.setFormat(Paths.font("sonichud.ttf"), Std.int(FlxG.height * 0.043), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			var label:FlxText = new FlxText(x + 4, y + 1, panelWidth - 8, categories[i], Std.int(FlxG.height * 0.039));
+			label.setFormat(Paths.font("sonichud.ttf"), Std.int(FlxG.height * 0.039), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			label.scrollFactor.set(0, 0);
 			label.y = y + (panelHeight - label.height) * 0.5 - 1;
 			categoryLabels.push(label);

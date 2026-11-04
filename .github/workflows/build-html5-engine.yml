@@ -257,6 +257,21 @@ jobs:
               "assets/exe/backButton.webp": Path("engine/assets/shared/images/sonicexe-back-button.png"),
           }
           with ZipFile(archive) as z:
+              note_related = [
+                  name for name in z.namelist()
+                  if Path(name).suffix.casefold() in {".png", ".webp", ".xml", ".txt"}
+                  and (
+                      "note_assets" in Path(name).name.casefold()
+                      or "noteskins" in name.casefold()
+                      or "note-skin" in name.casefold()
+                  )
+              ]
+              print("Original release note-skin candidates:")
+              for name in note_related:
+                  print("  " + name)
+              if not note_related:
+                  print("  No explicitly named note-skin files found in release archive.")
+
               for source_name, output in images.items():
                   output.parent.mkdir(parents=True, exist_ok=True)
                   with z.open(source_name) as source, Image.open(source) as image:
