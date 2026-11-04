@@ -385,11 +385,22 @@ jobs:
               # standard sounds directory so Paths.sound() resolves the names.
               sound_dir = Path("engine/assets/shared/sounds")
               sound_dir.mkdir(parents=True, exist_ok=True)
+              # The release archive uses inconsistent filename casing for some sound assets.
+              # Match the original path case-insensitively, then write a predictable lowercase
+              # filename for the HTML5 conversion step below.
+              archive_names = {name.casefold(): name for name in z.namelist()}
               for sound_name in ("sonic.ogg", "menulaugh.ogg", "menumomentclick.ogg", "menuConfirm.ogg", "scrollmenu.ogg"):
-                  output = sound_dir / sound_name
-                  with z.open("assets/shared/sounds/" + sound_name) as source, output.open("wb") as target:
+                  archive_path = "assets/shared/sounds/" + sound_name
+                  actual_path = archive_names.get(archive_path.casefold())
+                  if actual_path is None:
+                      matches = [name for name in z.namelist() if Path(name).name.casefold() == sound_name.casefold()]
+                      if len(matches) != 1:
+                          raise SystemExit(f"Could not uniquely find original sound {sound_name}; matches: {matches}")
+                      actual_path = matches[0]
+                  output = sound_dir / sound_name.lower()
+                  with z.open(actual_path) as source, output.open("wb") as target:
                       shutil.copyfileobj(source, target)
-                  print(f"Installed original Sonic.EXE sound: {output} ({output.stat().st_size:,} bytes)")
+                  print(f"Installed original Sonic.EXE sound: {output} from {actual_path} ({output.stat().st_size:,} bytes)")
 
               music_output = Path("engine/assets/shared/music/menu-source.ogg")
               music_output.parent.mkdir(parents=True, exist_ok=True)
