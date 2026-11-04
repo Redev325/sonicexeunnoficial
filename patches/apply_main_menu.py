@@ -276,12 +276,33 @@ def main() -> None:
 
 \tfunction beginSonicConfirmWipe():Void
 \t{
-\t\t// The reference transitions with a clean fade to black, not a red Sonic mask.
+\t\t// Reuse the original Sonic head artwork without recoloring it.
+\t\t// The head starts large, then closes down toward the center as the screen fades.
 \t\tvar darken:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 \t\tdarken.scrollFactor.set(0, 0);
 \t\tdarken.alpha = 0;
 \t\tadd(darken);
-\t\tFlxTween.tween(darken, {alpha: 1}, 0.52, {ease: FlxEase.quadIn});
+
+\t\tvar sonicWipe:FlxSprite = new FlxSprite();
+\t\tsonicWipe.loadGraphic(Paths.image('sonicexe-transitions/head'));
+\t\tsonicWipe.setGraphicSize(Std.int(FlxG.width * 1.18));
+\t\tsonicWipe.updateHitbox();
+\t\tsonicWipe.screenCenter();
+\t\tsonicWipe.scrollFactor.set(0, 0);
+\t\tsonicWipe.alpha = 1;
+\t\tadd(sonicWipe);
+
+\t\tvar startScaleX:Float = sonicWipe.scale.x;
+\t\tvar startScaleY:Float = sonicWipe.scale.y;
+\t\tFlxTween.tween(sonicWipe.scale, {x: startScaleX * 0.025, y: startScaleY * 0.025}, 0.76, {
+\t\t\tease: FlxEase.quadIn,
+\t\t\tonUpdate: function(twn:FlxTween)
+\t\t\t{
+\t\t\t\tsonicWipe.updateHitbox();
+\t\t\t\tsonicWipe.screenCenter();
+\t\t\t}
+\t\t});
+\t\tFlxTween.tween(darken, {alpha: 1}, 0.62, {ease: FlxEase.quadIn});
 \t}
 \tfunction menuLabel(index:Int):String
 \t{
