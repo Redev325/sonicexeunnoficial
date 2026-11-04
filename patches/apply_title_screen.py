@@ -26,7 +26,7 @@ def patch_title_state(source: str) -> str:
         "var swagShader:ColorSwap = null;",
         "var swagShader:ColorSwap = null;\n"
         "\tvar postIntroGroup:FlxGroup;\n"
-        "\tvar postIntroPlaying:Bool = false;\n"
+        "\tvar postIntroPlaying:Bool = false;\n\tvar introExePlaying:Bool = false;\n"
         "\tvar warningGroup:FlxGroup;\n"
         "\tvar warningPrompt:FlxText;\n"
         "\tvar warningActive:Bool = false;\n"
@@ -121,11 +121,22 @@ def patch_title_state(source: str) -> str:
 \t\tPaths.clearUnusedMemory();
 \t}
 
-\tfunction beginPostIntro():Void
+\tfunction beginIntroExe():Void
 \t{
 \t\twarningActive = false;
 \t\tif (warningGroup != null)
 \t\t\twarningGroup.visible = false;
+\t\tintroExePlaying = true;
+\t\tpostIntroPlaying = false;
+\t\tsetTitleBackdropVisible(false);
+\t\tsetPostIntroVideoVisible(false);
+\t\tsetIntroExeVideoVisible(true);
+\t}
+
+\tfunction beginPostIntro():Void
+\t{
+\t\tintroExePlaying = false;
+\t\tsetIntroExeVideoVisible(false);
 \t\tpostIntroPlaying = true;
 \t\tsetTitleBackdropVisible(false);
 \t\tsetPostIntroVideoVisible(true);
@@ -148,6 +159,26 @@ def patch_title_state(source: str) -> str:
 \t\tvar callback:Dynamic = Reflect.field(browserWindow, "setSonicEXETitleVideo");
 \t\tif (callback != null)
 \t\t\tReflect.callMethod(browserWindow, callback, [visible]);
+\t\t#end
+\t}
+
+\tfunction setIntroExeVideoVisible(visible:Bool):Void
+\t{
+\t\t#if js
+\t\tvar browserWindow:Dynamic = js.Browser.window;
+\t\tvar callback:Dynamic = Reflect.field(browserWindow, "setSonicEXEIntroExe");
+\t\tif (callback != null)
+\t\t\tReflect.callMethod(browserWindow, callback, [visible]);
+\t\t#end
+\t}
+
+\tfunction introExeVideoFinished():Bool
+\t{
+\t\t#if js
+\t\tvar browserWindow:Dynamic = js.Browser.window;
+\t\treturn Reflect.field(browserWindow, "sonicEXEIntroExeFinished") == true;
+\t\t#else
+\t\treturn true;
 \t\t#end
 \t}
 
@@ -204,8 +235,16 @@ def patch_title_state(source: str) -> str:
 \t\t\t\twarningPrompt.alpha = 0.58 + Math.sin(warningPulseTime * 3.2) * 0.42;
 \t\t\tif (pressedEnter)
 \t\t\t{
-\t\t\t\tbeginPostIntro();
+\t\t\t\tbeginIntroExe();
 \t\t\t}
+\t\t\tsuper.update(elapsed);
+\t\t\treturn;
+\t\t}
+
+\t\tif (introExePlaying)
+\t\t{
+\t\t\tif (introExeVideoFinished() || pressedEnter)
+\t\t\t\tbeginPostIntro();
 \t\t\tsuper.update(elapsed);
 \t\t\treturn;
 \t\t}
