@@ -279,7 +279,8 @@ def main() -> None:
 \t\t// This is an alpha-only cutout animation: the Sonic shape is transparent
 \t\t// and everything outside it is black. No blue or red pixels are rendered.
 \t\tvar sonicWipe:FlxSprite = new FlxSprite();
-\t\tsonicWipe.loadGraphic(Paths.image('sonicexe-transitions/head-wipe'), true, 1280, 720);
+\t\tsonicWipe.loadGraphic(Paths.image('sonicexe-transitions/head-wipe'), true, 640, 360);
+		sonicWipe.antialiasing = true;
 \t\tsonicWipe.animation.add('close', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], 24, false);
 \t\tsonicWipe.animation.play('close');
 \t\tsonicWipe.setGraphicSize(FlxG.width, FlxG.height);
