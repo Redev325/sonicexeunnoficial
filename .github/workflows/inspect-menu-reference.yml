@@ -89,6 +89,20 @@ jobs:
                   if x.filename.casefold().startswith("assets/exe/")
               ]
               add(f"ALL assets/exe files: {len(exe_paths)}")
+              add("ANIMATED WEBP CHECK - OPTIONS / SOUND TEST / FREEPLAY:")
+              if Image is not None:
+                  for x in infos:
+                      if not x.filename.casefold().startswith(("assets/exe/options/", "assets/exe/soundtest/", "assets/exe/freeplayassets/")):
+                          continue
+                      if PurePosixPath(x.filename).suffix.casefold() != ".webp":
+                          continue
+                      try:
+                          with Image.open(BytesIO(z.read(x))) as im:
+                              frames = getattr(im, "n_frames", 1)
+                              if frames > 1 or PurePosixPath(x.filename).name.casefold() in {"bg.webp", "bgtest.webp"}:
+                                  add(f"  {x.filename}: {im.width}x{im.height}, frames={frames}, duration={im.info.get('duration', 0)}ms")
+                      except Exception as error:
+                          add(f"  {x.filename}: unable to inspect ({error})")
               audio_extensions = {".ogg", ".mp3", ".wav", ".flac", ".m4a"}
               audio_candidates = [
                   x for x in infos
@@ -107,7 +121,10 @@ jobs:
                   if Image is not None:
                       try:
                           with Image.open(BytesIO(z.read(x))) as im:
-                              dims = f" [{im.width}x{im.height}]"
+                              frames = getattr(im, "n_frames", 1)
+                              duration = im.info.get("duration", 0)
+                              animation = f" [frames={frames}, first_frame_ms={duration}]" if frames > 1 else ""
+                              dims = f" [{im.width}x{im.height}]{animation}"
                       except Exception:
                           pass
                   add(f"  {x.file_size:>10,} bytes{dims}  {x.filename}")
