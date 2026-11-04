@@ -510,7 +510,7 @@ jobs:
             #openfl-content {
               position: relative; z-index: 1; width: 100%; height: 100%;
               background: transparent !important;
-              mix-blend-mode: screen;
+              mix-blend-mode: normal;
             }
             #openfl-content canvas {
               background: transparent !important;
@@ -625,6 +625,8 @@ jobs:
               if (spikes) spikes.style.display = show ? "block" : "none";
               if (!video) return;
               video.style.display = show ? "block" : "none";
+              var gameLayer = document.getElementById("openfl-content");
+              if (gameLayer) gameLayer.style.mixBlendMode = show ? "screen" : "normal";
               if (show) {
                 var menuVideo = document.getElementById("sonicexe-menu-bg");
                 if (menuVideo) { menuVideo.pause(); menuVideo.style.display = "none"; }
@@ -642,6 +644,8 @@ jobs:
               if (show && titleSpikes) titleSpikes.style.display = "none";
               if (!video) return;
               video.style.display = show ? "block" : "none";
+              var gameLayer = document.getElementById("openfl-content");
+              if (gameLayer) gameLayer.style.mixBlendMode = show ? "screen" : "normal";
               if (show) {
                 var titleVideo = document.getElementById("sonicexe-title-bg");
                 if (titleVideo) { titleVideo.pause(); titleVideo.style.display = "none"; }
