@@ -12,6 +12,8 @@ on:
       - "patches/apply_sonic_transition.py"
       - "patches/apply_menu_screen_uis.py"
       - "patches/apply_custom_options_ui.py"
+      - "patches/apply_loading_optimization.py"
+      - "patches/SonicEXEAssetLoader.hx"
   workflow_dispatch:
 
 # Trigger a full rebuild against the latest committed asset and intro pipeline.
@@ -771,6 +773,12 @@ jobs:
       - name: Apply Sonic.EXE layouts to Freeplay, Story Mode, Extras and Sound Test
         run: |
           python3 patches/apply_menu_screen_uis.py engine/source/states/FreeplayState.hx engine/source/states/StoryMenuState.hx engine/source/states/CreditsState.hx
+
+      - name: Defer song audio until the title sequence
+        run: |
+          mkdir -p engine/source/backend
+          cp patches/SonicEXEAssetLoader.hx engine/source/backend/SonicEXEAssetLoader.hx
+          python3 patches/apply_loading_optimization.py engine/Project.xml engine/source/states/TitleState.hx engine/source/states/MainMenuState.hx
 
       - name: Compile browser target
         working-directory: engine
