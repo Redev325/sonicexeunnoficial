@@ -36,7 +36,7 @@ def patch_freeplay(path: Path) -> None:
 \t\tvar sonicUiRightLine:FlxSprite = new FlxSprite(FlxG.width - 32, 72).makeGraphic(4, FlxG.height - 118, 0xFF9D001B);
 \t\tsonicUiRightLine.scrollFactor.set();
 \t\tadd(sonicUiRightLine);
-\t\tvar sonicUiTitle:String = sonicExeCustomSongMode ? "SOUND TEST" : "FREEPLAY";
+\t\tvar sonicUiTitle:String = sonicExeEncoreMode ? "EXTRAS / ENCORE" : (sonicExeCustomSongMode ? "SOUND TEST" : "FREEPLAY");
 \t\tvar sonicUiHeaderText:FlxText = new FlxText(24, 8, 600, sonicUiTitle, 30);
 \t\tsonicUiHeaderText.setFormat(Paths.font("sonichud.ttf"), 30, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\tsonicUiHeaderText.scrollFactor.set();
@@ -53,7 +53,7 @@ def patch_freeplay(path: Path) -> None:
     source = replace_once(
         source,
         'var leText:String = "Press SPACE to listen to the Song / Press CTRL to open the Gameplay Changers Menu / Press RESET to Reset your Score and Accuracy.";',
-        'var leText:String = sonicExeCustomSongMode ? "SPACE: PREVIEW TRACK  /  ENTER: PLAY  /  LEFT OR RIGHT: DIFFICULTY  /  ESC: BACK" : "SPACE: PREVIEW  /  ENTER: PLAY  /  CTRL: GAMEPLAY CHANGERS  /  RESET: CLEAR SCORE";',
+        'var leText:String = sonicExeCustomSongMode ? (sonicExeEncoreMode ? "SPACE: PREVIEW BONUS TRACK  /  ENTER: PLAY  /  LEFT OR RIGHT: DIFFICULTY  /  ESC: BACK" : "SPACE: PREVIEW TRACK  /  ENTER: PLAY  /  LEFT OR RIGHT: DIFFICULTY  /  ESC: BACK") : "SPACE: PREVIEW  /  ENTER: PLAY  /  CTRL: GAMEPLAY CHANGERS  /  RESET: CLEAR SCORE";',
         "Freeplay versus Sound Test control hints",
     )
 
@@ -157,7 +157,7 @@ def patch_extras(path: Path) -> None:
 \t\tsonicExtrasTitle.setFormat(Paths.font("sonichud.ttf"), 30, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\tsonicExtrasTitle.scrollFactor.set();
 \t\tadd(sonicExtrasTitle);
-\t\tvar sonicExtrasSubtitle:FlxText = new FlxText(FlxG.width - 370, 17, 340, "CREDITS  /  CONTRIBUTIONS", 15);
+\t\tvar sonicExtrasSubtitle:FlxText = new FlxText(FlxG.width - 370, 17, 340, "ENCORE  /  BONUS SONGS", 15);
 \t\tsonicExtrasSubtitle.setFormat(Paths.font("sonichud.ttf"), 15, 0xFFFFB8C2, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\tsonicExtrasSubtitle.scrollFactor.set();
 \t\tadd(sonicExtrasSubtitle);
@@ -181,7 +181,7 @@ def patch_extras(path: Path) -> None:
 \t\tvar sonicExtrasFooterLine:FlxSprite = new FlxSprite(0, FlxG.height - 34).makeGraphic(FlxG.width, 3, 0xFF9D001B);
 \t\tsonicExtrasFooterLine.scrollFactor.set();
 \t\tadd(sonicExtrasFooterLine);
-\t\tvar sonicExtrasHints:FlxText = new FlxText(0, FlxG.height - 26, FlxG.width, "UP / DOWN: SELECT    ENTER: OPEN LINK    ESC: BACK", 14);
+\t\tvar sonicExtrasHints:FlxText = new FlxText(0, FlxG.height - 26, FlxG.width, "UP / DOWN: SELECT    ENTER: PLAY SONG    ESC: BACK", 14);
 \t\tsonicExtrasHints.setFormat(Paths.font("sonichud.ttf"), 14, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\tsonicExtrasHints.scrollFactor.set();
 \t\tadd(sonicExtrasHints);
