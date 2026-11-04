@@ -16,13 +16,10 @@ on:
   # A workflow_run event can be skipped by GitHub's condition evaluation; this
   # push path lets a deploy-only workflow edit republish the latest successful build.
   push:
+    branches:
+      - main
     paths:
       - ".github/workflows/deploy-html5-menu.yml"
-    inputs:
-      run_id:
-        description: "Successful Build HTML5 engine base run ID"
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -32,7 +29,7 @@ permissions:
 
 concurrency:
   group: psych-engine-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
