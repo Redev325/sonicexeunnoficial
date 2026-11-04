@@ -1,0 +1,459 @@
+#!/usr/bin/env python3
+"""Apply the original Sonic.EXE panel treatment to settings submenus."""
+
+from pathlib import Path
+import sys
+
+
+def replace_once(source: str, old: str, new: str, label: str) -> str:
+    count = source.count(old)
+    if count != 1:
+        raise SystemExit(f"Custom options UI patch stopped: expected one match for {label}, found {count}")
+    return source.replace(old, new)
+
+
+def patch_base_options(path: Path) -> None:
+    source = path.read_text(encoding="utf-8")
+
+    source = replace_once(
+        source,
+        "private var descBox:FlxSprite;\n\tprivate var descText:FlxText;",
+        """private var descBox:FlxSprite;
+\tprivate var descText:FlxText;
+\tprivate var customRows:FlxTypedGroup<FlxSprite>;
+\tprivate var customHighlights:FlxTypedGroup<FlxSprite>;
+\tprivate var customArrows:FlxTypedGroup<FlxSprite>;
+\tprivate var customLabels:FlxTypedGroup<FlxText>;
+\tprivate var customValues:FlxTypedGroup<FlxText>;
+\tprivate var customTitlePanel:FlxSprite;
+\tprivate var customTitle:FlxText;
+\tprivate var customBackgroundTint:FlxSprite;
+\tprivate var customBackgroundTime:Float = 0;
+\tprivate var customBackgroundScaleX:Float = 1;
+\tprivate var customBackgroundScaleY:Float = 1;""",
+        "custom options UI fields",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tbg = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
+\t\tbg.color = 0xFFea71fd;
+\t\tbg.screenCenter();
+\t\tbg.antialiasing = ClientPrefs.data.antialiasing;
+\t\tadd(bg);""",
+        """\t\t// Reuse the original Sonic.EXE red Options artwork for every settings page.
+\t\tbg = new FlxSprite().loadGraphic(Paths.image('sonicexe-options/bg'));
+\t\tbg.setGraphicSize(Std.int(FlxG.width * 1.08), Std.int(FlxG.height * 1.08));
+\t\tbg.updateHitbox();
+\t\tbg.screenCenter();
+\t\tcustomBackgroundScaleX = bg.scale.x;
+\t\tcustomBackgroundScaleY = bg.scale.y;
+\t\tbg.color = 0xFFB02C2C;
+\t\tbg.antialiasing = ClientPrefs.data.antialiasing;
+\t\tbg.scrollFactor.set(0, 0);
+\t\tadd(bg);
+
+\t\tcustomBackgroundTint = new FlxSprite().makeGraphic(1, 1, 0xFF9D0D1D);
+\t\tcustomBackgroundTint.setGraphicSize(FlxG.width, FlxG.height);
+\t\tcustomBackgroundTint.updateHitbox();
+\t\tcustomBackgroundTint.alpha = 0.08;
+\t\tcustomBackgroundTint.scrollFactor.set(0, 0);
+\t\tadd(customBackgroundTint);""",
+        "original red options background",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tcheckboxGroup = new FlxTypedGroup<CheckboxThingie>();
+\t\tadd(checkboxGroup);
+
+\t\tdescBox = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
+\t\tdescBox.alpha = 0.6;
+\t\tadd(descBox);
+
+\t\tvar titleText:Alphabet = new Alphabet(75, 45, title, true);
+\t\ttitleText.setScale(0.6);
+\t\ttitleText.alpha = 0.4;
+\t\tadd(titleText);
+
+\t\tdescText = new FlxText(50, 600, 1180, "", 32);
+\t\tdescText.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\tdescText.scrollFactor.set();
+\t\tdescText.borderSize = 2.4;
+\t\tadd(descText);""",
+        """\t\tcheckboxGroup = new FlxTypedGroup<CheckboxThingie>();
+\t\tadd(checkboxGroup);
+
+\t\t// The engine's original text/checkbox controls remain active for input and
+\t\t// preference logic, but the visible presentation is replaced below.
+\t\tgrpOptions.visible = false;
+\t\tgrpTexts.visible = false;
+\t\tcheckboxGroup.visible = false;
+
+\t\tcustomRows = new FlxTypedGroup<FlxSprite>();
+\t\tcustomHighlights = new FlxTypedGroup<FlxSprite>();
+\t\tcustomArrows = new FlxTypedGroup<FlxSprite>();
+\t\tcustomLabels = new FlxTypedGroup<FlxText>();
+\t\tcustomValues = new FlxTypedGroup<FlxText>();
+\t\tadd(customRows);
+\t\tadd(customHighlights);
+\t\tadd(customArrows);
+\t\tadd(customLabels);
+\t\tadd(customValues);
+
+\t\tcustomTitlePanel = new FlxSprite();
+\t\tcustomTitlePanel.loadGraphic(Paths.image('sonicexe-options/titleBG'));
+\t\tcustomTitlePanel.setGraphicSize(Std.int(FlxG.width * 0.74), Std.int(FlxG.height * 0.115));
+\t\tcustomTitlePanel.updateHitbox();
+\t\tcustomTitlePanel.x = (FlxG.width - customTitlePanel.width) * 0.5;
+\t\tcustomTitlePanel.y = FlxG.height * 0.015;
+\t\tcustomTitlePanel.scrollFactor.set(0, 0);
+\t\tadd(customTitlePanel);
+
+\t\tcustomTitle = new FlxText(0, FlxG.height * 0.035, FlxG.width, title.toUpperCase(), Std.int(FlxG.height * 0.047));
+\t\tcustomTitle.setFormat(Paths.font('sonichud.ttf'), Std.int(FlxG.height * 0.047), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\tcustomTitle.scrollFactor.set(0, 0);
+\t\tadd(customTitle);
+
+\t\tdescBox = new FlxSprite();
+\t\tdescBox.loadGraphic(Paths.image('sonicexe-options/propertyBG'));
+\t\tdescBox.alpha = 0.82;
+\t\tadd(descBox);
+
+\t\tdescText = new FlxText(90, 600, FlxG.width - 180, "", Std.int(FlxG.height * 0.026));
+\t\tdescText.setFormat(Paths.font("sonichud.ttf"), Std.int(FlxG.height * 0.026), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\tdescText.scrollFactor.set();
+\t\tdescText.borderSize = 1.5;
+\t\tadd(descText);""",
+        "replace stock option page header and description",
+    )
+
+    source = replace_once(
+        source,
+        """\t\t\t//optionText.snapToPosition(); //Don't ignore me when i ask for not making a fucking pull request to uncomment this line ok
+\t\t\tupdateTextFrom(optionsArray[i]);
+\t\t}
+
+\t\tchangeSelection();""",
+        """\t\t\t//optionText.snapToPosition(); //Don't ignore me when i ask for not making a fucking pull request to uncomment this line ok
+\t\t\tupdateTextFrom(optionsArray[i]);
+
+\t\t\tvar rowWidth:Int = Std.int(FlxG.width * 0.70);
+\t\t\tvar rowHeight:Int = Std.int(rowWidth * (164.0 / 972.0));
+\t\t\tvar row:FlxSprite = new FlxSprite();
+\t\t\trow.loadGraphic(Paths.image('sonicexe-options/propertyBG'));
+\t\t\trow.setGraphicSize(rowWidth, rowHeight);
+\t\t\trow.updateHitbox();
+\t\t\trow.scrollFactor.set(0, 0);
+\t\t\tcustomRows.add(row);
+
+\t\t\tvar selectedFrame:FlxSprite = new FlxSprite();
+\t\t\tselectedFrame.loadGraphic(Paths.image('sonicexe-options/sectionBGWhite'));
+\t\t\tselectedFrame.setGraphicSize(rowWidth, rowHeight);
+\t\t\tselectedFrame.updateHitbox();
+\t\t\tselectedFrame.alpha = 0;
+\t\t\tselectedFrame.scrollFactor.set(0, 0);
+\t\t\tcustomHighlights.add(selectedFrame);
+
+\t\t\tvar labelSize:Int = Std.int(FlxG.height * 0.034);
+\t\t\tvar label:FlxText = new FlxText(0, 0, rowWidth * 0.62, optionsArray[i].name, labelSize);
+\t\t\tlabel.setFormat(Paths.font('sonichud.ttf'), labelSize, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\t\tlabel.scrollFactor.set(0, 0);
+\t\t\tcustomLabels.add(label);
+
+\t\t\tvar value:FlxText = new FlxText(0, 0, rowWidth * 0.30, '', labelSize);
+\t\t\tvalue.setFormat(Paths.font('sonichud.ttf'), labelSize, 0xFFFFE7A6, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\t\tvalue.scrollFactor.set(0, 0);
+\t\t\tcustomValues.add(value);
+
+\t\t\tvar arrow:FlxSprite = new FlxSprite();
+\t\t\tarrow.loadGraphic(Paths.image('sonicexe-options/optionArrow'));
+\t\t\tarrow.setGraphicSize(Std.int(FlxG.width * 0.055), Std.int(FlxG.height * 0.018));
+\t\t\tarrow.updateHitbox();
+\t\t\tarrow.alpha = 0.72;
+\t\t\tarrow.scrollFactor.set(0, 0);
+\t\t\tcustomArrows.add(arrow);
+\t\t}
+
+\t\tchangeSelection();""",
+        "create custom Sonic row panels and labels",
+    )
+
+    source = replace_once(
+        source,
+        """\t\t\tif(curOption.type == 'bool')
+\t\t\t{""",
+        """\t\t\tif(curOption.type == 'bool')
+\t\t\t{""",
+        "validate boolean settings input path",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tsuper.update(elapsed);
+
+\t\tif(bindingKey)""",
+        """\t\tsuper.update(elapsed);
+\t\tupdateCustomOptionsUI(elapsed);
+
+\t\tif(bindingKey)""",
+        "update custom option visuals",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tcurOption = optionsArray[curSelected]; //shorter lol
+\t\tFlxG.sound.play(Paths.sound('scrollMenu'));
+\t}""",
+        """\t\tcurOption = optionsArray[curSelected]; //shorter lol
+\t\tupdateCustomOptionsUI(0);
+\t\tFlxG.sound.play(Paths.sound('scrollMenu'));
+\t}""",
+        "synchronize selected custom row",
+    )
+
+    custom_methods = """\tfunction customOptionValue(option:Option):String
+\t{
+\t\tif (option.type == 'bool')
+\t\t\treturn option.getValue() == true ? 'ON' : 'OFF';
+\t\tif (option.type == 'keybind')
+\t\t\treturn option.text == null ? Std.string(option.getValue()) : option.text;
+
+\t\tvar display:String = option.displayFormat;
+\t\tvar value:Dynamic = option.getValue();
+\t\tvar defaultValue:Dynamic = option.defaultValue;
+\t\tif (option.type == 'percent') value *= 100;
+\t\treturn display.replace('%v', Std.string(value)).replace('%d', Std.string(defaultValue));
+\t}
+
+\tfunction updateCustomOptionsUI(elapsed:Float):Void
+\t{
+\t\tcustomBackgroundTime += elapsed;
+\t\tvar zoom:Float = 1.0 + Math.sin(customBackgroundTime * 0.32) * 0.007;
+\t\tbg.scale.set(customBackgroundScaleX * zoom, customBackgroundScaleY * zoom);
+\t\tbg.updateHitbox();
+\t\tbg.x = (FlxG.width - bg.width) * 0.5 + Math.sin(customBackgroundTime * 0.28) * FlxG.width * 0.014;
+\t\tbg.y = (FlxG.height - bg.height) * 0.5 + Math.cos(customBackgroundTime * 0.22) * FlxG.height * 0.010;
+\t\tbg.angle = Math.sin(customBackgroundTime * 0.14) * 0.30;
+\t\tcustomBackgroundTint.alpha = 0.055 + (Math.sin(customBackgroundTime * 0.72) + 1) * 0.028;
+
+\t\tif (grpOptions == null || customRows == null) return;
+\t\tvar rowWidth:Float = FlxG.width * 0.70;
+\t\tfor (i in 0...customRows.length)
+\t\t{
+\t\t\tvar anchor:Alphabet = grpOptions.members[i];
+\t\t\tvar row:FlxSprite = customRows.members[i];
+\t\t\tvar frame:FlxSprite = customHighlights.members[i];
+\t\t\tvar label:FlxText = customLabels.members[i];
+\t\t\tvar value:FlxText = customValues.members[i];
+\t\t\tvar arrow:FlxSprite = customArrows.members[i];
+\t\t\tif (anchor == null || row == null) continue;
+
+\t\t\trow.x = (FlxG.width - row.width) * 0.5;
+\t\t\trow.y = anchor.y + (anchor.height - row.height) * 0.5;
+\t\t\tframe.setPosition(row.x, row.y);
+\t\t\tframe.alpha = (i == curSelected) ? 0.16 + (Math.sin(customBackgroundTime * 3.0) + 1) * 0.10 : 0;
+\t\t\tlabel.x = row.x + rowWidth * 0.055;
+\t\t\tlabel.y = row.y + (row.height - label.height) * 0.5;
+\t\t\tlabel.alpha = (i == curSelected) ? 1 : 0.72;
+\t\t\tvalue.x = row.x + rowWidth * 0.64;
+\t\t\tvalue.y = row.y + (row.height - value.height) * 0.5;
+\t\t\tvalue.text = customOptionValue(optionsArray[i]);
+\t\t\tvalue.color = (i == curSelected) ? 0xFFFFE7A6 : FlxColor.WHITE;
+\t\t\tvalue.alpha = (i == curSelected) ? 1 : 0.72;
+\t\t\tarrow.x = row.x + rowWidth * 0.615;
+\t\t\tarrow.y = row.y + (row.height - arrow.height) * 0.5;
+\t\t\tarrow.visible = optionsArray[i].type != 'bool';
+\t\t\tarrow.alpha = (i == curSelected) ? 0.85 : 0.48;
+\t\t}
+\t}
+
+"""
+    source = replace_once(
+        source,
+        "\tfunction changeSelection(change:Int = 0)",
+        custom_methods + "\tfunction changeSelection(change:Int = 0)",
+        "insert custom options UI helpers",
+    )
+
+    path.write_text(source, encoding="utf-8")
+    print(f"Applied custom Sonic.EXE option panels to {path}")
+
+
+def patch_controls(path: Path) -> None:
+    source = path.read_text(encoding="utf-8")
+
+    source = replace_once(
+        source,
+        "\tvar bg:FlxSprite;",
+        """\tvar bg:FlxSprite;
+\tvar customRowPanels:FlxTypedGroup<AttachedSprite>;
+\tvar customTitlePanel:FlxSprite;
+\tvar customTitle:FlxText;
+\tvar customBackgroundTime:Float = 0;
+\tvar customBackgroundScaleX:Float = 1;
+\tvar customBackgroundScaleY:Float = 1;""",
+        "controls custom UI fields",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tbg = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
+\t\tbg.color = keyboardColor;
+\t\tbg.antialiasing = ClientPrefs.data.antialiasing;
+\t\tbg.screenCenter();
+\t\tadd(bg);
+
+\t\tvar grid:FlxBackdrop = new FlxBackdrop(FlxGridOverlay.createGrid(80, 80, 160, 160, true, 0x33FFFFFF, 0x0));
+\t\tgrid.velocity.set(40, 40);
+\t\tgrid.alpha = 0;
+\t\tFlxTween.tween(grid, {alpha: 1}, 0.5, {ease: FlxEase.quadOut});
+\t\tadd(grid);
+
+\t\tgrpDisplay = new FlxTypedGroup<Alphabet>();
+\t\tadd(grpDisplay);
+\t\tgrpOptions = new FlxTypedGroup<Alphabet>();""",
+        """\t\tbg = new FlxSprite().loadGraphic(Paths.image('sonicexe-options/bg'));
+\t\tbg.setGraphicSize(Std.int(FlxG.width * 1.08), Std.int(FlxG.height * 1.08));
+\t\tbg.updateHitbox();
+\t\tbg.screenCenter();
+\t\tcustomBackgroundScaleX = bg.scale.x;
+\t\tcustomBackgroundScaleY = bg.scale.y;
+\t\tbg.color = 0xFFB02C2C;
+\t\tbg.antialiasing = ClientPrefs.data.antialiasing;
+\t\tbg.scrollFactor.set(0, 0);
+\t\tadd(bg);
+
+\t\tvar grid:FlxBackdrop = new FlxBackdrop(FlxGridOverlay.createGrid(80, 80, 160, 160, true, 0x33FFFFFF, 0x0));
+\t\tgrid.velocity.set(16, 16);
+\t\tgrid.alpha = 0.10;
+\t\tadd(grid);
+
+\t\tcustomTitlePanel = new FlxSprite();
+\t\tcustomTitlePanel.loadGraphic(Paths.image('sonicexe-options/titleBG'));
+\t\tcustomTitlePanel.setGraphicSize(Std.int(FlxG.width * 0.60), Std.int(FlxG.height * 0.095));
+\t\tcustomTitlePanel.updateHitbox();
+\t\tcustomTitlePanel.x = (FlxG.width - customTitlePanel.width) * 0.5;
+\t\tcustomTitlePanel.y = FlxG.height * 0.02;
+\t\tcustomTitlePanel.scrollFactor.set(0, 0);
+\t\tadd(customTitlePanel);
+\t\tcustomTitle = new FlxText(0, FlxG.height * 0.035, FlxG.width, 'CONTROLS', Std.int(FlxG.height * 0.042));
+\t\tcustomTitle.setFormat(Paths.font('sonichud.ttf'), Std.int(FlxG.height * 0.042), FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\tcustomTitle.scrollFactor.set(0, 0);
+\t\tadd(customTitle);
+
+\t\tgrpDisplay = new FlxTypedGroup<Alphabet>();
+\t\tadd(grpDisplay);
+\t\tcustomRowPanels = new FlxTypedGroup<AttachedSprite>();
+\t\tadd(customRowPanels);
+\t\tgrpOptions = new FlxTypedGroup<Alphabet>();""",
+        "original red background and controls header",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tselectSpr = new AttachedSprite();
+\t\tselectSpr.makeGraphic(250, 78, FlxColor.WHITE);
+\t\tselectSpr.copyAlpha = false;
+\t\tselectSpr.alpha = 0.75;
+\t\tadd(selectSpr);""",
+        """\t\tselectSpr = new AttachedSprite();
+\t\tselectSpr.loadGraphic(Paths.image('sonicexe-options/sectionBGWhite'));
+\t\tselectSpr.setGraphicSize(Std.int(FlxG.width * 0.88), Std.int(FlxG.height * 0.105));
+\t\tselectSpr.updateHitbox();
+\t\tselectSpr.xAdd = -470;
+\t\tselectSpr.yAdd = -10;
+\t\tselectSpr.copyAlpha = false;
+\t\tselectSpr.alpha = 0.82;
+\t\tadd(selectSpr);""",
+        "custom Controls selected-row highlight",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tgrpDisplay.forEachAlive(function(text:Alphabet) text.destroy());
+\t\tgrpBlacks.forEachAlive(function(black:AttachedSprite) black.destroy());""",
+        """\t\tgrpDisplay.forEachAlive(function(text:Alphabet) text.destroy());
+\t\tcustomRowPanels.forEachAlive(function(panel:AttachedSprite) panel.destroy());
+\t\tgrpBlacks.forEachAlive(function(black:AttachedSprite) black.destroy());""",
+        "clear old controls row panels",
+    )
+    source = replace_once(
+        source,
+        """\t\tgrpDisplay.clear();
+\t\tgrpBlacks.clear();""",
+        """\t\tgrpDisplay.clear();
+\t\tcustomRowPanels.clear();
+\t\tgrpBlacks.clear();""",
+        "clear custom controls panels",
+    )
+
+    source = replace_once(
+        source,
+        """\t\t\t\t\telse {
+\t\t\t\t\t\tgrpOptions.add(text);
+\t\t\t\t\t\tcurOptions.push(i);
+\t\t\t\t\t\tcurOptionsValid.push(myID);
+\t\t\t\t\t}""",
+        """\t\t\t\t\telse {
+\t\t\t\t\t\tvar rowPanel:AttachedSprite = new AttachedSprite();
+\t\t\t\t\t\trowPanel.loadGraphic(Paths.image('sonicexe-options/propertyBG'));
+\t\t\t\t\t\trowPanel.setGraphicSize(Std.int(FlxG.width * 0.72), Std.int(FlxG.height * 0.095));
+\t\t\t\t\t\trowPanel.updateHitbox();
+\t\t\t\t\t\trowPanel.sprTracker = text;
+\t\t\t\t\t\trowPanel.xAdd = -105;
+\t\t\t\t\t\trowPanel.yAdd = -12;
+\t\t\t\t\t\trowPanel.alphaMult = 0.78;
+\t\t\t\t\t\tcustomRowPanels.add(rowPanel);
+\t\t\t\t\t\tgrpOptions.add(text);
+\t\t\t\t\t\tcurOptions.push(i);
+\t\t\t\t\t\tcurOptionsValid.push(myID);
+\t\t\t\t\t}""",
+        "draw original panel behind each key option",
+    )
+
+    source = replace_once(
+        source,
+        """\t\t\tvar black:AttachedSprite = new AttachedSprite();
+\t\t\tblack.makeGraphic(250, 78, FlxColor.BLACK);
+\t\t\tblack.alphaMult = 0.4;""",
+        """\t\t\tvar black:AttachedSprite = new AttachedSprite();
+\t\t\tblack.loadGraphic(Paths.image('sonicexe-options/propertyBG'));
+\t\t\tblack.setGraphicSize(250, 78);
+\t\t\tblack.updateHitbox();
+\t\t\tblack.alphaMult = 0.84;""",
+        "original key binding value panels",
+    )
+
+    source = replace_once(
+        source,
+        """\toverride function update(elapsed:Float)
+\t{
+\t\tif(timeForMoving > 0)""",
+        """\toverride function update(elapsed:Float)
+\t{
+\t\tcustomBackgroundTime += elapsed;
+\t\tvar zoom:Float = 1.0 + Math.sin(customBackgroundTime * 0.30) * 0.007;
+\t\tbg.scale.set(customBackgroundScaleX * zoom, customBackgroundScaleY * zoom);
+\t\tbg.updateHitbox();
+\t\tbg.x = (FlxG.width - bg.width) * 0.5 + Math.sin(customBackgroundTime * 0.25) * FlxG.width * 0.012;
+\t\tbg.y = (FlxG.height - bg.height) * 0.5 + Math.cos(customBackgroundTime * 0.20) * FlxG.height * 0.009;
+\t\tbg.angle = Math.sin(customBackgroundTime * 0.14) * 0.28;
+
+\t\tif(timeForMoving > 0)""",
+        "animate controls red backdrop",
+    )
+
+    path.write_text(source, encoding="utf-8")
+    print(f"Applied custom Sonic.EXE key-binding panels to {path}")
+
+
+def main() -> None:
+    if len(sys.argv) != 3:
+        raise SystemExit("Usage: apply_custom_options_ui.py path/to/BaseOptionsMenu.hx path/to/ControlsSubState.hx")
+    patch_base_options(Path(sys.argv[1]))
+    patch_controls(Path(sys.argv[2]))
+
+
+if __name__ == "__main__":
+    main()
