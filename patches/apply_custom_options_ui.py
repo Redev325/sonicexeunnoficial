@@ -499,10 +499,15 @@ def patch_visuals(path: Path) -> None:
 \t\t\tif(!noteSplashes.contains(ClientPrefs.data.splashSkin))
 \t\t\t\tClientPrefs.data.splashSkin = ClientPrefs.defaultData.splashSkin; //Reset to default if saved splashskin couldnt be found
 
-\t\t\t// Keep Sonic.EXE first as the default splash.
+\t\t\t// Keep Sonic.EXE primary and restore the original Psych splash as the next option.
+\t\t\tif (!noteSplashes.contains('Psych'))
+\t\t\t\tnoteSplashes.push('Psych');
 \t\t\tif (noteSplashes.contains(ClientPrefs.defaultData.splashSkin))
 \t\t\t\tnoteSplashes.remove(ClientPrefs.defaultData.splashSkin);
-\t\t\tnoteSplashes.insert(0, ClientPrefs.defaultData.splashSkin);""",
+\t\t\tif (noteSplashes.contains('Psych'))
+\t\t\t\tnoteSplashes.remove('Psych');
+\t\t\tnoteSplashes.insert(0, ClientPrefs.defaultData.splashSkin);
+\t\t\tnoteSplashes.insert(1, 'Psych');""",
         "make Sonic.EXE the first and reset-default note splash",
     )
 
@@ -558,8 +563,15 @@ def patch_client_prefs(path: Path) -> None:
 
     source = replace_once(
         source,
+        "\tpublic var splashSkin:String = 'Sonic.EXE';",
+        "\tpublic var splashSkin:String = 'Sonic.EXE';\n\tpublic var splashSkinDefaultMigrated:Bool = false;",
+        "add a one-time migration marker for the previous default splash",
+    )
+
+    source = replace_once(
+        source,
         "\tpublic static var defaultData:SaveVariables = {};",
-        "\tpublic static var defaultData:SaveVariables = {noteSkin: 'Default', splashSkin: 'Sonic.EXE'};",
+        "\tpublic static var defaultData:SaveVariables = {noteSkin: 'Default', splashSkin: 'Sonic.EXE', splashSkinDefaultMigrated: true};",
         "keep the base note skin as the no-suffix fallback",
     )
 
@@ -575,9 +587,13 @@ def patch_client_prefs(path: Path) -> None:
 \t\t// Move existing browser saves from the engine default to the game skin.
 \t\tif (data.noteSkin == null || data.noteSkin == 'Default')
 \t\t\tdata.noteSkin = 'Sonic.EXE';
-\t\tif (data.splashSkin == null || data.splashSkin == 'Psych')
-\t\t\tdata.splashSkin = 'Sonic.EXE';""",
-        "migrate existing browser saves to the Sonic.EXE note and splash skins",
+\t\tif (!data.splashSkinDefaultMigrated)
+\t\t{
+\t\t\tif (data.splashSkin == null || data.splashSkin == 'Psych')
+\t\t\t\tdata.splashSkin = 'Sonic.EXE';
+\t\t\tdata.splashSkinDefaultMigrated = true;
+\t\t}""",
+        "migrate existing browser saves to Sonic.EXE once while preserving future Psych selections",
     )
 
     path.write_text(source, encoding="utf-8")
@@ -602,7 +618,7 @@ def patch_note_splash(path: Path) -> None:
 \t\t// Sonic.EXE is the saved default, but its artwork uses a named atlas suffix.
 \t\tif (ClientPrefs.data.splashSkin == 'Sonic.EXE')
 \t\t\tskin = '-sonic.exe';
-\t\telse if(ClientPrefs.data.splashSkin != ClientPrefs.defaultData.splashSkin)
+\t\telse if(ClientPrefs.data.splashSkin != 'Psych' && ClientPrefs.data.splashSkin != ClientPrefs.defaultData.splashSkin)
 \t\t\tskin = '-' + ClientPrefs.data.splashSkin.trim().toLowerCase().replace(' ', '_');
 \t\treturn skin;
 \t}""",
