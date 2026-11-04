@@ -10,8 +10,8 @@ def once(s,o,n,label):
 def patch_menu(path):
     s=path.read_text(encoding="utf-8")
     s=once(s,"case 'extras':\n\t\t\t\t\t\t\t\tMusicBeatState.switchState(new CreditsState());",
-        "case 'extras':\n\t\t\t\t\t\t\t\tCreditsState.psychEngineCreditsOnly = false;\n\t\t\t\t\t\t\t\tMusicBeatState.switchState(new CreditsState());",
-        "reset to FNF credits when opening Extras")
+        "case 'extras':\n\t\t\t\t\t\t\t\tFreeplayState.sonicExeCustomSongMode = true;\n\t\t\t\t\t\t\t\tFreeplayState.sonicExeEncoreMode = true;\n\t\t\t\t\t\t\t\tMusicBeatState.switchState(new FreeplayState());",
+        "open Encore bonus-song list from Extras")
     s=once(s,"var sonicMenuFloatTime:Float = 0;",
         "var sonicMenuFloatTime:Float = 0;\n\tvar psychCreditsButton:FlxText;",
         "Psych credits button field")
