@@ -310,6 +310,109 @@ jobs:
               if "sonic.exe" not in {line.strip().casefold() for line in existing_skins.splitlines()}:
                   note_list.write_text(existing_skins.rstrip() + ("\n" if existing_skins.strip() else "") + "Sonic.EXE\n", encoding="utf-8")
               print("Installed original Sonic.EXE note atlases and registered the Sonic.EXE Visuals skin.")
+ 
+              # Install the original Sonic.EXE note-splash atlas as a separate Visuals skin.
+              splash_related = [
+                  name for name in z.namelist()
+                  if Path(name).suffix.casefold() in {".png", ".webp", ".xml", ".txt"}
+                  and "notesplash" in re.sub(r"[^a-z0-9]", "", name.casefold())
+              ]
+              print("Original release note-splash candidates:")
+              for name in splash_related:
+                  print("  " + name)
+              if not splash_related:
+                  raise SystemExit("The original release archive contains no note-splash assets.")
+
+              archive_names = {name.casefold(): name for name in z.namelist()}
+              splash_images = [
+                  name for name in splash_related
+                  if Path(name).suffix.casefold() in {".png", ".webp"}
+              ]
+              splash_pairs = []
+              for image_name in splash_images:
+                  xml_key = str(Path(image_name).with_suffix(".xml")).casefold()
+                  xml_name = archive_names.get(xml_key)
+                  if xml_name:
+                      splash_pairs.append((image_name, xml_name))
+              if not splash_pairs:
+                  raise SystemExit("Found note-splash image candidates, but none has a matching Sparrow XML atlas.")
+
+              def splash_score(pair):
+                  image_name, _ = pair
+                  image_path = Path(image_name)
+                  stem = re.sub(r"[^a-z0-9]", "", image_path.stem.casefold())
+                  parent = re.sub(r"[^a-z0-9]", "", image_path.parent.name.casefold())
+                  score = 0
+                  if stem == "notesplashes":
+                      score += 100
+                  elif stem == "notesplash":
+                      score += 70
+                  elif "notesplash" in stem:
+                      score += 30
+                  if parent in {"notesplashes", "notesplash"}:
+                      score += 35
+                  if "shared" in {part.casefold() for part in image_path.parts}:
+                      score += 10
+                  if image_path.suffix.casefold() == ".webp":
+                      score += 1
+                  return score
+
+              splash_image_name, splash_xml_name = max(splash_pairs, key=splash_score)
+              splash_dir = Path("engine/assets/shared/images/noteSplashes")
+              splash_dir.mkdir(parents=True, exist_ok=True)
+              splash_base = "noteSplashes-sonic.exe"
+              splash_image_output = splash_dir / f"{splash_base}.png"
+              with z.open(splash_image_name) as source, Image.open(source) as image:
+                  image.convert("RGBA").save(splash_image_output, format="PNG", optimize=True)
+
+              with z.open(splash_xml_name) as source:
+                  splash_xml = source.read().decode("utf-8-sig")
+              splash_xml, splash_replaced = re.subn(
+                  r'imagePath\s*=\s*"[^"]+"',
+                  f'imagePath="{splash_base}.png"',
+                  splash_xml,
+                  count=1
+              )
+              if splash_replaced != 1:
+                  raise SystemExit(f"Could not update the note-splash atlas imagePath in {splash_xml_name}.")
+              (splash_dir / f"{splash_base}.xml").write_text(splash_xml, encoding="utf-8")
+
+              # Psych Engine reads an optional same-name text file for animation
+              # prefix, playback-rate range and per-direction offsets.
+              splash_config_candidates = [
+                  name for name in splash_related
+                  if Path(name).suffix.casefold() == ".txt"
+                  and Path(name).parent == Path(splash_image_name).parent
+              ]
+              exact_config = archive_names.get(str(Path(splash_image_name).with_suffix(".txt")).casefold())
+              if exact_config:
+                  splash_config_source = exact_config
+              else:
+                  splash_config_source = next(
+                      (name for name in splash_config_candidates
+                       if re.sub(r"[^a-z0-9]", "", Path(name).stem.casefold()) == "notesplashes"),
+                      splash_config_candidates[0] if len(splash_config_candidates) == 1 else None
+                  )
+              if splash_config_source:
+                  (splash_dir / f"{splash_base}.txt").write_bytes(z.read(splash_config_source))
+                  print(f"Installed note-splash animation config: {splash_config_source}")
+              else:
+                  print("No matching note-splash config found; using Psych Engine's default animation rate and offsets.")
+
+              splash_list = splash_dir / "list.txt"
+              existing_splash_skins = splash_list.read_text(encoding="utf-8-sig") if splash_list.exists() else ""
+              if "sonic.exe" not in {line.strip().casefold() for line in existing_splash_skins.splitlines()}:
+                  splash_list.write_text(
+                      existing_splash_skins.rstrip() + ("\n" if existing_splash_skins.strip() else "") + "Sonic.EXE\n",
+                      encoding="utf-8"
+                  )
+              print(
+                  "Installed Sonic.EXE Note Splash skin:",
+                  splash_image_name,
+                  "->",
+                  splash_image_output,
+                  f"({splash_image_output.stat().st_size:,} bytes)"
+              )
 
               for source_name, output in images.items():
                   output.parent.mkdir(parents=True, exist_ok=True)
