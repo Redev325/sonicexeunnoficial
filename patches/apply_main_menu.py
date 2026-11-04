@@ -358,6 +358,8 @@ def main() -> None:
 \t\t\tvar keyboardDown:Bool = FlxG.keys.justPressed.DOWN || FlxG.keys.justPressed.S;
 \t\t\tvar keyboardLeft:Bool = FlxG.keys.justPressed.LEFT || FlxG.keys.justPressed.A;
 \t\t\tvar keyboardRight:Bool = FlxG.keys.justPressed.RIGHT || FlxG.keys.justPressed.D;
+\t\t\tif (keyboardLeft) changeItem(-1);
+\t\t\tif (keyboardRight) changeItem(1);
 
 \t\t\t// Only let hover change selection when the pointer actually moves.
 \t\t\t// A stationary cursor must not fight keyboard navigation.
@@ -404,8 +406,6 @@ def main() -> None:
 
     # Add direct browser keyboard fallbacks for every menu direction.
     source = replace_once(source, "if (controls.UI_DOWN_P)", "if (controls.UI_DOWN_P || keyboardDown)", "browser DOWN key fallback")
-    source = replace_once(source, "if (controls.UI_LEFT_P)", "if (controls.UI_LEFT_P || keyboardLeft)", "browser LEFT key fallback")
-    source = replace_once(source, "if (controls.UI_RIGHT_P)", "if (controls.UI_RIGHT_P || keyboardRight)", "browser RIGHT key fallback")
 
     # Animate the selected label and both layers before the engine switches screens.
     source = replace_once(
