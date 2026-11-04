@@ -26,6 +26,15 @@ CREATE_NEW = """\t\tif (sonicExeTransitionIn) {
 \t\t\topenSubState(new CustomFadeTransition(0.6, true));
 \t\t}"""
 
+SWITCH_OLD = """\t\tif(FlxTransitionableState.skipNextTransIn) FlxG.switchState(nextState);
+\t\telse startTransition(nextState);"""
+SWITCH_NEW = """\t\t// Keep the Sonic close and reverse reveal adjacent; don't insert the
+\t\t// engine's default fade between the two halves of the same transition.
+\t\tif(sonicExeTransitionIn || FlxTransitionableState.skipNextTransIn)
+\t\t\tFlxG.switchState(nextState);
+\t\telse
+\t\t\tstartTransition(nextState);"""
+
 TRANSITION_CLASS = """
 
 // Transparent Sonic-head aperture used as the transition-in after the main-menu
@@ -81,6 +90,7 @@ def patch_music_beat(path: Path) -> None:
         "incoming transition flag",
     )
     source = replace_once(source, CREATE_OLD, CREATE_NEW, "default transition-in hook")
+    source = replace_once(source, SWITCH_OLD, SWITCH_NEW, "chain Sonic close directly to reverse reveal")
     if "class SonicEXETransitionSubState extends FlxSubState" in source:
         raise SystemExit("Sonic transition patch stopped: transition substate is already installed.")
     source += TRANSITION_CLASS
