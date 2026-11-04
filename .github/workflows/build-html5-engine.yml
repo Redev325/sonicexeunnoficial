@@ -765,7 +765,7 @@ jobs:
 
       - name: Add reverse Sonic transition on destination screens
         run: |
-          python3 patches/apply_sonic_transition.py engine/source/backend/MusicBeatState.hx engine/source/states/MainMenuState.hx
+          python3 patches/apply_sonic_transition.py engine/source/backend/MusicBeatState.hx engine/source/states/MainMenuState.hx engine/source/states/FreeplayState.hx engine/source/states/StoryMenuState.hx engine/source/states/CreditsState.hx
 
       - name: Compile browser target
         working-directory: engine
