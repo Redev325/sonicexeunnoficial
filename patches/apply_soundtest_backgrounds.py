@@ -40,14 +40,7 @@ def main() -> None:
         "\tfunction changeDiff(change:Int = 0)",
         """\tfunction soundTestVideoKey(songName:String):String
 \t{
-\t\tvar key:String = "";
-\t\tvar lowered:String = songName.toLowerCase();
-\t\tfor (i in 0...lowered.length)
-\t\t{
-\t\t\tvar code:Int = lowered.charCodeAt(i);
-\t\t\tif ((code >= 48 && code <= 57) || (code >= 97 && code <= 122))
-\t\t\t\tkey += lowered.charAt(i);
-\t\t}
+\t\tvar key:String = new EReg("[^a-z0-9]", "g").replace(songName.toLowerCase(), "");
 \t\treturn switch (key)
 \t\t{
 \t\t\tcase "tooslowencore": "tooslowencore";
@@ -84,8 +77,8 @@ def main() -> None:
 
     source = replace_once(
         source,
-        "\t\tif (curSelected >= songs.length) curSelected = 0;",
-        "\t\tif (curSelected >= songs.length) curSelected = 0;\n\t\tupdateSonicEXESoundTestBackdrop();",
+        "\t\tif (curSelected >= songs.length)\n\t\t\tcurSelected = 0;",
+        "\t\tif (curSelected >= songs.length)\n\t\t\tcurSelected = 0;\n\t\tupdateSonicEXESoundTestBackdrop();",
         "refresh video when the selected song changes",
     )
 
