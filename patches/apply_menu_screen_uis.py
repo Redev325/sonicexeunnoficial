@@ -41,7 +41,7 @@ def patch_freeplay(path: Path) -> None:
 \t\tsonicUiHeaderText.setFormat(Paths.font("sonichud.ttf"), 30, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\tsonicUiHeaderText.scrollFactor.set();
 \t\tadd(sonicUiHeaderText);
-\t\tvar sonicUiHeaderHint:FlxText = new FlxText(FlxG.width - 640, 17, 300, "SELECT A TRACK", 15);
+\t\tvar sonicUiHeaderHint:FlxText = new FlxText(FlxG.width - 650, 17, 220, "SELECT A TRACK", 15);
 \t\tsonicUiHeaderHint.setFormat(Paths.font("sonichud.ttf"), 15, 0xFFFFB8C2, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\tsonicUiHeaderHint.scrollFactor.set();
 \t\tadd(sonicUiHeaderHint);
