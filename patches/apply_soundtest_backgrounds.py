@@ -24,8 +24,8 @@ def main() -> None:
     source = replace_once(
         source,
         "class FreeplayState extends MusicBeatState\n{",
-        "class FreeplayState extends MusicBeatState\n{\n\tpublic static var sonicExeCustomSongMode:Bool = false;",
-        "add the custom-song screen flag",
+        "class FreeplayState extends MusicBeatState\n{\n\tpublic static var sonicExeCustomSongMode:Bool = false;\n\tpublic static var sonicExeEncoreMode:Bool = false;",
+        "add the custom-song and Encore screen flags",
     )
 
     source = replace_once(
@@ -37,13 +37,44 @@ def main() -> None:
 
     source = replace_once(
         source,
+        "\t\tMods.loadTopMod();",
+        """\t\tMods.loadTopMod();
+
+\t\t// Extras is a separate bonus-song list. Include tracks explicitly named
+\t\t// Encore/Bonus/Extra and tracks belonging to a week with one of those labels.
+\t\tif (sonicExeEncoreMode)
+\t\t{
+\t\t\tvar bonusSongs:Array<SongMetadata> = [];
+\t\t\tfor (song in songs)
+\t\t\t{
+\t\t\t\tvar songKey:String = new EReg("[^a-z0-9]", "g").replace(song.songName.toLowerCase(), "");
+\t\t\t\tvar weekKey:String = "";
+\t\t\t\tif (song.week >= 0 && song.week < WeekData.weeksList.length)
+\t\t\t\t\tweekKey = WeekData.weeksList[song.week].toLowerCase();
+\t\t\t\tvar isBonus:Bool = songKey.indexOf("encore") >= 0 || songKey.indexOf("bonus") >= 0 || songKey.indexOf("extra") >= 0
+\t\t\t\t\t|| weekKey.indexOf("encore") >= 0 || weekKey.indexOf("bonus") >= 0 || weekKey.indexOf("extra") >= 0;
+\t\t\t\tif (isBonus) bonusSongs.push(song);
+\t\t\t}
+\t\t\tif (bonusSongs.length > 0)
+\t\t\t\tsongs = bonusSongs;
+\t\t\telse
+\t\t\t{
+\t\t\t\t// Keep the menu usable if this build does not contain a tagged bonus week.
+\t\t\t\ttrace("Extras: no Encore/bonus-tagged songs were found in the loaded week data.");
+\t\t\t}
+\t\t}""",
+        "filter Extras to real Encore and bonus tracks"
+    )
+
+    source = replace_once(
+        source,
         "\tfunction changeDiff(change:Int = 0)",
         """\tfunction soundTestVideoKey(songName:String):String
 \t{
 \t\tvar key:String = new EReg("[^a-z0-9]", "g").replace(songName.toLowerCase(), "");
 \t\treturn switch (key)
 \t\t{
-\t\t\tcase "tooslowencore": "tooslowencore";
+\t\t\tcase "tooslowencore": "tooslowencore";\n\t\t\tcase "tripletroubleencore": "tripletrouble";
 \t\t\tcase "tripletrouble": "tripletrouble";
 \t\t\tcase "sanic", "sanicvid": "sanicvid";
 \t\t\tcase "starvedarg1", "starvedarg1final": "starvedarg1final";
@@ -96,7 +127,7 @@ def main() -> None:
 \t\t\tif (callback != null) Reflect.callMethod(browserWindow, callback, [""]);
 \t\t}
 \t\t#end
-\t\tsonicExeCustomSongMode = false;
+\t\tsonicExeCustomSongMode = false;\n\t\tsonicExeEncoreMode = false;
 \t\tsuper.destroy();""",
         "stop preview video when leaving custom songs",
     )
