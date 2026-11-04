@@ -274,12 +274,43 @@ jobs:
                   idle_box.save(idle_box_output, format="PNG", optimize=True)
               print(f"Prepared neutral gray idle frame: {idle_box_output} ({idle_box_output.stat().st_size:,} bytes)")
 
-              # Preserve the original Sonic-head transition artwork as-is (no red recolor).
-              transition_output = Path("engine/assets/shared/images/sonicexe-transitions/head.png")
+              # Build an alpha-only transition: the Sonic-head area is a transparent
+              # window, with solid black outside it. Ignore the source RGB values so
+              # the blue artwork is never drawn over the game.
+              transition_output = Path("engine/assets/shared/images/sonicexe-transitions/head-wipe.png")
               transition_output.parent.mkdir(parents=True, exist_ok=True)
+              frame_width, frame_height, frame_count = 1280, 720, 20
               with z.open("assets/exe/transitions/head.webp") as source, Image.open(source) as image:
-                  image.convert("RGBA").save(transition_output, format="PNG", optimize=True)
-              print(f"Prepared original non-red Sonic head transition: {transition_output} ({transition_output.stat().st_size:,} bytes)")
+                  source_rgba = image.convert("RGBA")
+                  source_alpha = source_rgba.getchannel("A")
+                  sheet = Image.new("RGBA", (frame_width, frame_height * frame_count), (0, 0, 0, 255))
+                  for frame_index in range(frame_count):
+                      # Begin with an oversized opening and close it smoothly to a point.
+                      progress = frame_index / (frame_count - 1)
+                      scale = 1.32 * ((1.0 - progress) ** 1.7) + 0.006
+                      scaled_width = max(1, round(source_alpha.width * scale))
+                      scaled_height = max(1, round(source_alpha.height * scale))
+                      mask = source_alpha.resize((scaled_width, scaled_height), Image.Resampling.LANCZOS)
+                      canvas_mask = Image.new("L", (frame_width, frame_height), 0)
+                      left = (frame_width - scaled_width) // 2
+                      top = (frame_height - scaled_height) // 2
+                      # Clip the centered mask cleanly to the screen-sized frame.
+                      src_left = max(0, -left)
+                      src_top = max(0, -top)
+                      dst_left = max(0, left)
+                      dst_top = max(0, top)
+                      copy_width = min(scaled_width - src_left, frame_width - dst_left)
+                      copy_height = min(scaled_height - src_top, frame_height - dst_top)
+                      if copy_width > 0 and copy_height > 0:
+                          crop = mask.crop((src_left, src_top, src_left + copy_width, src_top + copy_height))
+                          canvas_mask.paste(crop, (dst_left, dst_top))
+                      # Opaque source silhouette becomes a fully transparent aperture.
+                      frame_alpha = Image.eval(canvas_mask, lambda value: 255 - value)
+                      frame = Image.new("RGBA", (frame_width, frame_height), (0, 0, 0, 255))
+                      frame.putalpha(frame_alpha)
+                      sheet.paste(frame, (0, frame_index * frame_height))
+                  sheet.save(transition_output, format="PNG", optimize=True)
+              print(f"Prepared {frame_count}-frame transparent Sonic-head wipe: {transition_output} ({transition_output.stat().st_size:,} bytes)")
 
               # Copy original title-screen assets and matching atlas metadata.
               title_prefix = "assets/exe/title/"
