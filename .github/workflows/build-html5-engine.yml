@@ -777,10 +777,10 @@ jobs:
           python3 patches/apply_menu_screen_uis.py engine/source/states/FreeplayState.hx engine/source/states/StoryMenuState.hx engine/source/states/CreditsState.hx
 
       - name: Reduce Freeplay and Story Mode HTML5 stalls
+        run: python3 patches/apply_menu_freeze_fixes.py engine/source/states/FreeplayState.hx engine/source/states/StoryMenuState.hx
+
       - name: Add separate Psych Engine credits button
         run: python3 patches/apply_psych_engine_credits.py engine/source/states/MainMenuState.hx engine/source/states/CreditsState.hx
-
-        run: python3 patches/apply_menu_freeze_fixes.py engine/source/states/FreeplayState.hx engine/source/states/StoryMenuState.hx
 
       - name: Defer song audio until the title sequence
         run: |
