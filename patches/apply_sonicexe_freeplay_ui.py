@@ -48,7 +48,28 @@ def main() -> None:
     source = replace_pattern(
         source,
         r"\t\tgrpSongs = new FlxTypedGroup<Alphabet>\(\);\n\t\tadd\(grpSongs\);\n\n\t\tfor \(i in 0\.\.songs\.length\)\n\t\t\{.*?\n\t\t\}\n\t\tWeekData\.setDirectoryFromWeek\(\);",
-        """\t\tsongSelectionShadows = new FlxTypedGroup<FlxSprite>();
+        """\t\t// Regular Freeplay excludes Encore/Bonus/Extra tracks. These remain
+\t\t// available through the dedicated Extras mode, and Sound Test keeps them all.
+\t\tif (!sonicExeCustomSongMode)
+\t\t{
+\t\t\tvar regularSonicSongs:Array<SongMetadata> = [];
+\t\t\tfor (song in songs)
+\t\t\t{
+\t\t\t\tvar songTags:String = song.songName.toLowerCase();
+\t\t\t\tif (song.week >= 0 && song.week < WeekData.weeksList.length)
+\t\t\t\t{
+\t\t\t\t\tvar weekId:String = WeekData.weeksList[song.week];
+\t\t\t\t\tsongTags += " " + weekId.toLowerCase();
+\t\t\t\t\tvar weekInfo:WeekData = WeekData.weeksLoaded.get(weekId);
+\t\t\t\t\tif (weekInfo != null)
+\t\t\t\t\t\tsongTags += " " + (weekInfo.weekName == null ? "" : weekInfo.weekName.toLowerCase()) + " " + (weekInfo.storyName == null ? "" : weekInfo.storyName.toLowerCase());
+\t\t\t\t}
+\t\t\t\tvar isEncoreOrBonus:Bool = songTags.indexOf("encore") >= 0 || songTags.indexOf("bonus") >= 0 || songTags.indexOf("extra") >= 0;
+\t\t\t\tif (!isEncoreOrBonus) regularSonicSongs.push(song);
+\t\t\t}
+\t\t\tsongs = regularSonicSongs;
+\t\t}
+\t\tsongSelectionShadows = new FlxTypedGroup<FlxSprite>();
 \t\tadd(songSelectionShadows);
 \t\tsongIdlePlates = new FlxTypedGroup<FlxSprite>();
 \t\tadd(songIdlePlates);
