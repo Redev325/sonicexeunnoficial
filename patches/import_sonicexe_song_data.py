@@ -280,6 +280,41 @@ def main() -> None:
             output_assets / "week_assets" / directory,
         )
 
+    # Final Escape uses original atlases outside the normal week/stage asset
+    # folders. The game requests these at runtime from assets/exe/images, so
+    # preserve the complete original directory and its matching PNG/XML pairs.
+    final_escape_source = source_assets / "exe" / "images" / "final escape"
+    final_escape_output = output_assets / "exe" / "images" / "final escape"
+    required_final_escape_atlases = (
+        "broke.xml",
+        "exe line.xml",
+        "block2.xml",
+        "banner.xml",
+        "bf dead.xml",
+        "attack arm.xml",
+        "checkpoint.xml",
+    )
+    if not final_escape_source.is_dir():
+        raise SystemExit(
+            "Sonic.EXE import stopped: original Final Escape assets are missing "
+            f"from the source checkout: {final_escape_source}"
+        )
+
+    copied_final_escape_assets = copy_folder(final_escape_source, final_escape_output)
+    missing_final_escape = [
+        name for name in required_final_escape_atlases
+        if not (final_escape_output / name).is_file()
+    ]
+    if missing_final_escape:
+        raise SystemExit(
+            "Sonic.EXE import stopped: required Final Escape atlas files were "
+            "not copied: " + ", ".join(missing_final_escape)
+        )
+    print(
+        f"Copied original Final Escape assets: {copied_final_escape_assets} "
+        f"files; validated {len(required_final_escape_atlases)} required atlases."
+    )
+
     print(f"Imported Sonic.EXE weeks: {', '.join(week_id for week_id, _ in selected_weeks)}")
     print(f"Playable tracks imported: {len(selected_song_names)} ({normal_count} regular; Encore/Bonus/Extra kept for Extras)")
     print("Songs: " + ", ".join(selected_song_names))
