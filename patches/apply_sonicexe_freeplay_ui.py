@@ -47,7 +47,7 @@ def main() -> None:
     # HTML5 menu-freeze patch, so no stock HealthIcon is constructed or rendered.
     source = replace_pattern(
         source,
-        r"\t\tgrpSongs = new FlxTypedGroup<Alphabet>\(\);\n\t\tadd\(grpSongs\);\n\n\t\tfor \(i in 0\.\.songs\.length\)\n\t\t\{.*?\n\t\t\}\n\t\tWeekData\.setDirectoryFromWeek\(\);",
+        r"\t\tgrpSongs = new FlxTypedGroup<Alphabet>\(\);\n\t\tadd\(grpSongs\);\n\n\t\tfor \(i in 0\.\.\.songs\.length\)\n\t\t\{.*?\n\t\t\}\n\t\tWeekData\.setDirectoryFromWeek\(\);",
         """\t\t// Regular Freeplay excludes Encore/Bonus/Extra tracks. These remain
 \t\t// available through the dedicated Extras mode, and Sound Test keeps them all.
 \t\tif (!sonicExeCustomSongMode)
@@ -118,7 +118,7 @@ def main() -> None:
     # Replace stock icon alpha updates and Alphabet targetY updates.
     source = replace_pattern(
         source,
-        r"\t\tfor \(i in 0\.\.iconArray\.length\)\n\t\t\{\n\t\t\tif \(iconArray\[i\] != null\) iconArray\[i\]\.alpha = 0\.6;\n\t\t\}\n\n\t\tif \(iconArray\[curSelected\] != null\) iconArray\[curSelected\]\.alpha = 1;\n",
+        r"\t\tfor \(i in 0\.\.\.iconArray\.length\)\n\t\t\{\n\t\t\tif \(iconArray\[i\] != null\) iconArray\[i\]\.alpha = 0\.6;\n\t\t\}\n\n\t\tif \(iconArray\[curSelected\] != null\) iconArray\[curSelected\]\.alpha = 1;\n",
         "",
         "remove Psych icon selection logic",
     )
