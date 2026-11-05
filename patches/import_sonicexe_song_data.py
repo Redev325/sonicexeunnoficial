@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Import playable, non-vanilla Sonic.EXE songs from the original release archive."""
+"""Import the curated Sonic.EXE mod weeks, charts, audio and required character/stage assets."""
 
-from pathlib import Path, PurePosixPath
-from zipfile import ZipFile
+from pathlib import Path
 import json
 import re
 import shutil
@@ -15,236 +14,277 @@ VANILLA_SONGS = {
     "eggnog", "winterhorrorland", "senpai", "roses", "thorns", "ugh", "guns",
     "stress", "darnell", "litup", "2hot", "blazin",
 }
-BONUS_TERMS = ("encore", "bonus", "extra")
 
 
 def norm(value: str) -> str:
     return re.sub(r"[^a-z0-9]", "", str(value).casefold())
 
 
-def is_bonus(value: str) -> bool:
-    key = norm(value)
-    return any(term in key for term in BONUS_TERMS)
+def format_song_path(value: str) -> str:
+    # Match Psych Engine Paths.formatToSongPath().
+    value = str(value).replace(" ", "-")
+    value = re.sub(r"[~&\\;:<>#]", "-", value)
+    value = re.sub(r"[.,'\"%?!]", "", value)
+    return value.lower()
 
 
-def path_contains_song(path: str, song_key: str, root_name: str) -> bool:
-    parts = [norm(part) for part in PurePosixPath(path).parts]
-    try:
-        root_index = next(i for i, part in enumerate(parts) if part == root_name)
-    except StopIteration:
+def copy_file(source: Path, destination: Path) -> bool:
+    if not source.is_file():
         return False
-    return song_key in parts[root_index + 1:]
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
+    return True
 
 
-def copy_entries(z: ZipFile, names: list[str], predicate, destination: Path) -> int:
+def copy_folder(source: Path, destination: Path) -> int:
+    if not source.is_dir():
+        return 0
     copied = 0
-    for name in names:
-        if not predicate(name) or name.endswith("/"):
-            continue
-        suffix = PurePosixPath(name).parts
-        if not suffix or suffix[0].casefold() != "assets":
-            continue
-        target = destination.joinpath(*suffix[1:])
-        target.parent.mkdir(parents=True, exist_ok=True)
-        with z.open(name) as source, target.open("wb") as output:
-            shutil.copyfileobj(source, output)
-        copied += 1
+    for file in source.rglob("*"):
+        if file.is_file():
+            relative = file.relative_to(source)
+            if copy_file(file, destination / relative):
+                copied += 1
     return copied
+
+
+def find_song_folder(data_root: Path, songs_root: Path, title: str):
+    target = format_song_path(title)
+    candidates = []
+    if data_root.is_dir():
+        for folder in data_root.iterdir():
+            if not folder.is_dir():
+                continue
+            if norm(folder.name) == norm(target):
+                candidates.append(folder)
+    for data_folder in candidates:
+        slug = data_folder.name
+        hard_chart = data_folder / f"{slug}-hard.json"
+        audio_folder = songs_root / slug
+        instrumental = next(
+            (audio_folder / f"Inst{ext}" for ext in (".mp3", ".ogg", ".wav")
+             if (audio_folder / f"Inst{ext}").is_file()),
+            None,
+        )
+        if hard_chart.is_file() and instrumental is not None:
+            return slug, data_folder, audio_folder, hard_chart
+    return None
 
 
 def main() -> None:
     if len(sys.argv) != 3:
-        raise SystemExit("Usage: import_sonicexe_song_data.py package/release.zip engine/assets")
+        raise SystemExit(
+            "Usage: import_sonicexe_song_data.py sonic-source/assets engine/assets"
+        )
 
-    archive = Path(sys.argv[1])
+    source_assets = Path(sys.argv[1])
     output_assets = Path(sys.argv[2])
-    if not archive.is_file():
-        raise SystemExit(f"Original Sonic.EXE release archive not found: {archive}")
+    source_weeks = source_assets / "weeks"
+    data_root = source_assets / "data"
+    songs_root = source_assets / "songs"
 
-    with ZipFile(archive) as z:
-        names = z.namelist()
-        week_lists = [
-            name for name in names
-            if PurePosixPath(name).name.casefold() == "weeklist.txt"
-            and any(part.casefold() == "weeks" for part in PurePosixPath(name).parts)
-        ]
-        if not week_lists:
-            print("Sonic.EXE archive week/data inventory (no weeks/weekList.txt found):")
-            week_related = [
-                name for name in names
-                if "week" in name.casefold()
-                and (PurePosixPath(name).suffix.casefold() in {".txt", ".json", ".xml"})
-            ]
-            chart_related = [
-                name for name in names
-                if PurePosixPath(name).suffix.casefold() == ".json"
-                and any(part.casefold() in {"data", "songs", "charts"} for part in PurePosixPath(name).parts)
-            ]
-            audio_related = [
-                name for name in names
-                if PurePosixPath(name).suffix.casefold() in {".ogg", ".mp3", ".wav"}
-                and any(part.casefold() in {"songs", "music", "audio"} for part in PurePosixPath(name).parts)
-            ]
-            print("Week-related files (" + str(len(week_related)) + "):")
-            for name in week_related[:160]:
-                print("  " + name)
-            print("Chart/data JSON files (" + str(len(chart_related)) + "):")
-            for name in chart_related[:160]:
-                print("  " + name)
-            print("Song/audio files (" + str(len(audio_related)) + "):")
-            for name in audio_related[:160]:
-                print("  " + name)
+    week_list_file = source_weeks / "weekList.txt"
+    if not week_list_file.is_file():
+        raise SystemExit(f"Sonic.EXE source repository has no {week_list_file}.")
 
-            contents_files = [name for name in names if name.casefold().startswith("contents/") and not name.endswith("/")]
-            by_suffix = {}
-            for name in contents_files:
-                suffix = PurePosixPath(name).suffix.casefold() or "<no extension>"
-                by_suffix.setdefault(suffix, []).append(name)
-            print("Contents file types:")
-            for suffix, entries in sorted(by_suffix.items()):
-                print(f"  {suffix}: {len(entries)}")
-            for suffix in (".json", ".jsonc", ".txt", ".hx", ".xml", ".fnfc", ".chart", ".bin", ".csv", ".yaml", ".yml"):
-                entries = by_suffix.get(suffix, [])
-                if entries:
-                    print(f"Contents {suffix} files ({len(entries)}):")
-                    for name in entries[:240]:
-                        print("  " + name)
-            raise SystemExit("Sonic.EXE import stopped: archive has no week list; file-type inventory above identifies alternate chart formats.")
+    week_ids = [
+        line.strip() for line in week_list_file.read_text(encoding="utf-8-sig").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
 
-        data_json = [
-            name for name in names
-            if name.casefold().endswith(".json") and "/data/" in name.casefold()
-        ]
-        song_audio = [
-            name for name in names
-            if name.casefold().startswith("assets/songs/")
-            and PurePosixPath(name).suffix.casefold() in {".ogg", ".mp3", ".wav"}
-        ]
+    selected_weeks = []
+    selected_song_slugs = set()
+    selected_song_names = []
+    selected_characters = set()
+    selected_stages = set()
+    selected_stage_directories = set()
+    skipped = []
 
-        candidates = []
-        for list_path in week_lists:
-            folder = PurePosixPath(list_path).parent
-            try:
-                week_ids = [
-                    line.strip() for line in z.read(list_path).decode("utf-8-sig").splitlines()
-                    if line.strip() and not line.lstrip().startswith("#")
-                ]
-            except Exception as exc:
-                print(f"Skipping unreadable week list {list_path}: {exc}")
+    for week_id in week_ids:
+        week_path = source_weeks / f"{week_id}.json"
+        if not week_path.is_file():
+            print(f"Skipping week {week_id}: missing {week_path.name}")
+            continue
+
+        try:
+            week_data = json.loads(week_path.read_text(encoding="utf-8-sig"))
+        except Exception as exc:
+            print(f"Skipping malformed week {week_id}: {exc}")
+            continue
+
+        source_rows = week_data.get("songs")
+        if not isinstance(source_rows, list):
+            print(f"Skipping week {week_id}: songs is not an array")
+            continue
+
+        playable_rows = []
+        for row in source_rows:
+            if not isinstance(row, list) or len(row) < 2:
+                skipped.append(f"{week_id}: malformed song row")
                 continue
 
-            accepted_weeks = []
-            accepted_songs = []
-            chart_paths = set()
-            audio_paths = set()
-            for week_id in week_ids:
-                week_path = str(folder / f"{week_id}.json")
-                if week_path not in names:
-                    continue
-                try:
-                    week_data = json.loads(z.read(week_path).decode("utf-8-sig"))
-                except Exception as exc:
-                    print(f"Skipping malformed week metadata {week_path}: {exc}")
-                    continue
+            title = str(row[0])
+            key = norm(title)
+            if not key or key in VANILLA_SONGS:
+                skipped.append(f"{week_id}: stock FNF entry {title}")
+                continue
 
-                week_songs = week_data.get("songs")
-                if not isinstance(week_songs, list):
-                    continue
+            match = find_song_folder(data_root, songs_root, title)
+            if match is None:
+                skipped.append(f"{week_id}: {title} (no matching Hard chart + Inst audio)")
+                continue
 
-                playable_rows = []
-                for row in week_songs:
-                    if not isinstance(row, list) or not row:
-                        continue
-                    title = str(row[0])
-                    key = norm(title)
-                    if not key or key in VANILLA_SONGS:
-                        continue
+            slug, data_folder, audio_folder, hard_chart = match
+            chart_folder = data_folder
+            try:
+                chart_json = json.loads(hard_chart.read_text(encoding="utf-8-sig"))
+            except Exception as exc:
+                skipped.append(f"{week_id}: {title} (invalid chart JSON: {exc})")
+                continue
+            chart_song = chart_json.get("song", chart_json)
+            if not isinstance(chart_song, dict):
+                skipped.append(f"{week_id}: {title} (unexpected chart format)")
+                continue
 
-                    charts = {
-                        name for name in data_json
-                        if path_contains_song(name, key, "data")
-                    }
-                    audio = {
-                        name for name in song_audio
-                        if path_contains_song(name, key, "songs")
-                    }
-                    if not charts or not audio:
-                        continue
-                    playable_rows.append(row)
-                    chart_paths.update(charts)
-                    audio_paths.update(audio)
+            selected_song_slugs.add(slug)
+            selected_song_names.append(title)
 
-                if playable_rows:
-                    week_data["songs"] = playable_rows
-                    accepted_weeks.append((week_id, week_path, week_data))
-                    accepted_songs.extend(str(row[0]) for row in playable_rows)
+            for character in (row[1], chart_song.get("player1"), chart_song.get("player2"), chart_song.get("gfVersion")):
+                if character:
+                    selected_characters.add(str(character))
 
-            score = len(accepted_songs)
-            candidates.append((score, list_path, accepted_weeks, accepted_songs, chart_paths, audio_paths))
+            stage = chart_song.get("stage")
+            if stage:
+                selected_stages.add(str(stage))
 
-        if not candidates:
-            raise SystemExit("Sonic.EXE import stopped: no readable week-list candidates were found.")
-        candidates.sort(key=lambda item: item[0], reverse=True)
-        score, chosen_list, selected_weeks, selected_songs, chart_paths, audio_paths = candidates[0]
+            # The week file's original display name, character and color are kept.
+            playable_rows.append(row)
 
-        print("Sonic.EXE release week-list candidates:")
-        for candidate in candidates:
-            print(f"  {candidate[1]}: {len(candidate[3])} playable non-vanilla/non-bonus songs")
-        if score == 0:
-            raise SystemExit(
-                "Sonic.EXE import stopped: no non-vanilla, non-Encore/bonus tracks had both chart JSON and instrumental audio. "
-                "No stock FNF weeks will be silently left in Freeplay."
-            )
+        if playable_rows:
+            week_data["songs"] = playable_rows
+            week_data["startUnlocked"] = True
+            week_data["hideFreeplay"] = False
+            week_data["hideStoryMode"] = False
+            if not isinstance(week_data.get("weekCharacters"), list) or len(week_data["weekCharacters"]) < 3:
+                week_data["weekCharacters"] = ["", "bf", "gf"]
+            if not week_data.get("difficulties"):
+                week_data["difficulties"] = "Hard"
+            selected_weeks.append((week_id, week_data))
 
-        # Replace only the base game's week metadata with the discovered Sonic.EXE
-        # weeks. Entries containing Encore/Bonus/Extra are deliberately omitted.
-        weeks_output = output_assets / "shared" / "weeks"
-        weeks_output.mkdir(parents=True, exist_ok=True)
-        for old_file in weeks_output.glob("*.json"):
-            old_file.unlink()
-        (weeks_output / "weekList.txt").write_text(
-            "\n".join(week_id for week_id, _path, _data in selected_weeks) + "\n",
+    if not selected_weeks:
+        raise SystemExit(
+            "Sonic.EXE import stopped: no source week contains a song with both a Hard chart and instrumental audio."
+        )
+
+    normal_count = sum(
+        1
+        for week_id, week_data in selected_weeks
+        for row in week_data["songs"]
+        if "encore" not in norm(row[0])
+        and "bonus" not in norm(row[0])
+        and "extra" not in norm(row[0])
+        and "encore" not in norm(week_id)
+        and "bonus" not in norm(week_id)
+        and "extra" not in norm(week_id)
+    )
+    if normal_count == 0:
+        raise SystemExit("Sonic.EXE import stopped: no regular (non-Encore/non-Bonus) tracks were found.")
+
+    # Replace the default FNF week catalogue completely.
+    weeks_output = output_assets / "shared" / "weeks"
+    weeks_output.mkdir(parents=True, exist_ok=True)
+    for old_file in weeks_output.glob("*.json"):
+        old_file.unlink()
+    (weeks_output / "weekList.txt").write_text(
+        "\n".join(week_id for week_id, _data in selected_weeks) + "\n",
+        encoding="utf-8",
+    )
+    for week_id, week_data in selected_weeks:
+        (weeks_output / f"{week_id}.json").write_text(
+            json.dumps(week_data, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
-        for week_id, _week_path, week_data in selected_weeks:
-            (weeks_output / f"{week_id}.json").write_text(
-                json.dumps(week_data, ensure_ascii=False, indent=2) + "\n",
-                encoding="utf-8",
-            )
 
-        copied_charts = copy_entries(
-            z, names,
-            lambda name: name in chart_paths,
-            output_assets,
-        )
-        copied_audio = copy_entries(
-            z, names,
-            lambda name: name in audio_paths,
-            output_assets,
+    copied_charts = 0
+    copied_audio = 0
+    for slug in sorted(selected_song_slugs):
+        copied_charts += copy_folder(data_root / slug, output_assets / "shared" / "data" / slug)
+        copied_audio += copy_folder(songs_root / slug, output_assets / "songs" / slug)
+
+    # Import only character definitions and sprites actually referenced by the
+    # selected weeks or their chart metadata. Existing built-in characters stay intact.
+    copied_character_defs = 0
+    copied_character_images = 0
+    copied_icons = 0
+    char_root = source_assets / "characters"
+    image_root = source_assets / "images"
+    for character in sorted(selected_characters):
+        char_json = char_root / f"{character}.json"
+        if not char_json.is_file():
+            continue
+        if copy_file(char_json, output_assets / "shared" / "characters" / char_json.name):
+            copied_character_defs += 1
+
+        try:
+            char_data = json.loads(char_json.read_text(encoding="utf-8-sig"))
+        except Exception:
+            char_data = {}
+
+        image_key = char_data.get("image")
+        if isinstance(image_key, str) and image_key:
+            for ext in (".png", ".xml"):
+                src = image_root / f"{image_key}{ext}"
+                if copy_file(src, output_assets / "shared" / "images" / f"{image_key}{ext}"):
+                    copied_character_images += 1
+
+        health_icon = char_data.get("healthicon")
+        if isinstance(health_icon, str) and health_icon:
+            icons_root = image_root / "icons"
+            for icon_file in icons_root.glob("*"):
+                if icon_file.is_file() and norm(icon_file.stem) in {
+                    norm(health_icon), norm("icon-" + health_icon)
+                }:
+                    if copy_file(icon_file, output_assets / "shared" / "images" / "icons" / icon_file.name):
+                        copied_icons += 1
+
+        # Character-specific Lua files are optional, but copy them when present.
+        copy_file(char_root / f"{character}.lua",
+                  output_assets / "shared" / "characters" / f"{character}.lua")
+
+    # Stage metadata is required for character placement and the correct asset library.
+    copied_stages = 0
+    for stage in sorted(selected_stages):
+        stage_file = source_assets / "stages" / f"{stage}.json"
+        if not copy_file(stage_file, output_assets / "shared" / "stages" / f"{stage}.json"):
+            print(f"Warning: no stage metadata found for {stage}")
+            continue
+        copied_stages += 1
+        try:
+            stage_data = json.loads(stage_file.read_text(encoding="utf-8-sig"))
+        except Exception:
+            stage_data = {}
+        directory = stage_data.get("directory")
+        if isinstance(directory, str) and directory:
+            selected_stage_directories.add(directory)
+
+    copied_stage_assets = 0
+    for directory in sorted(selected_stage_directories):
+        copied_stage_assets += copy_folder(
+            source_assets / directory,
+            output_assets / "week_assets" / directory,
         )
 
-        # Bring over common custom character, icon, menu-character and stage art
-        # directories used by the imported weeks. These are game assets, not
-        # generated substitutes.
-        copied_support = copy_entries(
-            z, names,
-            lambda name: any(
-                token in name.casefold()
-                for token in (
-                    "assets/shared/characters/",
-                    "assets/shared/images/characters/",
-                    "assets/shared/images/icons/",
-                    "assets/shared/images/menucharacters/",
-                    "assets/shared/images/menubackgrounds/",
-                    "assets/week_assets/",
-                )
-            ),
-            output_assets,
-        )
-
-        print(f"Imported {len(selected_weeks)} Sonic.EXE weeks from {chosen_list}.")
-        print("Imported playable Sonic.EXE tracks (Encore/Bonus/Extra retained for the separate Extras list): " + ", ".join(selected_songs))
-        print(f"Copied chart files: {copied_charts}; instrumental/voice files: {copied_audio}; support assets: {copied_support}.")
+    print(f"Imported Sonic.EXE weeks: {', '.join(week_id for week_id, _ in selected_weeks)}")
+    print(f"Playable tracks imported: {len(selected_song_names)} ({normal_count} regular; Encore/Bonus/Extra kept for Extras)")
+    print("Songs: " + ", ".join(selected_song_names))
+    print(f"Skipped entries without a matching Hard chart and instrumental: {len(skipped)}")
+    for entry in skipped:
+        print("  " + entry)
+    print(
+        f"Copied charts/data: {copied_charts}; audio: {copied_audio}; "
+        f"character JSONs: {copied_character_defs}; character images: {copied_character_images}; "
+        f"icons: {copied_icons}; stage JSONs: {copied_stages}; stage asset files: {copied_stage_assets}."
+    )
 
 
 if __name__ == "__main__":
