@@ -98,8 +98,6 @@ def main() -> None:
             chart_paths = set()
             audio_paths = set()
             for week_id in week_ids:
-                if is_bonus(week_id):
-                    continue
                 week_path = str(folder / f"{week_id}.json")
                 if week_path not in names:
                     continue
@@ -109,8 +107,6 @@ def main() -> None:
                     print(f"Skipping malformed week metadata {week_path}: {exc}")
                     continue
 
-                if is_bonus(week_data.get("weekName", "")) or is_bonus(week_data.get("storyName", "")):
-                    continue
                 week_songs = week_data.get("songs")
                 if not isinstance(week_songs, list):
                     continue
@@ -121,7 +117,7 @@ def main() -> None:
                         continue
                     title = str(row[0])
                     key = norm(title)
-                    if not key or key in VANILLA_SONGS or is_bonus(title):
+                    if not key or key in VANILLA_SONGS:
                         continue
 
                     charts = {
@@ -207,7 +203,7 @@ def main() -> None:
         )
 
         print(f"Imported {len(selected_weeks)} Sonic.EXE weeks from {chosen_list}.")
-        print("Included playable tracks (Encore/Bonus/Extra excluded): " + ", ".join(selected_songs))
+        print("Imported playable Sonic.EXE tracks (Encore/Bonus/Extra retained for the separate Extras list): " + ", ".join(selected_songs))
         print(f"Copied chart files: {copied_charts}; instrumental/voice files: {copied_audio}; support assets: {copied_support}.")
 
 
