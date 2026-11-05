@@ -664,7 +664,34 @@ jobs:
       - name: Import Sonic.EXE mod weeks, charts and playable songs
         run: |
           git clone --depth 1 --filter=blob:none --sparse https://github.com/Redev325/fnf-sonic.exe-restored-.git sonicexe-mod-source
-          git -C sonicexe-mod-source sparse-checkout set assets/weeks assets/data assets/songs assets/characters assets/images/characters assets/images/icons assets/images/fpstuff assets/images/FreeBox.png assets/images/backgroundlool.png assets/images/sidebar.png assets/images/redbox.png assets/images/yellowbox.png assets/images/greybox.png assets/images/SMMStatic.png assets/images/SMMStatic.xml assets/images/screenstatic.png assets/images/screenstatic.xml assets/images/campaign_menu_UI_assets.png assets/images/campaign_menu_UI_assets.xml assets/images/campaign_menu_UI_assets_alt.png assets/images/campaign_menu_UI_assets_alt.xml assets/shared/images/characters assets/shared/images/icons assets/stages assets/exe
+          # This asset list intentionally mixes directories with individual PNG/XML files.
+          # Cone mode only accepts directories, so use pattern mode for exact file paths.
+          git -C sonicexe-mod-source sparse-checkout set --no-cone \
+            '/assets/weeks/' \
+            '/assets/data/' \
+            '/assets/songs/' \
+            '/assets/characters/' \
+            '/assets/images/characters/' \
+            '/assets/images/icons/' \
+            '/assets/images/fpstuff/' \
+            '/assets/images/FreeBox.png' \
+            '/assets/images/backgroundlool.png' \
+            '/assets/images/sidebar.png' \
+            '/assets/images/redbox.png' \
+            '/assets/images/yellowbox.png' \
+            '/assets/images/greybox.png' \
+            '/assets/images/SMMStatic.png' \
+            '/assets/images/SMMStatic.xml' \
+            '/assets/images/screenstatic.png' \
+            '/assets/images/screenstatic.xml' \
+            '/assets/images/campaign_menu_UI_assets.png' \
+            '/assets/images/campaign_menu_UI_assets.xml' \
+            '/assets/images/campaign_menu_UI_assets_alt.png' \
+            '/assets/images/campaign_menu_UI_assets_alt.xml' \
+            '/assets/shared/images/characters/' \
+            '/assets/shared/images/icons/' \
+            '/assets/stages/' \
+            '/assets/exe/'
           python3 patches/import_sonicexe_song_data.py sonicexe-mod-source/assets engine/assets
           rm -rf sonicexe-mod-source
 
