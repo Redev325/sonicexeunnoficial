@@ -76,12 +76,6 @@ def patch_freeplay(path: Path) -> None:
     )
     source = replace_once(
         source,
-        "\t\t\tvar leWeek:WeekData = WeekData.weeksLoaded.get(WeekData.weeksList[i]);\n\t\t\tvar leSongs:Array<String> = [];",
-        "\t\t\tvar leWeek:WeekData = WeekData.weeksLoaded.get(WeekData.weeksList[i]);\n\t\t\tif (leWeek == null || leWeek.songs == null || leWeek.songs.length == 0)\n\t\t\t{\n\t\t\t\tMusicBeatState.sonicEXEDebug(\"ERROR: Skipping malformed Freeplay week \" + WeekData.weeksList[i] + \" (missing songs)\");\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar leSongs:Array<String> = [];",
-        "Freeplay malformed week guard",
-    )
-    source = replace_once(
-        source,
         "\toverride function create()\n\t{\n\t\t//Paths.clearStoredMemory();",
         "\toverride function create()\n\t{\n\t\tMusicBeatState.sonicEXEDebug(\"FREEPLAY CREATE: start\");\n\t\t//Paths.clearStoredMemory();",
         "Freeplay create start",
@@ -132,12 +126,6 @@ def patch_story(path: Path) -> None:
         "\t\treturn (!leWeek.startUnlocked && leWeek.weekBefore.length > 0 && (!weekCompleted.exists(leWeek.weekBefore) || !weekCompleted.get(leWeek.weekBefore)));",
         "\t\tif (leWeek == null) return true;\n\t\tvar previousWeek:String = leWeek.weekBefore;\n\t\treturn (!leWeek.startUnlocked && previousWeek != null && previousWeek.length > 0 && (!weekCompleted.exists(previousWeek) || !weekCompleted.get(previousWeek)));",
         "Story nullable week prerequisite",
-    )
-    source = replace_once(
-        source,
-        "\t\t\tvar weekFile:WeekData = WeekData.weeksLoaded.get(WeekData.weeksList[i]);\n\t\t\tvar isLocked:Bool = weekIsLocked(WeekData.weeksList[i]);",
-        "\t\t\tvar weekFile:WeekData = WeekData.weeksLoaded.get(WeekData.weeksList[i]);\n\t\t\tif (weekFile == null || weekFile.songs == null || weekFile.songs.length == 0 || weekFile.weekCharacters == null || weekFile.weekCharacters.length < 3)\n\t\t\t{\n\t\t\t\tMusicBeatState.sonicEXEDebug(\"ERROR: Skipping malformed Story week \" + WeekData.weeksList[i] + \" (missing songs or characters)\");\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar isLocked:Bool = weekIsLocked(WeekData.weeksList[i]);",
-        "Story malformed week guard",
     )
     source = replace_once(
         source,
@@ -219,16 +207,34 @@ def patch_loading(path: Path) -> None:
     path.write_text(source, encoding="utf-8")
 
 
+def patch_week_data(path: Path) -> None:
+    source = path.read_text(encoding="utf-8")
+    source = replace_once(
+        source,
+        "if(weekFile != null && (isStoryMode == null || (isStoryMode && !weekFile.hideStoryMode) || (!isStoryMode && !weekFile.hideFreeplay))) {",
+        "if(weekFile != null && weekFile.songs != null && weekFile.songs.length > 0 && (isStoryMode == null || (isStoryMode && !weekFile.hideStoryMode && weekFile.weekCharacters != null && weekFile.weekCharacters.length >= 3) || (!isStoryMode && !weekFile.hideFreeplay))) {",
+        "WeekData reload validation",
+    )
+    source = replace_once(
+        source,
+        "if((PlayState.isStoryMode && !weekFile.hideStoryMode) || (!PlayState.isStoryMode && !weekFile.hideFreeplay))",
+        "if(weekFile.songs != null && weekFile.songs.length > 0 && ((PlayState.isStoryMode && !weekFile.hideStoryMode && weekFile.weekCharacters != null && weekFile.weekCharacters.length >= 3) || (!PlayState.isStoryMode && !weekFile.hideFreeplay)))",
+        "WeekData mod scan validation",
+    )
+    path.write_text(source, encoding="utf-8")
+
+
 def main() -> None:
-    if len(sys.argv) != 5:
+    if len(sys.argv) != 6:
         raise SystemExit(
-            "Usage: apply_runtime_diagnostics.py MusicBeatState.hx FreeplayState.hx StoryMenuState.hx LoadingState.hx"
+            "Usage: apply_runtime_diagnostics.py MusicBeatState.hx FreeplayState.hx StoryMenuState.hx LoadingState.hx WeekData.hx"
         )
     patch_music_beat(Path(sys.argv[1]))
     patch_freeplay(Path(sys.argv[2]))
     patch_story(Path(sys.argv[3]))
     patch_loading(Path(sys.argv[4]))
-    print("Installed HTML5 runtime checkpoints for state changes, Freeplay, Story Mode, and song loading.")
+    patch_week_data(Path(sys.argv[5]))
+    print("Installed HTML5 runtime checkpoints and validated week data for Freeplay and Story Mode.")
 
 
 if __name__ == "__main__":
