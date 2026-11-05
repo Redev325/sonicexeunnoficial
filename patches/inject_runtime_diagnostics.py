@@ -342,6 +342,15 @@ SCRIPT = r"""
     lastHeartbeat = current;
   }, 1000);
 
+  window.addEventListener("keydown", function (event) {
+    if (event.key === "F8") {
+      expanded = !expanded;
+      render();
+      if (panel) panel.querySelector(".sx-toggle").textContent = expanded ? "Hide" : "Details";
+      event.preventDefault();
+    }
+  }, true);
+
   window.addEventListener("pageshow", function () {
     mark("BROWSER PAGE: visible and running");
   });
