@@ -70,6 +70,9 @@ SCRIPT = r"""
   var currentState = "Booting";
   var currentAction = "Waiting for game startup";
   var lastHeartbeat = Date.now();
+  var lastGamePulse = Date.now();
+  var gamePulseSeen = false;
+  var pulseStallReported = false;
   var creatingState = null;
   var createToken = 0;
   var switchToken = 0;
@@ -238,6 +241,11 @@ SCRIPT = r"""
 
   window.sonicEXEDiagnostics = {
     mark: mark,
+    pulse: function () {
+      lastGamePulse = Date.now();
+      gamePulseSeen = true;
+      pulseStallReported = false;
+    },
     report: function (level, message, detail) {
       add(level || "INFO", message, detail);
     },
@@ -322,6 +330,14 @@ SCRIPT = r"""
     if (gap > 5000) {
       add("WARN", "MAIN THREAD STALL DETECTED: browser JavaScript was unresponsive for " +
         (gap / 1000).toFixed(1) + " seconds.");
+    }
+    if (gamePulseSeen && document.visibilityState === "visible") {
+      var pulseGap = current - lastGamePulse;
+      if (pulseGap > 6000 && !pulseStallReported) {
+        pulseStallReported = true;
+        add("ERROR", "GAME UPDATE LOOP STOPPED: no Psych Engine update checkpoint for " +
+          (pulseGap / 1000).toFixed(1) + " seconds while this tab was visible. Last state: " + currentState);
+      }
     }
     lastHeartbeat = current;
   }, 1000);
