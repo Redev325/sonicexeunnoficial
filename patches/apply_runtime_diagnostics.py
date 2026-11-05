@@ -29,6 +29,13 @@ def patch_music_beat(path: Path) -> None:
 \t\tjs.Syntax.code("if (window.sonicEXEDiagnostics) window.sonicEXEDiagnostics.mark({0});", message);
 \t\t#end
 \t}
+
+\tpublic static function sonicEXEPulse():Void
+\t{
+\t\t#if html5
+\t\tjs.Syntax.code("if (window.sonicEXEDiagnostics) window.sonicEXEDiagnostics.pulse();");
+\t\t#end
+\t}
 """,
         "diagnostics bridge",
     )
@@ -49,6 +56,12 @@ def patch_music_beat(path: Path) -> None:
         "\tpublic static function switchState(nextState:FlxState = null) {\n\t\tif(nextState == null) nextState = FlxG.state;",
         "\tpublic static function switchState(nextState:FlxState = null) {\n\t\tif(nextState == null) nextState = FlxG.state;\n\t\tvar debugTargetName = nextState == null ? \"unknown\" : Type.getClassName(Type.getClass(nextState));\n\t\tsonicEXEDebug(\"STATE SWITCH REQUESTED: \" + (debugTargetName == null ? \"unknown\" : debugTargetName));",
         "state-switch request",
+    )
+    source = replace_once(
+        source,
+        "\toverride function update(elapsed:Float)\n\t{\n\t\t//everyStep();",
+        "\toverride function update(elapsed:Float)\n\t{\n\t\tsonicEXEPulse();\n\t\t//everyStep();",
+        "game update pulse",
     )
     path.write_text(source, encoding="utf-8")
 
