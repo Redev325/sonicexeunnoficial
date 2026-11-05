@@ -94,8 +94,8 @@ def patch_freeplay(path: Path) -> None:
     )
     source = replace_once(
         source,
-        "\t\tchangeSelection();\n\t\tupdateTexts();\n\t\tsuper.create();",
-        "\t\tchangeSelection();\n\t\tupdateTexts();\n\t\tsuper.create();\n\t\tMusicBeatState.sonicEXEDebug(\"FREEPLAY CREATE: finished\");",
+        "\t\tsuper.create();\n\t}",
+        "\t\tsuper.create();\n\t\tMusicBeatState.sonicEXEDebug(\"FREEPLAY CREATE: finished\");\n\t}",
         "Freeplay create completion",
     )
     source = replace_once(
