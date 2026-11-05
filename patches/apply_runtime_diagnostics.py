@@ -71,8 +71,14 @@ def patch_freeplay(path: Path) -> None:
     source = replace_once(
         source,
         "\t\treturn (!leWeek.startUnlocked && leWeek.weekBefore.length > 0 && (!StoryMenuState.weekCompleted.exists(leWeek.weekBefore) || !StoryMenuState.weekCompleted.get(leWeek.weekBefore)));",
-        "\t\tvar previousWeek:String = leWeek.weekBefore;\n\t\treturn (!leWeek.startUnlocked && previousWeek != null && previousWeek.length > 0 && (!StoryMenuState.weekCompleted.exists(previousWeek) || !StoryMenuState.weekCompleted.get(previousWeek)));",
+        "\t\tif (leWeek == null) return true;\n\t\tvar previousWeek:String = leWeek.weekBefore;\n\t\treturn (!leWeek.startUnlocked && previousWeek != null && previousWeek.length > 0 && (!StoryMenuState.weekCompleted.exists(previousWeek) || !StoryMenuState.weekCompleted.get(previousWeek)));",
         "Freeplay nullable week prerequisite",
+    )
+    source = replace_once(
+        source,
+        "\t\t\tvar leWeek:WeekData = WeekData.weeksLoaded.get(WeekData.weeksList[i]);\n\t\t\tvar leSongs:Array<String> = [];",
+        "\t\t\tvar leWeek:WeekData = WeekData.weeksLoaded.get(WeekData.weeksList[i]);\n\t\t\tif (leWeek == null || leWeek.songs == null || leWeek.songs.length == 0)\n\t\t\t{\n\t\t\t\tMusicBeatState.sonicEXEDebug(\"ERROR: Skipping malformed Freeplay week \" + WeekData.weeksList[i] + \" (missing songs)\");\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar leSongs:Array<String> = [];",
+        "Freeplay malformed week guard",
     )
     source = replace_once(
         source,
@@ -124,8 +130,14 @@ def patch_story(path: Path) -> None:
     source = replace_once(
         source,
         "\t\treturn (!leWeek.startUnlocked && leWeek.weekBefore.length > 0 && (!weekCompleted.exists(leWeek.weekBefore) || !weekCompleted.get(leWeek.weekBefore)));",
-        "\t\tvar previousWeek:String = leWeek.weekBefore;\n\t\treturn (!leWeek.startUnlocked && previousWeek != null && previousWeek.length > 0 && (!weekCompleted.exists(previousWeek) || !weekCompleted.get(previousWeek)));",
+        "\t\tif (leWeek == null) return true;\n\t\tvar previousWeek:String = leWeek.weekBefore;\n\t\treturn (!leWeek.startUnlocked && previousWeek != null && previousWeek.length > 0 && (!weekCompleted.exists(previousWeek) || !weekCompleted.get(previousWeek)));",
         "Story nullable week prerequisite",
+    )
+    source = replace_once(
+        source,
+        "\t\t\tvar weekFile:WeekData = WeekData.weeksLoaded.get(WeekData.weeksList[i]);\n\t\t\tvar isLocked:Bool = weekIsLocked(WeekData.weeksList[i]);",
+        "\t\t\tvar weekFile:WeekData = WeekData.weeksLoaded.get(WeekData.weeksList[i]);\n\t\t\tif (weekFile == null || weekFile.songs == null || weekFile.songs.length == 0 || weekFile.weekCharacters == null || weekFile.weekCharacters.length < 3)\n\t\t\t{\n\t\t\t\tMusicBeatState.sonicEXEDebug(\"ERROR: Skipping malformed Story week \" + WeekData.weeksList[i] + \" (missing songs or characters)\");\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar isLocked:Bool = weekIsLocked(WeekData.weeksList[i]);",
+        "Story malformed week guard",
     )
     source = replace_once(
         source,
