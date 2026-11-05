@@ -69,7 +69,32 @@ def main() -> None:
             and any(part.casefold() == "weeks" for part in PurePosixPath(name).parts)
         ]
         if not week_lists:
-            raise SystemExit("Sonic.EXE import stopped: original release contains no weeks/weekList.txt.")
+            print("Sonic.EXE archive week/data inventory (no weeks/weekList.txt found):")
+            week_related = [
+                name for name in names
+                if "week" in name.casefold()
+                and (PurePosixPath(name).suffix.casefold() in {".txt", ".json", ".xml"})
+            ]
+            chart_related = [
+                name for name in names
+                if PurePosixPath(name).suffix.casefold() == ".json"
+                and any(part.casefold() in {"data", "songs", "charts"} for part in PurePosixPath(name).parts)
+            ]
+            audio_related = [
+                name for name in names
+                if PurePosixPath(name).suffix.casefold() in {".ogg", ".mp3", ".wav"}
+                and any(part.casefold() in {"songs", "music", "audio"} for part in PurePosixPath(name).parts)
+            ]
+            print("Week-related files (" + str(len(week_related)) + "):")
+            for name in week_related[:160]:
+                print("  " + name)
+            print("Chart/data JSON files (" + str(len(chart_related)) + "):")
+            for name in chart_related[:160]:
+                print("  " + name)
+            print("Song/audio files (" + str(len(audio_related)) + "):")
+            for name in audio_related[:160]:
+                print("  " + name)
+            raise SystemExit("Sonic.EXE import stopped: no week list was found; inventory above identifies the archive's actual data layout.")
 
         data_json = [
             name for name in names
