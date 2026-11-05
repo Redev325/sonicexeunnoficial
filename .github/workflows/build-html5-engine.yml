@@ -792,7 +792,7 @@ jobs:
 
       - name: Add HTML5 game runtime diagnostics checkpoints
         run: |
-          python3 patches/apply_runtime_diagnostics.py engine/source/backend/MusicBeatState.hx engine/source/states/FreeplayState.hx engine/source/states/StoryMenuState.hx engine/source/states/LoadingState.hx
+          python3 patches/apply_runtime_diagnostics.py engine/source/backend/MusicBeatState.hx engine/source/states/FreeplayState.hx engine/source/states/StoryMenuState.hx engine/source/states/LoadingState.hx engine/source/backend/WeekData.hx
 
       - name: Compile browser target
         working-directory: engine
