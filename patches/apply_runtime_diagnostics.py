@@ -70,6 +70,12 @@ def patch_freeplay(path: Path) -> None:
     source = path.read_text(encoding="utf-8")
     source = replace_once(
         source,
+        "\t\treturn (!leWeek.startUnlocked && leWeek.weekBefore.length > 0 && (!StoryMenuState.weekCompleted.exists(leWeek.weekBefore) || !StoryMenuState.weekCompleted.get(leWeek.weekBefore)));",
+        "\t\tvar previousWeek:String = leWeek.weekBefore;\n\t\treturn (!leWeek.startUnlocked && previousWeek != null && previousWeek.length > 0 && (!StoryMenuState.weekCompleted.exists(previousWeek) || !StoryMenuState.weekCompleted.get(previousWeek)));",
+        "Freeplay nullable week prerequisite",
+    )
+    source = replace_once(
+        source,
         "\toverride function create()\n\t{\n\t\t//Paths.clearStoredMemory();",
         "\toverride function create()\n\t{\n\t\tMusicBeatState.sonicEXEDebug(\"FREEPLAY CREATE: start\");\n\t\t//Paths.clearStoredMemory();",
         "Freeplay create start",
@@ -115,6 +121,12 @@ def patch_freeplay(path: Path) -> None:
 
 def patch_story(path: Path) -> None:
     source = path.read_text(encoding="utf-8")
+    source = replace_once(
+        source,
+        "\t\treturn (!leWeek.startUnlocked && leWeek.weekBefore.length > 0 && (!weekCompleted.exists(leWeek.weekBefore) || !weekCompleted.get(leWeek.weekBefore)));",
+        "\t\tvar previousWeek:String = leWeek.weekBefore;\n\t\treturn (!leWeek.startUnlocked && previousWeek != null && previousWeek.length > 0 && (!weekCompleted.exists(previousWeek) || !weekCompleted.get(previousWeek)));",
+        "Story nullable week prerequisite",
+    )
     source = replace_once(
         source,
         "\toverride function create()\n\t{\n",
