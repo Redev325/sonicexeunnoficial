@@ -211,6 +211,12 @@ def patch_week_data(path: Path) -> None:
     source = path.read_text(encoding="utf-8")
     source = replace_once(
         source,
+        "\t\tfor (field in Reflect.fields(weekFile))\n\t\t\tif(Reflect.fields(this).contains(field)) // Reflect.hasField() won't fucking work :/\n\t\t\t\tReflect.setProperty(this, field, Reflect.getProperty(weekFile, field));",
+        "\t\t// Assign JSON fields explicitly. On the HTML5 target Reflect.fields(this)\n\t\t// only reports initialized own-properties (such as folder), not the class\n\t\t// fields declared without initial values. The old reflection filter therefore\n\t\t// silently discarded songs/weekCharacters and left every week unusable.\n\t\tthis.songs = weekFile.songs == null ? [] : weekFile.songs;\n\t\tthis.weekCharacters = weekFile.weekCharacters == null ? [\"dad\", \"bf\", \"gf\"] : weekFile.weekCharacters;\n\t\tthis.weekBackground = weekFile.weekBackground;\n\t\tthis.weekBefore = weekFile.weekBefore;\n\t\tthis.storyName = weekFile.storyName;\n\t\tthis.weekName = weekFile.weekName;\n\t\tthis.freeplayColor = weekFile.freeplayColor;\n\t\tthis.startUnlocked = weekFile.startUnlocked == null ? true : weekFile.startUnlocked;\n\t\tthis.hiddenUntilUnlocked = weekFile.hiddenUntilUnlocked == null ? false : weekFile.hiddenUntilUnlocked;\n\t\tthis.hideStoryMode = weekFile.hideStoryMode == null ? false : weekFile.hideStoryMode;\n\t\tthis.hideFreeplay = weekFile.hideFreeplay == null ? false : weekFile.hideFreeplay;\n\t\tthis.difficulties = weekFile.difficulties;",
+        "WeekData HTML5 field initialization",
+    )
+    source = replace_once(
+        source,
         "if(weekFile != null && (isStoryMode == null || (isStoryMode && !weekFile.hideStoryMode) || (!isStoryMode && !weekFile.hideFreeplay))) {",
         "if(weekFile != null && weekFile.songs != null && weekFile.songs.length > 0 && (isStoryMode == null || (isStoryMode && !weekFile.hideStoryMode && weekFile.weekCharacters != null && weekFile.weekCharacters.length >= 3) || (!isStoryMode && !weekFile.hideFreeplay))) {",
         "WeekData reload validation",
