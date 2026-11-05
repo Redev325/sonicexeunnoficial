@@ -657,8 +657,14 @@ jobs:
                   shutil.copyfileobj(source, target)
               print(f"Extracted original animated title background source ({title_bg_source.stat().st_size:,} bytes)")
           PY
-          python3 patches/import_sonicexe_song_data.py package/release.zip engine/assets
           rm -rf package
+
+      - name: Import Sonic.EXE mod weeks, charts and playable songs
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/Redev325/fnf-sonic.exe-restored-.git sonicexe-mod-source
+          git -C sonicexe-mod-source sparse-checkout set assets/weeks assets/data assets/songs assets/characters assets/images/characters assets/images/icons assets/stages assets/exe
+          python3 patches/import_sonicexe_song_data.py sonicexe-mod-source/assets engine/assets
+          rm -rf sonicexe-mod-source
 
       - name: Convert original game menu and Options music for HTML5
         run: |
