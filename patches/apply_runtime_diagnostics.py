@@ -117,8 +117,8 @@ def patch_story(path: Path) -> None:
     source = path.read_text(encoding="utf-8")
     source = replace_once(
         source,
-        "\toverride function create()\n\t{\n\t\tPaths.clearStoredMemory();",
-        "\toverride function create()\n\t{\n\t\tMusicBeatState.sonicEXEDebug(\"STORY CREATE: start\");\n\t\tPaths.clearStoredMemory();",
+        "\toverride function create()\n\t{\n",
+        "\toverride function create()\n\t{\n\t\tMusicBeatState.sonicEXEDebug(\"STORY CREATE: start\");\n",
         "Story create start",
     )
     source = replace_once(
