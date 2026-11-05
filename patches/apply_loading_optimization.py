@@ -20,7 +20,7 @@ def main() -> None:
     project = Path(sys.argv[1])
     source = project.read_text(encoding="utf-8")
     pattern = re.compile(
-        r'(?m)^(\s*<library\s+name="songs"\s+preload=")(?:true|false)("\\s*/>)$'
+        r'(?m)^(\s*<library\s+name="songs"\s+preload=")(?:true|false)("\s*/>)$'
     )
     source, count = pattern.subn(r"\1true\2", source)
     if count != 1:
