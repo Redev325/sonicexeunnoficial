@@ -94,7 +94,22 @@ def main() -> None:
             print("Song/audio files (" + str(len(audio_related)) + "):")
             for name in audio_related[:160]:
                 print("  " + name)
-            raise SystemExit("Sonic.EXE import stopped: no week list was found; inventory above identifies the archive's actual data layout.")
+
+            contents_files = [name for name in names if name.casefold().startswith("contents/") and not name.endswith("/")]
+            by_suffix = {}
+            for name in contents_files:
+                suffix = PurePosixPath(name).suffix.casefold() or "<no extension>"
+                by_suffix.setdefault(suffix, []).append(name)
+            print("Contents file types:")
+            for suffix, entries in sorted(by_suffix.items()):
+                print(f"  {suffix}: {len(entries)}")
+            for suffix in (".json", ".jsonc", ".txt", ".hx", ".xml", ".fnfc", ".chart", ".bin", ".csv", ".yaml", ".yml"):
+                entries = by_suffix.get(suffix, [])
+                if entries:
+                    print(f"Contents {suffix} files ({len(entries)}):")
+                    for name in entries[:240]:
+                        print("  " + name)
+            raise SystemExit("Sonic.EXE import stopped: archive has no week list; file-type inventory above identifies alternate chart formats.")
 
         data_json = [
             name for name in names
