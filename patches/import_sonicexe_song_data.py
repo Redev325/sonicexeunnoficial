@@ -315,6 +315,50 @@ def main() -> None:
         f"files; validated {len(required_final_escape_atlases)} required atlases."
     )
 
+    # Original Freeplay and Story Mode visuals. These are source-game files,
+    # not generated replacements. Keep them in the shared image library so
+    # Paths.image()/Paths.getSparrowAtlas() resolve them on HTML5.
+    menu_image_files = (
+        "FreeBox.png",
+        "backgroundlool.png",
+        "sidebar.png",
+        "redbox.png",
+        "yellowbox.png",
+        "greybox.png",
+        "SMMStatic.png",
+        "SMMStatic.xml",
+        "screenstatic.png",
+        "screenstatic.xml",
+        "campaign_menu_UI_assets.png",
+        "campaign_menu_UI_assets.xml",
+        "campaign_menu_UI_assets_alt.png",
+        "campaign_menu_UI_assets_alt.xml",
+    )
+    menu_image_root = source_assets / "images"
+    menu_output_root = output_assets / "shared" / "images"
+    copied_menu_images = 0
+    for name in menu_image_files:
+        if not copy_file(menu_image_root / name, menu_output_root / name):
+            raise SystemExit(
+                f"Sonic.EXE menu import stopped: required original asset is missing: "
+                f"{menu_image_root / name}"
+            )
+        copied_menu_images += 1
+
+    copied_freeplay_art = copy_folder(
+        menu_image_root / "fpstuff",
+        menu_output_root / "fpstuff",
+    )
+    if copied_freeplay_art == 0:
+        raise SystemExit(
+            f"Sonic.EXE menu import stopped: original Freeplay art folder is empty: "
+            f"{menu_image_root / 'fpstuff'}"
+        )
+    print(
+        f"Copied original Freeplay/Story menu assets: {copied_menu_images} "
+        f"root images and atlases plus {copied_freeplay_art} song-card art files."
+    )
+
     print(f"Imported Sonic.EXE weeks: {', '.join(week_id for week_id, _ in selected_weeks)}")
     print(f"Playable tracks imported: {len(selected_song_names)} ({normal_count} regular; Encore/Bonus/Extra kept for Extras)")
     print("Songs: " + ", ".join(selected_song_names))
