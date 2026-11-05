@@ -16,6 +16,8 @@ on:
       - "patches/apply_menu_freeze_fixes.py"
       - "patches/apply_psych_engine_credits.py"
       - "patches/SonicEXEAssetLoader.hx"
+      - "patches/apply_runtime_diagnostics.py"
+      - "patches/inject_runtime_diagnostics.py"
   workflow_dispatch:
 
 # Trigger a full rebuild against the latest committed asset and intro pipeline.
@@ -788,6 +790,10 @@ jobs:
           cp patches/SonicEXEAssetLoader.hx engine/source/backend/SonicEXEAssetLoader.hx
           python3 patches/apply_loading_optimization.py engine/Project.xml engine/source/states/TitleState.hx engine/source/states/MainMenuState.hx
 
+      - name: Add HTML5 game runtime diagnostics checkpoints
+        run: |
+          python3 patches/apply_runtime_diagnostics.py engine/source/backend/MusicBeatState.hx engine/source/states/FreeplayState.hx engine/source/states/StoryMenuState.hx engine/source/states/LoadingState.hx
+
       - name: Compile browser target
         working-directory: engine
         run: |
@@ -1110,6 +1116,9 @@ jobs:
           page.write_text(html, encoding="utf-8")
           print("Installed the original menu MP4 behind the transparent game canvas.")
           PY
+
+      - name: Add browser runtime error and freeze diagnostics
+        run: python3 patches/inject_runtime_diagnostics.py engine/export/release/html5/bin/index.html
 
       - name: Upload HTML5 engine test
         uses: actions/upload-artifact@v4
