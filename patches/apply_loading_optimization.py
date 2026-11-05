@@ -70,10 +70,10 @@ def patch_menu(path: Path) -> None:
     matches = pattern.findall(source)
     story_count = sum(1 for _, target in matches if target == "StoryMenuState")
     freeplay_count = sum(1 for _, target in matches if target == "FreeplayState")
-    if story_count != 1 or freeplay_count != 2:
+    if story_count != 1 or freeplay_count != 3:
         raise SystemExit(
-            "Loading optimization stopped: expected one Story Mode route and two Freeplay "
-            f"routes (regular + Sound Test), found Story={story_count}, Freeplay={freeplay_count}."
+            "Loading optimization stopped: expected one Story Mode route and three Freeplay "
+            f"routes (regular + Sound Test + Extras/Encore), found Story={story_count}, Freeplay={freeplay_count}."
         )
 
     def guarded_route(match: re.Match) -> str:
@@ -89,12 +89,12 @@ def patch_menu(path: Path) -> None:
         )
 
     source, count = pattern.subn(guarded_route, source)
-    if count != 3:
+    if count != 4:
         raise SystemExit(
-            f"Loading optimization stopped: expected to guard 3 menu routes, patched {count}."
+            f"Loading optimization stopped: expected to guard 4 menu routes, patched {count}."
         )
     path.write_text(source, encoding="utf-8")
-    print("Guarded Story Mode, Freeplay and Sound Test until song audio is ready.")
+    print("Guarded Story Mode, regular Freeplay, Sound Test and Extras/Encore until song audio is ready.")
 
 
 def main() -> None:
