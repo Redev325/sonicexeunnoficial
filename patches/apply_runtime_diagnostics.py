@@ -129,9 +129,8 @@ def patch_story(path: Path) -> None:
     )
     source = replace_once(
         source,
-        "\t\tchangeWeek();\n\t\tchangeDifficulty();\n\n\t\tsuper.create();",
-        "\t\tchangeWeek();\n\t\tchangeDifficulty();\n\n\t\tsuper.create();\n\t\tMusicBeatState.sonicEXEDebug(\"STORY CREATE: finished; visible weeks=\" + loadedWeeks.length);",
-        "Story create completion",
+        "\t\tsuper.create();\n\t}\n\n\toverride function closeSubState()",
+        "\t\tsuper.create();\n\t\tMusicBeatState.sonicEXEDebug(\"STORY CREATE: finished; visible weeks=\" + loadedWeeks.length);\n\t}\n\n\toverride function closeSubState()",
     )
     source = replace_once(
         source,
