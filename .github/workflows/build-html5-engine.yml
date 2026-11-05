@@ -17,6 +17,8 @@ on:
       - "patches/apply_psych_engine_credits.py"
       - "patches/SonicEXEAssetLoader.hx"
       - "patches/apply_runtime_diagnostics.py"
+      - "patches/import_sonicexe_song_data.py"
+      - "patches/apply_sonicexe_freeplay_ui.py"
       - "patches/inject_runtime_diagnostics.py"
   workflow_dispatch:
 
@@ -655,6 +657,7 @@ jobs:
                   shutil.copyfileobj(source, target)
               print(f"Extracted original animated title background source ({title_bg_source.stat().st_size:,} bytes)")
           PY
+          python3 patches/import_sonicexe_song_data.py package/release.zip engine/assets
           rm -rf package
 
       - name: Convert original game menu and Options music for HTML5
@@ -780,6 +783,9 @@ jobs:
 
       - name: Reduce Freeplay and Story Mode HTML5 stalls
         run: python3 patches/apply_menu_freeze_fixes.py engine/source/states/FreeplayState.hx engine/source/states/StoryMenuState.hx
+
+      - name: Replace Psych Freeplay widgets with original Sonic.EXE UI
+        run: python3 patches/apply_sonicexe_freeplay_ui.py engine/source/states/FreeplayState.hx
 
       - name: Add separate Psych Engine credits button
         run: python3 patches/apply_psych_engine_credits.py engine/source/states/MainMenuState.hx engine/source/states/CreditsState.hx
