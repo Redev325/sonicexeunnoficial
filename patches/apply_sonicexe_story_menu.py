@@ -63,11 +63,11 @@ def main() -> None:
 \t\tsonicStoryPortrait.antialiasing = true;
 \t\tadd(sonicStoryPortrait);
 
-\t\tvar sonicStoryPortraitStatic:FlxSprite = new FlxSprite(46, 10);
+\t\tvar sonicStoryPortraitStatic:FlxSprite = new FlxSprite(198, 70);
 \t\tsonicStoryPortraitStatic.frames = Paths.getSparrowAtlas('screenstatic');
 \t\tsonicStoryPortraitStatic.animation.addByPrefix('staticLoop', 'screenSTATIC', 24, true);
 \t\tsonicStoryPortraitStatic.animation.play('staticLoop');
-\t\tsonicStoryPortraitStatic.setGraphicSize(620);
+\t\tsonicStoryPortraitStatic.setGraphicSize(310, 205);
 \t\tsonicStoryPortraitStatic.updateHitbox();
 \t\tsonicStoryPortraitStatic.alpha = 0.30;
 \t\tsonicStoryPortraitStatic.antialiasing = true;
