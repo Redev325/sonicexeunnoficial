@@ -131,6 +131,7 @@ def patch_story(path: Path) -> None:
         source,
         "\t\tsuper.create();\n\t}\n\n\toverride function closeSubState()",
         "\t\tsuper.create();\n\t\tMusicBeatState.sonicEXEDebug(\"STORY CREATE: finished; visible weeks=\" + loadedWeeks.length);\n\t}\n\n\toverride function closeSubState()",
+        "Story create completion",
     )
     source = replace_once(
         source,
