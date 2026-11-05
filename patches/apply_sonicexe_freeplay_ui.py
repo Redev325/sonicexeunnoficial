@@ -78,7 +78,9 @@ def main() -> None:
 \t\tgrpSongs = new FlxTypedGroup<FlxText>();
 \t\tadd(grpSongs);
 
-\t\tvar songPlateWidth:Int = Std.int(FlxG.width * 0.55);
+\t\t// Extras has a longer catalogue, so use compact original menu plates there.
+\t\tvar songPlateWidth:Int = Std.int(FlxG.width * (sonicExeEncoreMode ? 0.40 : 0.55));
+\t\tvar songTextSize:Int = sonicExeEncoreMode ? 18 : 24;
 \t\tvar songPlateHeight:Int = Std.int(songPlateWidth * (322.0 / 1673.0));
 \t\tfor (i in 0...songs.length)
 \t\t{
@@ -103,8 +105,8 @@ def main() -> None:
 \t\t\tselectedPlate.visible = false;
 \t\t\tsongSelectedPlates.add(selectedPlate);
 
-\t\t\tvar songText:FlxText = new FlxText(0, 0, songPlateWidth - 120, songs[i].songName.toUpperCase(), 24);
-\t\t\tsongText.setFormat(Paths.font("sonichud.ttf"), 24, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\t\tvar songText:FlxText = new FlxText(0, 0, songPlateWidth - 120, songs[i].songName.toUpperCase(), songTextSize);
+\t\t\tsongText.setFormat(Paths.font("sonichud.ttf"), songTextSize, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\t\tsongText.scrollFactor.set();
 \t\t\tsongText.antialiasing = false;
 \t\t\tsongText.ID = i;
@@ -138,15 +140,16 @@ def main() -> None:
 \t\t\treturn;
 
 \t\tlerpSelected = FlxMath.lerp(curSelected, lerpSelected, Math.exp(-elapsed * 9.6));
-\t\tvar plateWidth:Float = FlxG.width * 0.55;
+\t\tvar plateWidth:Float = FlxG.width * (sonicExeEncoreMode ? 0.40 : 0.55);
 \t\tvar plateHeight:Float = plateWidth * (322.0 / 1673.0);
 \t\tvar plateX:Float = (FlxG.width - plateWidth) * 0.5;
-\t\tvar rowStep:Float = FlxG.height * 0.132;
+\t\tvar rowStep:Float = FlxG.height * (sonicExeEncoreMode ? 0.14 : 0.132);
+\t\tvar visibleRowRadius:Float = sonicExeEncoreMode ? 3.0 : 2.25;
 
 \t\tfor (i in 0...songs.length)
 \t\t{
 \t\t\tvar offset:Float = i - lerpSelected;
-\t\t\tvar rowVisible:Bool = Math.abs(offset) <= 2.25;
+\t\t\tvar rowVisible:Bool = Math.abs(offset) <= visibleRowRadius;
 \t\t\tvar selected:Bool = (i == curSelected);
 \t\t\tvar rowY:Float = (FlxG.height - plateHeight) * 0.5 + offset * rowStep;
 
