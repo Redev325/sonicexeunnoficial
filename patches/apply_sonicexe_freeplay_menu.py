@@ -205,18 +205,24 @@ def main() -> None:
 \t\tif (shownFreeplayIndex != selectedIndex)
 \t\t{
 \t\t\tvar selectedArt:String = sonicEXEArtForSong(songs[selectedIndex].songName, songs[selectedIndex].songCharacter);
+\t\t\tFlxTween.cancelTweensOf(freeplayCardArt);
+\t\t\tfreeplayCardArt.alpha = 0.35;
 \t\t\tfreeplayCardArt.loadGraphic(Paths.image('fpstuff/' + selectedArt));
 \t\t\tfreeplayCardArt.setGraphicSize(800, 450);
 \t\t\tfreeplayCardArt.updateHitbox();
+\t\t\tFlxTween.tween(freeplayCardArt, {alpha: 1}, 0.22);
 \t\t\tfreeplayTitle.text = songs[selectedIndex].songName.toUpperCase();
 \t\t\tshownFreeplayIndex = selectedIndex;
 \t\t}
 \t\tif (shownFreeplayNextIndex != nextIndex)
 \t\t{
 \t\t\tvar nextArt:String = sonicEXEArtForSong(songs[nextIndex].songName, songs[nextIndex].songCharacter);
+\t\t\tFlxTween.cancelTweensOf(freeplayNextArt);
+\t\t\tfreeplayNextArt.alpha = 0.25;
 \t\t\tfreeplayNextArt.loadGraphic(Paths.image('fpstuff/' + nextArt));
 \t\t\tfreeplayNextArt.setGraphicSize(800, 450);
 \t\t\tfreeplayNextArt.updateHitbox();
+\t\t\tFlxTween.tween(freeplayNextArt, {alpha: 0.75}, 0.22);
 \t\t\tfreeplayNextTitle.text = songs[nextIndex].songName.toUpperCase();
 \t\t\tshownFreeplayNextIndex = nextIndex;
 \t\t}
