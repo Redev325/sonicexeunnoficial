@@ -233,9 +233,15 @@ def main() -> None:
         image_key = char_data.get("image")
         if isinstance(image_key, str) and image_key:
             for ext in (".png", ".xml"):
-                src = image_root / f"{image_key}{ext}"
-                if copy_file(src, output_assets / "shared" / "images" / f"{image_key}{ext}"):
-                    copied_character_images += 1
+                relative_image = Path(f"{image_key}{ext}")
+                candidates = (
+                    image_root / relative_image,
+                    source_assets / "shared" / "images" / relative_image,
+                )
+                for src in candidates:
+                    if copy_file(src, output_assets / "shared" / "images" / relative_image):
+                        copied_character_images += 1
+                        break
 
         health_icon = char_data.get("healthicon")
         if isinstance(health_icon, str) and health_icon:
