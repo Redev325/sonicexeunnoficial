@@ -70,7 +70,7 @@ def main() -> None:
 \t\tvar key:String = new EReg("[^a-z0-9]", "g").replace(songName.toLowerCase(), "");
 \t\treturn switch (key)
 \t\t{
-\t\t\tcase "tooslowencore": "tooslowencore";\n\t\t\tcase "tripletroubleencore": "tripletrouble";
+\t\t\tcase "tooslowencore": ""; // Too Slow uses the static Sonic.EXE background.\n\t\t\tcase "tripletroubleencore": "tripletrouble";
 \t\t\tcase "tripletrouble": "tripletrouble";
 \t\t\tcase "sanic", "sanicvid": "sanicvid";
 \t\t\tcase "starvedarg1", "starvedarg1final": "starvedarg1final";
