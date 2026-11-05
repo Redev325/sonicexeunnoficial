@@ -1068,7 +1068,7 @@ jobs:
               if (!video) return;
               var key = String(songName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
               var videoNames = {
-                tooslowencore: "tooslowencore",
+                // Too Slow Encore intentionally uses the static Sonic.EXE artwork.
                 tripletrouble: "tripletrouble",
                 sanic: "sanicvid", sanicvid: "sanicvid",
                 starvedarg1: "starvedarg1final", starvedarg1final: "starvedarg1final",
