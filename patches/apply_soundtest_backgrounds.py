@@ -55,13 +55,9 @@ def main() -> None:
 \t\t\t\t\t|| weekKey.indexOf("encore") >= 0 || weekKey.indexOf("bonus") >= 0 || weekKey.indexOf("extra") >= 0;
 \t\t\t\tif (isBonus) bonusSongs.push(song);
 \t\t\t}
-\t\t\tif (bonusSongs.length > 0)
-\t\t\t\tsongs = bonusSongs;
-\t\t\telse
-\t\t\t{
-\t\t\t\t// Keep the menu usable if this build does not contain a tagged bonus week.
+\t\t\tsongs = bonusSongs;
+\t\t\tif (songs.length == 0)
 \t\t\t\ttrace("Extras: no Encore/bonus-tagged songs were found in the loaded week data.");
-\t\t\t}
 \t\t}""",
         "filter Extras to real Encore and bonus tracks"
     )
