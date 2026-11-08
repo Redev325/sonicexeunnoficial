@@ -36,7 +36,7 @@ def main() -> None:
 \t// lists keep the compact row UI installed by the existing patch.
 \tvar freeplayBackdrop:FlxBackdrop;
 \tvar freeplayCardArt:FlxSprite;
-\tvar freeplayCardFrame:FlxSprite;
+\tvar freeplayCardFrame:FlxSprite;\n\tvar freeplayNextCardArt:FlxSprite;\n\tvar freeplayNextCardFrame:FlxSprite;
 \tvar freeplayTitle:FlxText;
 \tvar freeplayCategory:FlxText;
 \tvar freeplayScreenOverlay:FlxSprite;
