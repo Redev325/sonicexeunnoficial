@@ -18,7 +18,7 @@ def main() -> None:
     path = Path(sys.argv[1])
     source = path.read_text(encoding="utf-8")
 
-        source = replace_once(
+    source = replace_once(
         source,
         "\tvar bg:FlxSprite;\n\tvar intendedColor:Int;",
         """\tvar bg:FlxSprite;
