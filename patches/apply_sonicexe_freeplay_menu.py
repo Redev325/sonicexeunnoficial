@@ -37,15 +37,12 @@ def main() -> None:
 \tvar freeplayBackdrop:FlxBackdrop;
 \tvar freeplayCardArt:FlxSprite;
 \tvar freeplayCardFrame:FlxSprite;
-\tvar freeplayNextArt:FlxSprite;
-\tvar freeplayNextFrame:FlxSprite;
 \tvar freeplayTitle:FlxText;
-\tvar freeplayNextTitle:FlxText;
 \tvar freeplayCategory:FlxText;
 \tvar freeplayScreenOverlay:FlxSprite;
 \tvar freeplayTracksLabel:FlxSprite;
 \tvar shownFreeplayIndex:Int = -1;
-\tvar shownFreeplayNextIndex:Int = -1;""",
+""",
         "add original Freeplay card state",
     )
 
@@ -80,39 +77,26 @@ def main() -> None:
 
 \t\t\t// FreeBox and fpstuff art are the original source-game files. Their
 \t\t\t// matching 800x450 canvas positions recreate the gold photo-frame crop.
-\t\t\tfreeplayCardArt = new FlxSprite(280, 160);
+\t\t\t// fpstuff and FreeBox are full-screen 1280x720 compositions.
+\t\t\t// Keep both at the same origin and canvas size so the artwork sits
+\t\t\t// exactly inside its matching gold frame.
+\t\t\tfreeplayCardArt = new FlxSprite(0, 0);
 \t\t\tfreeplayCardArt.loadGraphic(Paths.image('fpstuff/story'));
-\t\t\tfreeplayCardArt.setGraphicSize(800, 450);
+\t\t\tfreeplayCardArt.setGraphicSize(FlxG.width, FlxG.height);
 \t\t\tfreeplayCardArt.updateHitbox();
-\t\t\tfreeplayCardArt.antialiasing = true;
+\t\t\tfreeplayCardArt.screenCenter();
+\t\t\tfreeplayCardArt.antialiasing = false;
 \t\t\tfreeplayCardArt.scrollFactor.set();
 \t\t\tadd(freeplayCardArt);
 
-\t\t\tfreeplayCardFrame = new FlxSprite(280, 160);
+\t\t\tfreeplayCardFrame = new FlxSprite(0, 0);
 \t\t\tfreeplayCardFrame.loadGraphic(Paths.image('FreeBox'));
-\t\t\tfreeplayCardFrame.setGraphicSize(800, 450);
+\t\t\tfreeplayCardFrame.setGraphicSize(FlxG.width, FlxG.height);
 \t\t\tfreeplayCardFrame.updateHitbox();
-\t\t\tfreeplayCardFrame.antialiasing = true;
+\t\t\tfreeplayCardFrame.screenCenter();
+\t\t\tfreeplayCardFrame.antialiasing = false;
 \t\t\tfreeplayCardFrame.scrollFactor.set();
 \t\t\tadd(freeplayCardFrame);
-
-\t\t\tfreeplayNextArt = new FlxSprite(950, 160);
-\t\t\tfreeplayNextArt.loadGraphic(Paths.image('fpstuff/story'));
-\t\t\tfreeplayNextArt.setGraphicSize(800, 450);
-\t\t\tfreeplayNextArt.updateHitbox();
-\t\t\tfreeplayNextArt.antialiasing = true;
-\t\t\tfreeplayNextArt.alpha = 0.75;
-\t\t\tfreeplayNextArt.scrollFactor.set();
-\t\t\tadd(freeplayNextArt);
-
-\t\t\tfreeplayNextFrame = new FlxSprite(950, 160);
-\t\t\tfreeplayNextFrame.loadGraphic(Paths.image('FreeBox'));
-\t\t\tfreeplayNextFrame.setGraphicSize(800, 450);
-\t\t\tfreeplayNextFrame.updateHitbox();
-\t\t\tfreeplayNextFrame.antialiasing = true;
-\t\t\tfreeplayNextFrame.alpha = 0.75;
-\t\t\tfreeplayNextFrame.scrollFactor.set();
-\t\t\tadd(freeplayNextFrame);
 
 \t\t\t// Original Sonic.EXE Freeplay screen frame. This PNG is a transparent
 \t\t\t// full-screen overlay with the real red top/bottom panels; keep it in
@@ -139,11 +123,6 @@ def main() -> None:
 \t\t\tfreeplayTitle.setFormat(Paths.font('sonichud.ttf'), 38, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\t\tfreeplayTitle.scrollFactor.set();
 \t\t\tadd(freeplayTitle);
-
-\t\t\tfreeplayNextTitle = new FlxText(950, FlxG.height - 142, 330, '', 24);
-\t\t\tfreeplayNextTitle.setFormat(Paths.font('sonichud.ttf'), 24, 0xFFB9B9B9, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-\t\t\tfreeplayNextTitle.scrollFactor.set();
-\t\t\tadd(freeplayNextTitle);
 
 \t\t\tfreeplayCategory = new FlxText(28, FlxG.height - 96, 210, 'EXE', 36);
 \t\t\tfreeplayCategory.setFormat(Paths.font('sonichud.ttf'), 36, 0xFFFF1717, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -223,7 +202,6 @@ def main() -> None:
 \t\tvar selectedIndex:Int = curSelected;
 \t\tif (selectedIndex < 0 || selectedIndex >= songs.length)
 \t\t\tselectedIndex = 0;
-\t\tvar nextIndex:Int = (selectedIndex + 1) % songs.length;
 
 \t\tif (shownFreeplayIndex != selectedIndex)
 \t\t{
@@ -231,23 +209,12 @@ def main() -> None:
 \t\t\tFlxTween.cancelTweensOf(freeplayCardArt);
 \t\t\tfreeplayCardArt.alpha = 0.35;
 \t\t\tfreeplayCardArt.loadGraphic(Paths.image('fpstuff/' + selectedArt));
-\t\t\tfreeplayCardArt.setGraphicSize(800, 450);
+\t\t\tfreeplayCardArt.setGraphicSize(FlxG.width, FlxG.height);
 \t\t\tfreeplayCardArt.updateHitbox();
+\t\t\tfreeplayCardArt.screenCenter();
 \t\t\tFlxTween.tween(freeplayCardArt, {alpha: 1}, 0.22);
 \t\t\tfreeplayTitle.text = songs[selectedIndex].songName.toUpperCase();
 \t\t\tshownFreeplayIndex = selectedIndex;
-\t\t}
-\t\tif (shownFreeplayNextIndex != nextIndex)
-\t\t{
-\t\t\tvar nextArt:String = sonicEXEArtForSong(songs[nextIndex].songName, songs[nextIndex].songCharacter);
-\t\t\tFlxTween.cancelTweensOf(freeplayNextArt);
-\t\t\tfreeplayNextArt.alpha = 0.25;
-\t\t\tfreeplayNextArt.loadGraphic(Paths.image('fpstuff/' + nextArt));
-\t\t\tfreeplayNextArt.setGraphicSize(800, 450);
-\t\t\tfreeplayNextArt.updateHitbox();
-\t\t\tFlxTween.tween(freeplayNextArt, {alpha: 0.75}, 0.22);
-\t\t\tfreeplayNextTitle.text = songs[nextIndex].songName.toUpperCase();
-\t\t\tshownFreeplayNextIndex = nextIndex;
 \t\t}
 \t}
 
