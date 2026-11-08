@@ -320,6 +320,7 @@ def main() -> None:
     # Paths.image()/Paths.getSparrowAtlas() resolve them on HTML5.
     menu_image_files = (
         "FreeBox.png",
+        "BackGROUND.png",
         "FreePlayShit.png",
         "Menu_Tracks.png",
         "backgroundlool.png",
