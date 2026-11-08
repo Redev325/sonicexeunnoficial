@@ -321,6 +321,7 @@ def main() -> None:
     menu_image_files = (
         "FreeBox.png",
         "FreePlayShit.png",
+        "Menu_Tracks.png",
         "backgroundlool.png",
         "sidebar.png",
         "redbox.png",
