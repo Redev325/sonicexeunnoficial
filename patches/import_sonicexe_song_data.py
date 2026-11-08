@@ -320,6 +320,7 @@ def main() -> None:
     # Paths.image()/Paths.getSparrowAtlas() resolve them on HTML5.
     menu_image_files = (
         "FreeBox.png",
+        "FreePlayShit.png",
         "backgroundlool.png",
         "sidebar.png",
         "redbox.png",
@@ -349,14 +350,35 @@ def main() -> None:
         menu_image_root / "fpstuff",
         menu_output_root / "fpstuff",
     )
-    if copied_freeplay_art == 0:
+    expected_freeplay_art = sorted(
+        file.name for file in (menu_image_root / "fpstuff").glob("*.png")
+        if file.is_file()
+    )
+    missing_freeplay_art = [
+        name for name in expected_freeplay_art
+        if not (menu_output_root / "fpstuff" / name).is_file()
+    ]
+    if not expected_freeplay_art or missing_freeplay_art:
         raise SystemExit(
-            f"Sonic.EXE menu import stopped: original Freeplay art folder is empty: "
-            f"{menu_image_root / 'fpstuff'}"
+            "Sonic.EXE menu import stopped: original Freeplay song-card art is "
+            "incomplete. Missing: " + (", ".join(missing_freeplay_art) or "all fpstuff PNG files")
         )
+
+    # Preserve the source game's Freeplay song catalogue beside the imported
+    # charts. The custom menu uses WeekData for selection, but keeping this
+    # original list available avoids silently dropping a source menu resource.
+    source_song_list = source_assets / "data" / "freeplaySonglist.txt"
+    if not copy_file(source_song_list, output_assets / "shared" / "data" / "freeplaySonglist.txt"):
+        raise SystemExit(
+            "Sonic.EXE menu import stopped: original Freeplay song list is missing: "
+            f"{source_song_list}"
+        )
+
     print(
         f"Copied original Freeplay/Story menu assets: {copied_menu_images} "
-        f"root images and atlases plus {copied_freeplay_art} song-card art files."
+        f"root images and atlases plus {copied_freeplay_art} song-card art files; "
+        f"validated all {len(expected_freeplay_art)} original card images and "
+        "the Freeplay song-list metadata."
     )
 
     print(f"Imported Sonic.EXE weeks: {', '.join(week_id for week_id, _ in selected_weeks)}")
