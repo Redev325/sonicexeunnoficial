@@ -42,6 +42,8 @@ def main() -> None:
 \tvar freeplayTitle:FlxText;
 \tvar freeplayNextTitle:FlxText;
 \tvar freeplayCategory:FlxText;
+\tvar freeplayScreenOverlay:FlxSprite;
+\tvar freeplayTracksLabel:FlxSprite;
 \tvar shownFreeplayIndex:Int = -1;
 \tvar shownFreeplayNextIndex:Int = -1;""",
         "add original Freeplay card state",
@@ -112,7 +114,28 @@ def main() -> None:
 \t\t\tfreeplayNextFrame.scrollFactor.set();
 \t\t\tadd(freeplayNextFrame);
 
-\t\t\tfreeplayTitle = new FlxText(240, FlxG.height - 148, 800, '', 38);
+\t\t\t// Original Sonic.EXE Freeplay screen frame. This PNG is a transparent
+\t\t\t// full-screen overlay with the real red top/bottom panels; keep it in
+\t\t\t// front of the scrolling wallpaper, cards and gold photo frames.
+\t\t\tfreeplayScreenOverlay = new FlxSprite(0, 0);
+\t\t\tfreeplayScreenOverlay.loadGraphic(Paths.image('FreePlayShit'));
+\t\t\tfreeplayScreenOverlay.setGraphicSize(FlxG.width, FlxG.height);
+\t\t\tfreeplayScreenOverlay.updateHitbox();
+\t\t\tfreeplayScreenOverlay.scrollFactor.set();
+\t\t\tfreeplayScreenOverlay.antialiasing = true;
+\t\t\tadd(freeplayScreenOverlay);
+
+\t\t\t// Use the source game's own TRACKS artwork in its top panel instead
+\t\t\t// of drawing a substitute heading with a different font.
+\t\t\tfreeplayTracksLabel = new FlxSprite(58, 30);
+\t\t\tfreeplayTracksLabel.loadGraphic(Paths.image('Menu_Tracks'));
+\t\t\tfreeplayTracksLabel.setGraphicSize(200, 41);
+\t\t\tfreeplayTracksLabel.updateHitbox();
+\t\t\tfreeplayTracksLabel.scrollFactor.set();
+\t\t\tfreeplayTracksLabel.antialiasing = true;
+\t\t\tadd(freeplayTracksLabel);
+
+\t\t\tfreeplayTitle = new FlxText(240, FlxG.height - 104, 800, '', 38);
 \t\t\tfreeplayTitle.setFormat(Paths.font('sonichud.ttf'), 38, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\t\tfreeplayTitle.scrollFactor.set();
 \t\t\tadd(freeplayTitle);
@@ -122,7 +145,7 @@ def main() -> None:
 \t\t\tfreeplayNextTitle.scrollFactor.set();
 \t\t\tadd(freeplayNextTitle);
 
-\t\t\tfreeplayCategory = new FlxText(28, FlxG.height - 100, 210, 'EXE', 36);
+\t\t\tfreeplayCategory = new FlxText(28, FlxG.height - 96, 210, 'EXE', 36);
 \t\t\tfreeplayCategory.setFormat(Paths.font('sonichud.ttf'), 36, 0xFFFF1717, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\t\tfreeplayCategory.scrollFactor.set();
 \t\t\tadd(freeplayCategory);
