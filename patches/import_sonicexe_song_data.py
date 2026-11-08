@@ -280,39 +280,42 @@ def main() -> None:
             output_assets / "week_assets" / directory,
         )
 
-    # Final Escape uses original atlases outside the normal week/stage asset
-    # folders. The game requests these at runtime from assets/exe/images, so
-    # preserve the complete original directory and its matching PNG/XML pairs.
-    final_escape_source = source_assets / "exe" / "images" / "final escape"
-    final_escape_output = output_assets / "exe" / "images" / "final escape"
-    required_final_escape_atlases = (
-        "broke.xml",
-        "exe line.xml",
-        "block2.xml",
-        "banner.xml",
-        "bf dead.xml",
-        "attack arm.xml",
-        "checkpoint.xml",
+    # Original EXE-stage and cutscene images are requested at runtime from
+    # assets/exe/images. Copy the complete directory, not only Final Escape:
+    # stages such as Sunky load atlases from sibling folders (for example
+    # sunky/sunker.png + sunky/sunker.xml).
+    exe_images_source = source_assets / "exe" / "images"
+    exe_images_output = output_assets / "exe" / "images"
+    required_exe_images = (
+        "sunky/sunker.png",
+        "sunky/sunker.xml",
+        "final escape/broke.xml",
+        "final escape/exe line.xml",
+        "final escape/block2.xml",
+        "final escape/banner.xml",
+        "final escape/bf dead.xml",
+        "final escape/attack arm.xml",
+        "final escape/checkpoint.xml",
     )
-    if not final_escape_source.is_dir():
+    if not exe_images_source.is_dir():
         raise SystemExit(
-            "Sonic.EXE import stopped: original Final Escape assets are missing "
-            f"from the source checkout: {final_escape_source}"
+            "Sonic.EXE import stopped: original EXE image directory is missing "
+            f"from the source checkout: {exe_images_source}"
         )
 
-    copied_final_escape_assets = copy_folder(final_escape_source, final_escape_output)
-    missing_final_escape = [
-        name for name in required_final_escape_atlases
-        if not (final_escape_output / name).is_file()
+    copied_exe_image_assets = copy_folder(exe_images_source, exe_images_output)
+    missing_exe_images = [
+        name for name in required_exe_images
+        if not (exe_images_output / name).is_file()
     ]
-    if missing_final_escape:
+    if missing_exe_images:
         raise SystemExit(
-            "Sonic.EXE import stopped: required Final Escape atlas files were "
-            "not copied: " + ", ".join(missing_final_escape)
+            "Sonic.EXE import stopped: required original EXE image assets were "
+            "not copied: " + ", ".join(missing_exe_images)
         )
     print(
-        f"Copied original Final Escape assets: {copied_final_escape_assets} "
-        f"files; validated {len(required_final_escape_atlases)} required atlases."
+        f"Copied original EXE image assets: {copied_exe_image_assets} files; "
+        f"validated {len(required_exe_images)} required Sunky/Final Escape files."
     )
 
     # Original Freeplay and Story Mode visuals. These are source-game files,
