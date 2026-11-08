@@ -22,7 +22,7 @@ def main() -> None:
         source = replace_once(
             source,
             "import flixel.math.FlxMath;\n",
-            "import flixel.math.FlxMath;\nimport flixel.addons.display.FlxBackdrop;\n",
+            "import flixel.math.FlxMath;\nimport flixel.addons.display.FlxBackdrop;\nimport flixel.util.FlxAxes;\n",
             "import FlxBackdrop for the original scrolling overlay",
         )
 
@@ -71,7 +71,7 @@ def main() -> None:
 \t\t\tbg.screenCenter();
 \t\t\tbg.scrollFactor.set();
 
-\t\t\tfreeplayBackdrop = new FlxBackdrop(Paths.image('sidebar'), 0, 1, false, true);
+\t\t\tfreeplayBackdrop = new FlxBackdrop(Paths.image('sidebar'), FlxAxes.Y);
 \t\t\tfreeplayBackdrop.scrollFactor.set();
 \t\t\tfreeplayBackdrop.y = 0;
 \t\t\tinsert(1, freeplayBackdrop);
