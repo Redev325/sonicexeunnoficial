@@ -18,15 +18,7 @@ def main() -> None:
     path = Path(sys.argv[1])
     source = path.read_text(encoding="utf-8")
 
-    if "import flixel.addons.display.FlxBackdrop;" not in source:
         source = replace_once(
-            source,
-            "import flixel.math.FlxMath;\n",
-            "import flixel.math.FlxMath;\nimport flixel.addons.display.FlxBackdrop;\nimport flixel.util.FlxAxes;\n",
-            "import FlxBackdrop for the original scrolling overlay",
-        )
-
-    source = replace_once(
         source,
         "\tvar bg:FlxSprite;\n\tvar intendedColor:Int;",
         """\tvar bg:FlxSprite;
@@ -34,7 +26,7 @@ def main() -> None:
 
 \t// Original Sonic.EXE Freeplay carousel layers. The Extras and Sound Test
 \t// lists keep the compact row UI installed by the existing patch.
-\tvar freeplayBackdrop:FlxBackdrop;
+\tvar freeplayBackdrop:FlxSprite;
 \tvar freeplayCardArt:FlxSprite;
 \tvar freeplayCardFrame:FlxSprite;\n\tvar freeplayNextCardArt:FlxSprite;\n\tvar freeplayNextCardFrame:FlxSprite;
 \tvar freeplayTitle:FlxText;
@@ -64,15 +56,18 @@ def main() -> None:
 \t\t\tif (bottomBG != null) bottomBG.visible = false;
 \t\t\tif (bottomText != null) bottomText.visible = false;
 
-\t\t\tbg.loadGraphic(Paths.image('backgroundlool'));
+\t\t\tbg.loadGraphic(Paths.image('BackGROUND'));
 \t\t\tbg.setGraphicSize(FlxG.width, FlxG.height);
 \t\t\tbg.updateHitbox();
 \t\t\tbg.screenCenter();
 \t\t\tbg.scrollFactor.set();
 
-\t\t\tfreeplayBackdrop = new FlxBackdrop(Paths.image('sidebar'), FlxAxes.Y);
+\t\t\t// Use the original static fade overlay once, not a tiled scrolling backdrop.
+\t\t\tfreeplayBackdrop = new FlxSprite(0, 0);
+\t\t\tfreeplayBackdrop.loadGraphic(Paths.image('sidebar'));
+\t\t\tfreeplayBackdrop.setGraphicSize(FlxG.width, FlxG.height);
+\t\t\tfreeplayBackdrop.updateHitbox();
 \t\t\tfreeplayBackdrop.scrollFactor.set();
-\t\t\tfreeplayBackdrop.y = 0;
 \t\t\tinsert(1, freeplayBackdrop);
 
 \t\t\t// Original 1280x720 transparent card canvases, displayed at the
@@ -153,13 +148,6 @@ def main() -> None:
         "\t\t\tlabel.color = selected ? FlxColor.WHITE : 0xFFFFC4CC;\n\t\t}\n\t}\n\n\toverride function destroy",
         "\t\t\tlabel.color = selected ? FlxColor.WHITE : 0xFFFFC4CC;\n\t\t}\n\t\tupdateFreeplayCards();\n\t\tif (!sonicExeCustomSongMode && !sonicExeEncoreMode)\n\t\t\tpositionFreeplayScore();\n\t}\n\n\toverride function destroy",
         "refresh original song art and lower score display",
-    )
-
-    source = replace_once(
-        source,
-        "\toverride function update(elapsed:Float)\n\t{",
-        "\toverride function update(elapsed:Float)\n\t{\n\t\tif (freeplayBackdrop != null && !sonicExeCustomSongMode && !sonicExeEncoreMode) freeplayBackdrop.y += elapsed * 36;",
-        "animate the original vertical Freeplay background layer",
     )
 
     helper = """\tfunction sonicEXEArtForSong(songName:String, songCharacter:String):String
