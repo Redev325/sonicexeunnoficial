@@ -26,7 +26,7 @@ def main() -> None:
 
 \t// Original Sonic.EXE Freeplay carousel layers. The Extras and Sound Test
 \t// lists keep the compact row UI installed by the existing patch.
-\tvar freeplayBackdrop:FlxSprite;
+\tvar freeplayBackdrop:FlxSprite;\n\tvar freeplaySpikes:FlxSprite;
 \tvar freeplayCardArt:FlxSprite;
 \tvar freeplayCardFrame:FlxSprite;\n\tvar freeplayNextCardArt:FlxSprite;\n\tvar freeplayNextCardFrame:FlxSprite;
 \tvar freeplayTitle:FlxText;
@@ -56,7 +56,7 @@ def main() -> None:
 \t\t\tif (bottomBG != null) bottomBG.visible = false;
 \t\t\tif (bottomText != null) bottomText.visible = false;
 
-\t\t\tbg.loadGraphic(Paths.image('BackGROUND'));
+\t\t\tbg.frames = Paths.getSparrowAtlas('Main_Menu_Spritesheet_Animation');\n\t\t\tbg.animation.addByPrefix('freeplayBackground', 'BG instance 1', 24, true);\n\t\t\tbg.animation.play('freeplayBackground');
 \t\t\tbg.setGraphicSize(FlxG.width, FlxG.height);
 \t\t\tbg.updateHitbox();
 \t\t\tbg.screenCenter();
@@ -69,6 +69,16 @@ def main() -> None:
 \t\t\tfreeplayBackdrop.updateHitbox();
 \t\t\tfreeplayBackdrop.scrollFactor.set();
 \t\t\tinsert(1, freeplayBackdrop);
+
+\t\t\t// Original Sonic.EXE sawtooth frame, kept as a crisp foreground layer
+\t\t\t// while the 24-frame background atlas animates behind it.
+\t\t\tfreeplaySpikes = new FlxSprite(0, 0);
+\t\t\tfreeplaySpikes.loadGraphic(Paths.image('SPIKES'));
+\t\t\tfreeplaySpikes.setGraphicSize(FlxG.width, FlxG.height);
+\t\t\tfreeplaySpikes.updateHitbox();
+\t\t\tfreeplaySpikes.scrollFactor.set();
+\t\t\tfreeplaySpikes.antialiasing = false;
+\t\t\tadd(freeplaySpikes);
 
 \t\t\t// Original 1280x720 transparent card canvases, displayed at the
 			// source game's ~64% scale and half-screen carousel spacing.
