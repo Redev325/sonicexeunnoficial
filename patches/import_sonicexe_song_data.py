@@ -324,6 +324,9 @@ def main() -> None:
     menu_image_files = (
         "FreeBox.png",
         "BackGROUND.png",
+        "Main_Menu_Spritesheet_Animation.png",
+        "Main_Menu_Spritesheet_Animation.xml",
+        "SPIKES.png",
         "FreePlayShit.png",
         "Menu_Tracks.png",
         "backgroundlool.png",
