@@ -73,7 +73,15 @@ jobs:
             --name psych-engine-html5-base --dir site
           test -s site/index.html
           test -s site/PsychEngine.js
-          echo "Verified HTML5 entry point and engine bundle."
+          # Preflight the runtime assets that previously failed with HTTP 503.
+          # These checks confirm the published Pages payload contains them at
+          # the exact paths requested by Lime's HTML5 preloader.
+          test -s site/assets/shared/data/endless-og/endless-og-hard.json
+          test -s site/assets/shared/images/characters/x.xml
+          test -s site/assets/shared/images/characters/x.png
+          test -s site/assets/exe/images/sunky/sunker.png
+          test -s site/assets/exe/images/sunky/sunker.xml
+          echo "Verified HTML5 entry point, engine bundle, Endless OG chart, X atlas, and Sunky atlas."
           du -sh site
 
       - name: Upload compiled game to GitHub Pages
