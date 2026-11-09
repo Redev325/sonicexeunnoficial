@@ -197,6 +197,13 @@ def main() -> None:
         "small game version text",
     )
 
+    source = replace_once(
+        source,
+        "fnfVer.setFormat(Paths.font('sonichud.ttf'), 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
+        "fnfVer.setFormat(Paths.font('sonichud.ttf'), 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);\n\t\tvar portCreditLogo:FlxSprite = new FlxSprite(16, FlxG.height - 142);\n\t\tportCreditLogo.loadGraphic(Paths.image('sonicexe-port-credit', 'shared'));\n\t\tportCreditLogo.setGraphicSize(190, 95);\n\t\tportCreditLogo.updateHitbox();\n\t\tportCreditLogo.antialiasing = true;\n\t\tportCreditLogo.scrollFactor.set(0, 0);\n\t\tadd(portCreditLogo);",
+        "show the port credit graphic on the main menu only",
+    )
+
     # Sound Test is a lightweight action for now; the other four choices enter real engine screens.
     source = replace_once(
         source,
