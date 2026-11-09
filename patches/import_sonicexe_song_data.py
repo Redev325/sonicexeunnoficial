@@ -171,6 +171,131 @@ def main() -> None:
                 week_data["difficulties"] = "Hard"
             selected_weeks.append((week_id, week_data))
 
+    # Import every other song that actually has both a Hard chart and Inst audio.
+    # The older importer only walked the three songs listed in weekList.txt, which
+    # left most original Sonic.EXE/bonus packs invisible in Freeplay.
+    extra_rows = []
+    display_names = {
+        "b4cksl4sh": "B4CKSL4SH",
+        "black-sun": "Black Sun",
+        "cycles-encore": "Cycles Encore",
+        "endless-og": "Endless OG",
+        "fight-or-flight": "Fight or Flight",
+        "final-escape": "Final Escape",
+        "forestall-desire": "Forestall Desire",
+        "manual-blast": "Manual Blast",
+        "pre-design": "Pre-Design",
+        "round-a-bout": "Round-a-Bout",
+        "sharpy-showdown": "Sharpy Showdown",
+        "sunshine-encore": "Sunshine Encore",
+        "too-fest": "Too-Fest",
+        "too-slow-encore": "Too Slow Encore",
+        "you-cant-run-encore": "You Can't Run Encore",
+        "personel-serious": "Personel Serious",
+        "iron-forest": "Iron Forest",
+    }
+
+    for data_folder in sorted((p for p in data_root.iterdir() if p.is_dir()), key=lambda p: p.name.casefold()):
+        slug = data_folder.name
+        if slug in selected_song_slugs:
+            continue
+        hard_chart = data_folder / f"{slug}-hard.json"
+        audio_folder = songs_root / slug
+        instrumental = next(
+            (audio_folder / f"Inst{ext}" for ext in (".mp3", ".ogg", ".wav")
+             if (audio_folder / f"Inst{ext}").is_file()),
+            None,
+        )
+        if not hard_chart.is_file() or instrumental is None:
+            continue
+        try:
+            chart_json = json.loads(hard_chart.read_text(encoding="utf-8-sig"))
+            chart_song = chart_json.get("song", chart_json)
+        except Exception as exc:
+            skipped.append(f"{slug}: invalid Hard chart ({exc})")
+            continue
+        if not isinstance(chart_song, dict):
+            skipped.append(f"{slug}: unexpected Hard chart format")
+            continue
+
+        title = display_names.get(slug, slug.replace("-", " ").title())
+        song_character = chart_song.get("player2") or chart_song.get("player1") or "sonicexe"
+        extra_rows.append([title, str(song_character), [146, 0, 0]])
+        selected_song_slugs.add(slug)
+        selected_song_names.append(title)
+
+        for character in (chart_song.get("player1"), chart_song.get("player2"), chart_song.get("gfVersion")):
+            if character:
+                selected_characters.add(str(character))
+        stage = chart_song.get("stage")
+        if stage:
+            selected_stages.add(str(stage))
+
+    if extra_rows:
+        selected_weeks.append(("more-songs", {
+            "storyName": "More Songs",
+            "difficulties": "Hard",
+            "hideFreeplay": False,
+            "weekBackground": "",
+            "weekBefore": "",
+            "freeplayColor": [146, 0, 0],
+            "startUnlocked": True,
+            "hideStoryMode": True,
+            "songs": extra_rows,
+            "weekCharacters": ["", "bf", "gf"],
+            "weekName": "More Songs",
+        }))
+
+    # A dedicated hidden-from-Freeplay week keeps the original four-song Story
+    # Mode data-select menu using the same shared charts/audio as the browser build.
+    story_rows = []
+    story_titles = {
+        "too-slow": "Too Slow",
+        "you-cant-run": "You Can't Run",
+        "triple-trouble": "Triple Trouble",
+        "final-escape": "Final Escape",
+    }
+    for slug, title in story_titles.items():
+        hard_chart = data_root / slug / f"{slug}-hard.json"
+        audio_folder = songs_root / slug
+        instrumental = next(
+            (audio_folder / f"Inst{ext}" for ext in (".mp3", ".ogg", ".wav")
+             if (audio_folder / f"Inst{ext}").is_file()),
+            None,
+        )
+        if not hard_chart.is_file() or instrumental is None:
+            raise SystemExit(
+                f"Sonic.EXE Story Mode import stopped: {slug} is missing its Hard chart or instrumental."
+            )
+        chart_json = json.loads(hard_chart.read_text(encoding="utf-8-sig"))
+        chart_song = chart_json.get("song", chart_json)
+        if not isinstance(chart_song, dict):
+            raise SystemExit(f"Sonic.EXE Story Mode import stopped: {slug} has an invalid chart.")
+        song_character = chart_song.get("player2") or chart_song.get("player1") or "sonicexe"
+        story_rows.append([title, str(song_character), [146, 0, 0]])
+        selected_song_slugs.add(slug)
+
+        for character in (chart_song.get("player1"), chart_song.get("player2"), chart_song.get("gfVersion")):
+            if character:
+                selected_characters.add(str(character))
+        stage = chart_song.get("stage")
+        if stage:
+            selected_stages.add(str(stage))
+
+    selected_weeks.insert(0, ("sonicexe-story", {
+        "storyName": "Sonic.EXE",
+        "difficulties": "Hard",
+        "hideFreeplay": True,
+        "weekBackground": "",
+        "weekBefore": "",
+        "freeplayColor": [146, 0, 0],
+        "startUnlocked": True,
+        "hideStoryMode": True,
+        "songs": story_rows,
+        "weekCharacters": ["", "bf", "gf"],
+        "weekName": "Sonic.EXE Story",
+    }))
+
     if not selected_weeks:
         raise SystemExit(
             "Sonic.EXE import stopped: no source week contains a song with both a Hard chart and instrumental audio."
@@ -179,6 +304,7 @@ def main() -> None:
     normal_count = sum(
         1
         for week_id, week_data in selected_weeks
+        if not week_data.get("hideFreeplay", False)
         for row in week_data["songs"]
         if "encore" not in norm(row[0])
         and "bonus" not in norm(row[0])
