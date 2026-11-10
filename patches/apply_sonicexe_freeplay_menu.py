@@ -69,11 +69,12 @@ def main() -> None:
 \t\t\tfreeplayBackdrop.loadGraphic(Paths.image('sidebar'));
 \t\t\tfreeplayBackdrop.setGraphicSize(FlxG.width, FlxG.height);
 \t\t\tfreeplayBackdrop.updateHitbox();
-\t\t\tfreeplayBackdrop.scrollFactor.set();\n\t\t\tfreeplayBackdrop.alpha = 0.32;
+\t\t\tfreeplayBackdrop.scrollFactor.set();
+\t\t\tfreeplayBackdrop.alpha = 0.32;
 \t\t\tinsert(1, freeplayBackdrop);
 
-\t\t\t// Original 1280x720 transparent card canvases, displayed at the
-			// source game's ~64% scale and half-screen carousel spacing.
+\t\t\t// Original 1280x720 transparent card canvases, displayed at 60% scale
+			// with a small preview of the next song to the right.
 			var cardWidth:Float = FlxG.width * 0.60;
 			var cardHeight:Float = FlxG.height * 0.60;
 			var cardX:Float = (FlxG.width - cardWidth) * 0.5;
@@ -99,7 +100,8 @@ def main() -> None:
 			freeplayNextCardArt.loadGraphic(Paths.image('fpstuff/story'));
 			freeplayNextCardArt.setGraphicSize(Std.int(cardWidth), Std.int(cardHeight));
 			freeplayNextCardArt.updateHitbox();
-			freeplayNextCardArt.antialiasing = false;\n\t\t\tfreeplayNextCardArt.alpha = 0.78;
+			freeplayNextCardArt.antialiasing = false;
+\t\t\tfreeplayNextCardArt.alpha = 0.78;
 			freeplayNextCardArt.scrollFactor.set();
 			add(freeplayNextCardArt);
 
@@ -107,7 +109,8 @@ def main() -> None:
 			freeplayNextCardFrame.loadGraphic(Paths.image('FreeBox'));
 			freeplayNextCardFrame.setGraphicSize(Std.int(cardWidth), Std.int(cardHeight));
 			freeplayNextCardFrame.updateHitbox();
-			freeplayNextCardFrame.antialiasing = false;\n\t\t\tfreeplayNextCardFrame.alpha = 0.78;
+			freeplayNextCardFrame.antialiasing = false;
+\t\t\tfreeplayNextCardFrame.alpha = 0.78;
 			freeplayNextCardFrame.scrollFactor.set();
 			add(freeplayNextCardFrame);
 
@@ -117,7 +120,7 @@ def main() -> None:
 \t\t\tadd(freeplayTitle);
 
 \t\t\tfreeplayCategory = new FlxText(FlxG.width * 0.025, FlxG.height - 72, FlxG.width * 0.20, 'EXE', 34);
-\t\t\tfreeplayCategory.setFormat(Paths.font('sonichud.ttf'), 36, 0xFFFF1717, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+\t\t\tfreeplayCategory.setFormat(Paths.font('sonichud.ttf'), 34, 0xFFFF1717, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\t\tfreeplayCategory.scrollFactor.set();
 \t\t\tadd(freeplayCategory);
 
@@ -220,10 +223,12 @@ def main() -> None:
 			freeplayNextCardArt.loadGraphic(Paths.image(nextArt.indexOf('sonicexe-freeplay/') == 0 ? nextArt : 'fpstuff/' + nextArt));
 			freeplayNextCardArt.setGraphicSize(cardWidth, cardHeight);
 			freeplayNextCardArt.updateHitbox();
-			freeplayNextCardArt.setPosition(cardX + cardWidth + FlxG.width * 0.02, cardY);\n\t\t\tfreeplayNextCardArt.alpha = 0.78;
+			freeplayNextCardArt.setPosition(cardX + cardWidth + FlxG.width * 0.02, cardY);
+\t\t\tfreeplayNextCardArt.alpha = 0.78;
 			freeplayNextCardFrame.setGraphicSize(cardWidth, cardHeight);
 			freeplayNextCardFrame.updateHitbox();
-			freeplayNextCardFrame.setPosition(cardX + cardWidth + FlxG.width * 0.02, cardY);\n\t\t\tfreeplayNextCardFrame.alpha = 0.78;
+			freeplayNextCardFrame.setPosition(cardX + cardWidth + FlxG.width * 0.02, cardY);
+\t\t\tfreeplayNextCardFrame.alpha = 0.78;
 
 			freeplayTitle.text = songs[selectedIndex].songName.toUpperCase();
 			shownFreeplayIndex = selectedIndex;
