@@ -873,6 +873,32 @@ jobs:
             exit 1
           fi
 
+      - name: Validate built-in achievement image sources
+        run: |
+          source="engine/assets/shared/images/achievements"
+          required="$source/ur_good.png"
+          mkdir -p "$source"
+          # Restore from the checked-out Psych Engine commit if the working tree
+          # ever arrives without a tracked default achievement image.
+          if [ ! -s "$required" ]; then
+            git -C engine show HEAD:assets/shared/images/achievements/ur_good.png > "$required"
+          fi
+          test -s "$required"
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          root = Path("engine/assets/shared/images/achievements")
+          files = sorted(root.glob("*.png"))
+          if not files:
+              raise SystemExit("Psych Engine achievement image folder is empty.")
+          required = root / "ur_good.png"
+          if not required.is_file():
+              raise SystemExit("Required default achievement art ur_good.png is missing.")
+          with Image.open(required) as image:
+              image.verify()
+          print(f"Validated {len(files)} built-in achievement PNGs; ur_good.png is a valid image.")
+          PY
+
       - name: Compile browser target
         working-directory: engine
         run: |
@@ -887,6 +913,20 @@ jobs:
       - name: Verify obsolete port-credit image is absent from HTML5 output
         run: |
           test ! -e engine/export/release/html5/bin/assets/shared/images/sonicexe-port-credit.png
+
+      - name: Include all default achievement images in HTML5 output
+        run: |
+          source="engine/assets/shared/images/achievements"
+          output="engine/export/release/html5/bin/assets/shared/images/achievements"
+          mkdir -p "$output"
+          test -s "$source/ur_good.png"
+          cp -a "$source"/. "$output"/
+          test -s "$output/ur_good.png"
+          # Keep the output folder complete, not just the first missing file.
+          source_count="$(find "$source" -maxdepth 1 -type f -name '*.png' | wc -l)"
+          output_count="$(find "$output" -maxdepth 1 -type f -name '*.png' | wc -l)"
+          test "$output_count" -ge "$source_count"
+          echo "Included $output_count default achievement images in the HTML5 output."
 
       - name: Add original animated menu video to the HTML5 page
         run: |
