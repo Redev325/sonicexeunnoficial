@@ -49,11 +49,14 @@ def main() -> None:
         "initialize reusable row labels",
     )
 
+    # The original menu patch inserts carousel helper methods immediately after
+    # updateTexts(), so this expression deliberately ends at its last card/score
+    # update rather than assuming destroy() follows directly.
     pattern = re.compile(
         r"\tpublic function updateTexts\(elapsed:Float = 0\.0\)\n"
         r"\t\{.*?\n"
-        r"\t\}\n\n"
-        r"\toverride function destroy",
+        r"\t\t\tpositionFreeplayScore\(\);\n"
+        r"\t\}\n",
         re.S,
     )
     replacement = """\tpublic function updateTexts(elapsed:Float = 0.0)
@@ -114,11 +117,12 @@ def main() -> None:
 \t\tif (!sonicExeCustomSongMode && !sonicExeEncoreMode)
 \t\t\tpositionFreeplayScore();
 \t}
-
-\toverride function destroy"""
+"""
     source, count = pattern.subn(lambda _match: replacement, source, count=1)
     if count != 1:
-        raise SystemExit(f"Freeplay virtualization stopped: expected one updateTexts(), found {count}")
+        raise SystemExit(
+            f"Freeplay virtualization stopped: expected one updateTexts() method with card/score refresh, found {count}"
+        )
 
     path.write_text(source, encoding="utf-8")
     print("Virtualized Freeplay rows: seven reusable rows instead of one set per song.")
