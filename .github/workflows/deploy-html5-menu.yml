@@ -79,9 +79,10 @@ jobs:
           test -s site/assets/shared/data/endless-og/endless-og-hard.json
           test -s site/assets/shared/images/characters/x.xml
           test -s site/assets/shared/images/characters/x.png
+          test -s site/assets/shared/images/achievements/ur_good.png
           test -s site/assets/exe/images/sunky/sunker.png
           test -s site/assets/exe/images/sunky/sunker.xml
-          echo "Verified HTML5 entry point, engine bundle, Endless OG chart, X atlas, and Sunky atlas."
+          echo "Verified HTML5 entry point, engine bundle, Endless OG chart, X atlas, achievement art, and Sunky atlas."
           du -sh site
 
       - name: Upload compiled game to GitHub Pages
