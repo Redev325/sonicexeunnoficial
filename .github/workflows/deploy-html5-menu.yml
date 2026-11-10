@@ -49,9 +49,19 @@ jobs:
           if [[ "$GITHUB_EVENT_NAME" == "workflow_run" ]]; then
             MAIN_SHA="$(gh api "repos/$GH_REPO/commits/main" --jq '.sha')"
             if [[ "$SOURCE_SHA" != "$MAIN_SHA" ]]; then
-              echo "deploy=false" >> "$GITHUB_OUTPUT"
-              echo "Skipping stale build $SOURCE_SHA; main is $MAIN_SHA."
-              exit 0
+              COMPARISON="$(gh api "repos/$GH_REPO/compare/$SOURCE_SHA...$MAIN_SHA")"
+              STATUS="$(jq -r '.status' <<< "$COMPARISON")"
+              # A successful engine build may be followed by a deploy-only
+              # workflow edit. Allow that exact case, but never deploy an
+              # artifact if any game/source/build file changed afterward.
+              UNRELATED="$(jq -r '.files[].filename' <<< "$COMPARISON" | grep -vxF '.github/workflows/deploy-html5-menu.yml' || true)"
+              if [[ "$STATUS" != "ahead" || -n "$UNRELATED" ]]; then
+                echo "deploy=false" >> "$GITHUB_OUTPUT"
+                echo "Skipping stale build $SOURCE_SHA; main is $MAIN_SHA (compare=$STATUS)."
+                if [[ -n "$UNRELATED" ]]; then printf '%s\n' "$UNRELATED"; fi
+                exit 0
+              fi
+              echo "Allowing build $SOURCE_SHA; the only newer main commit changes deploy-html5-menu.yml."
             fi
           fi
           echo "deploy=true" >> "$GITHUB_OUTPUT"
