@@ -260,17 +260,14 @@ def patch_freeplay(path: Path) -> None:
     if count != 1:
         raise SystemExit(f"Lazy song loading stopped: expected one Freeplay preview branch, found {count}")
 
-    source = replace_once(
+    source = replace_regex_once(
         source,
-        """\toverride function destroy():Void
-\t{
-\t\tsuper.destroy();""",
+        r"\toverride function destroy\(\):Void\r?\n\t\{",
         """\toverride function destroy():Void
 \t{
 \t\tpreviewLoadToken++;
-\t\tpreviewLoading = false;
-\t\tsuper.destroy();""",
-        "cancel callbacks after Freeplay destruction",
+\t\tpreviewLoading = false;""",
+        "cancel callbacks immediately when Freeplay is destroyed",
     )
     path.write_text(source, encoding="utf-8")
     print(f"Installed asynchronous Freeplay previews in {path}")
