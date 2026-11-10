@@ -52,12 +52,11 @@ def main() -> None:
     # The original menu patch inserts carousel helper methods immediately after
     # updateTexts(), so this expression deliberately ends at its last card/score
     # update rather than assuming destroy() follows directly.
+    # Match only updateTexts itself. The menu patch inserts helper functions
+    # between updateTexts and destroy, so those methods are not adjacent.
     pattern = re.compile(
-        r"\tpublic function updateTexts\(elapsed:Float = 0\.0\)\n"
-        r"\t\{.*?\n"
-        r"\t\t\tpositionFreeplayScore\(\);\n"
-        r"\t\}\n",
-        re.S,
+        r"(?ms)^\tpublic function updateTexts\(elapsed:Float = 0\.0\)\n"
+        r"\t\{.*?^\t\}\n"
     )
     replacement = """\tpublic function updateTexts(elapsed:Float = 0.0)
 \t{

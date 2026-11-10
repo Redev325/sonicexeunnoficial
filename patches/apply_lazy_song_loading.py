@@ -65,7 +65,11 @@ def patch_loading_state(path: Path) -> None:
 \t\t\tvar selectedAudioLoaded:Bool = Assets.cache.hasSound(getSongPath());
 \t\t\tif (PlayState.SONG.needsVoices)
 \t\t\t\tselectedAudioLoaded = selectedAudioLoaded && Assets.cache.hasSound(getVocalPath());
-\t\t\tif (!selectedAudioLoaded)
+
+\t\t\t// Stage sprites are large too; register their library only when a
+\t\t\t// selected song needs a non-shared stage directory.
+\t\t\tvar selectedStageLoaded:Bool = directory == 'shared' || Assets.getLibrary("week_assets") != null;
+\t\t\tif (!selectedAudioLoaded || !selectedStageLoaded)
 \t\t\t\treturn new LoadingState(target, stopMusic, directory);
 \t\t}
 \t\t#end
