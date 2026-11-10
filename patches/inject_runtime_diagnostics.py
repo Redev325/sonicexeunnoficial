@@ -27,6 +27,15 @@ STYLE = r"""
   color: #9ce4a5; font-weight: 700; white-space: nowrap;
 }
 #sonicexe-runtime-diagnostics.sx-error .sx-status { color: #ff7777; }
+#sonicexe-runtime-diagnostics.sx-hidden { display: none !important; }
+#sonicexe-runtime-diagnostics-show {
+  position: fixed; left: 12px; bottom: 12px; z-index: 2147483647;
+  display: none; padding: 7px 10px; border: 1px solid rgba(255,139,35,.8);
+  border-radius: 6px; color: #fff; background: rgba(10,10,12,.94);
+  box-shadow: 0 3px 16px rgba(0,0,0,.45);
+  font: 12px/1.3 Arial, sans-serif; cursor: pointer; pointer-events: auto;
+}
+#sonicexe-runtime-diagnostics-show:hover { background: #393027; }
 #sonicexe-runtime-diagnostics button {
   background: #25252a; color: #fff; border: 1px solid #555;
   border-radius: 4px; padding: 3px 7px; cursor: pointer; font: inherit;
@@ -78,6 +87,26 @@ SCRIPT = r"""
   var switchToken = 0;
   var pendingSwitch = null;
   var errorCount = 0;
+  var diagnosticsHidden = false;
+  var launcher = null;
+  try {
+    diagnosticsHidden = window.localStorage.getItem("sonicexe-hide-diagnostics") === "true";
+  } catch (_) {}
+
+  function saveHiddenPreference() {
+    try {
+      window.localStorage.setItem("sonicexe-hide-diagnostics", diagnosticsHidden ? "true" : "false");
+    } catch (_) {}
+  }
+
+  function updateVisibility() {
+    if (panel) panel.classList.toggle("sx-hidden", diagnosticsHidden);
+    if (launcher) {
+      launcher.style.display = diagnosticsHidden ? "block" : "none";
+      launcher.textContent = errorCount > 0 ? ("Diagnostics (" + errorCount + ")") : "Show diagnostics";
+      launcher.setAttribute("aria-label", "Show runtime diagnostics");
+    }
+  }
 
   function now() {
     return new Date().toLocaleTimeString();
@@ -126,6 +155,7 @@ SCRIPT = r"""
       line.textContent = "[" + entry.time + "] " + entry.level + ": " + entry.message;
       log.appendChild(line);
     });
+    updateVisibility();
   }
 
   function mount() {
@@ -137,6 +167,7 @@ SCRIPT = r"""
         '<span class="sx-title">SONIC.EXE RUNTIME DIAGNOSTICS</span>' +
         '<span class="sx-status">LIVE</span>' +
         '<button type="button" class="sx-toggle">Details</button>' +
+        '<button type="button" class="sx-hide" aria-label="Hide diagnostics" title="Hide diagnostics">Hide</button>' +
       '</div>' +
       '<div class="sx-summary">Monitoring startup and game loading</div>' +
       '<div class="sx-details">' +
@@ -149,6 +180,24 @@ SCRIPT = r"""
         '</div>' +
       '</div>';
     document.body.appendChild(panel);
+
+    launcher = document.createElement("button");
+    launcher.type = "button";
+    launcher.id = "sonicexe-runtime-diagnostics-show";
+    launcher.textContent = "Show diagnostics";
+    launcher.setAttribute("aria-label", "Show runtime diagnostics");
+    document.body.appendChild(launcher);
+    launcher.addEventListener("click", function () {
+      diagnosticsHidden = false;
+      saveHiddenPreference();
+      updateVisibility();
+    });
+    panel.querySelector(".sx-hide").addEventListener("click", function () {
+      diagnosticsHidden = true;
+      saveHiddenPreference();
+      updateVisibility();
+    });
+
     panel.querySelector(".sx-toggle").addEventListener("click", function () {
       expanded = !expanded;
       render();
