@@ -200,7 +200,7 @@ def main() -> None:
     source = replace_once(
         source,
         "fnfVer.setFormat(Paths.font('sonichud.ttf'), 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);",
-        "fnfVer.setFormat(Paths.font('sonichud.ttf'), 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);\n\t\tvar portCreditLogo:FlxSprite = new FlxSprite(16, FlxG.height - 142);\n\t\tportCreditLogo.loadGraphic(Paths.image('sonicexe-port-credit', 'shared'));\n\t\tportCreditLogo.setGraphicSize(190, 95);\n\t\tportCreditLogo.updateHitbox();\n\t\tportCreditLogo.antialiasing = true;\n\t\tportCreditLogo.scrollFactor.set(0, 0);\n\t\tadd(portCreditLogo);",
+        "fnfVer.setFormat(Paths.font('sonichud.ttf'), 10, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);\n\t\tvar portCreditText:FlxText = new FlxText(16, FlxG.height - 118, 430, 'SONIC.EXE UNOFFICIAL PORT', 16);\n\t\tportCreditText.setFormat(Paths.font('sonichud.ttf'), 16, 0xFFFF3333, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);\n\t\tportCreditText.scrollFactor.set(0, 0);\n\t\tadd(portCreditText);",
         "show the port credit graphic on the main menu only",
     )
 
