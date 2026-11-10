@@ -26,7 +26,7 @@ def main() -> None:
 
 \t// Original Sonic.EXE Freeplay carousel layers. The Extras and Sound Test
 \t// lists keep the compact row UI installed by the existing patch.
-\tvar freeplayBackdrop:FlxSprite;\n\tvar freeplaySpikes:FlxSprite;
+\tvar freeplayBackdrop:FlxSprite;
 \tvar freeplayCardArt:FlxSprite;
 \tvar freeplayCardFrame:FlxSprite;\n\tvar freeplayNextCardArt:FlxSprite;\n\tvar freeplayNextCardFrame:FlxSprite;
 \tvar freeplayTitle:FlxText;
@@ -61,7 +61,7 @@ def main() -> None:
 \t\t\tbg.updateHitbox();
 \t\t\tbg.screenCenter();
 \t\t\tbg.scrollFactor.set();
-\t\t\tbg.color = 0xFFFF0000;
+\t\t\tbg.color = 0xFFFF7777;
 \t\t\tbg.alpha = 1.0;
 
 \t\t\t// Use the original static fade overlay once, not a tiled scrolling backdrop.
@@ -69,23 +69,13 @@ def main() -> None:
 \t\t\tfreeplayBackdrop.loadGraphic(Paths.image('sidebar'));
 \t\t\tfreeplayBackdrop.setGraphicSize(FlxG.width, FlxG.height);
 \t\t\tfreeplayBackdrop.updateHitbox();
-\t\t\tfreeplayBackdrop.scrollFactor.set();
+\t\t\tfreeplayBackdrop.scrollFactor.set();\n\t\t\tfreeplayBackdrop.alpha = 0.32;
 \t\t\tinsert(1, freeplayBackdrop);
-
-\t\t\t// Original Sonic.EXE sawtooth frame, kept as a crisp foreground layer
-\t\t\t// while the 24-frame background atlas animates behind it.
-\t\t\tfreeplaySpikes = new FlxSprite(0, 0);
-\t\t\tfreeplaySpikes.loadGraphic(Paths.image('SPIKES'));
-\t\t\tfreeplaySpikes.setGraphicSize(FlxG.width, FlxG.height);
-\t\t\tfreeplaySpikes.updateHitbox();
-\t\t\tfreeplaySpikes.scrollFactor.set();
-\t\t\tfreeplaySpikes.antialiasing = false;
-\t\t\tadd(freeplaySpikes);
 
 \t\t\t// Original 1280x720 transparent card canvases, displayed at the
 			// source game's ~64% scale and half-screen carousel spacing.
-			var cardWidth:Float = FlxG.width * 0.64;
-			var cardHeight:Float = FlxG.height * 0.64;
+			var cardWidth:Float = FlxG.width * 0.60;
+			var cardHeight:Float = FlxG.height * 0.60;
 			var cardX:Float = (FlxG.width - cardWidth) * 0.5;
 			var cardY:Float = (FlxG.height - cardHeight) * 0.5;
 
@@ -105,28 +95,28 @@ def main() -> None:
 			freeplayCardFrame.scrollFactor.set();
 			add(freeplayCardFrame);
 
-			freeplayNextCardArt = new FlxSprite(cardX + FlxG.width * 0.5, cardY);
+			freeplayNextCardArt = new FlxSprite(cardX + cardWidth + FlxG.width * 0.02, cardY);
 			freeplayNextCardArt.loadGraphic(Paths.image('fpstuff/story'));
 			freeplayNextCardArt.setGraphicSize(Std.int(cardWidth), Std.int(cardHeight));
 			freeplayNextCardArt.updateHitbox();
-			freeplayNextCardArt.antialiasing = false;
+			freeplayNextCardArt.antialiasing = false;\n\t\t\tfreeplayNextCardArt.alpha = 0.78;
 			freeplayNextCardArt.scrollFactor.set();
 			add(freeplayNextCardArt);
 
-			freeplayNextCardFrame = new FlxSprite(cardX + FlxG.width * 0.5, cardY);
+			freeplayNextCardFrame = new FlxSprite(cardX + cardWidth + FlxG.width * 0.02, cardY);
 			freeplayNextCardFrame.loadGraphic(Paths.image('FreeBox'));
 			freeplayNextCardFrame.setGraphicSize(Std.int(cardWidth), Std.int(cardHeight));
 			freeplayNextCardFrame.updateHitbox();
-			freeplayNextCardFrame.antialiasing = false;
+			freeplayNextCardFrame.antialiasing = false;\n\t\t\tfreeplayNextCardFrame.alpha = 0.78;
 			freeplayNextCardFrame.scrollFactor.set();
 			add(freeplayNextCardFrame);
 
-			freeplayTitle = new FlxText(240, FlxG.height - 104, 800, '', 38);
-\t\t\tfreeplayTitle.setFormat(Paths.font('sonichud.ttf'), 38, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+			freeplayTitle = new FlxText(FlxG.width * 0.20, FlxG.height * 0.82, FlxG.width * 0.60, '', 36);
+\t\t\tfreeplayTitle.setFormat(Paths.font('sonichud.ttf'), 36, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\t\tfreeplayTitle.scrollFactor.set();
 \t\t\tadd(freeplayTitle);
 
-\t\t\tfreeplayCategory = new FlxText(28, FlxG.height - 96, 210, 'EXE', 36);
+\t\t\tfreeplayCategory = new FlxText(FlxG.width * 0.025, FlxG.height - 72, FlxG.width * 0.20, 'EXE', 34);
 \t\t\tfreeplayCategory.setFormat(Paths.font('sonichud.ttf'), 36, 0xFFFF1717, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 \t\t\tfreeplayCategory.scrollFactor.set();
 \t\t\tadd(freeplayCategory);
@@ -214,8 +204,8 @@ def main() -> None:
 \t\t\tvar nextIndex:Int = (selectedIndex + 1) % songs.length;
 			var selectedArt:String = sonicEXEArtForSong(songs[selectedIndex].songName, songs[selectedIndex].songCharacter);
 			var nextArt:String = sonicEXEArtForSong(songs[nextIndex].songName, songs[nextIndex].songCharacter);
-			var cardWidth:Int = Std.int(FlxG.width * 0.64);
-			var cardHeight:Int = Std.int(FlxG.height * 0.64);
+			var cardWidth:Int = Std.int(FlxG.width * 0.60);
+			var cardHeight:Int = Std.int(FlxG.height * 0.60);
 			var cardX:Float = (FlxG.width - cardWidth) * 0.5;
 			var cardY:Float = (FlxG.height - cardHeight) * 0.5;
 
@@ -230,10 +220,10 @@ def main() -> None:
 			freeplayNextCardArt.loadGraphic(Paths.image(nextArt.indexOf('sonicexe-freeplay/') == 0 ? nextArt : 'fpstuff/' + nextArt));
 			freeplayNextCardArt.setGraphicSize(cardWidth, cardHeight);
 			freeplayNextCardArt.updateHitbox();
-			freeplayNextCardArt.setPosition(cardX + FlxG.width * 0.5, cardY);
+			freeplayNextCardArt.setPosition(cardX + cardWidth + FlxG.width * 0.02, cardY);\n\t\t\tfreeplayNextCardArt.alpha = 0.78;
 			freeplayNextCardFrame.setGraphicSize(cardWidth, cardHeight);
 			freeplayNextCardFrame.updateHitbox();
-			freeplayNextCardFrame.setPosition(cardX + FlxG.width * 0.5, cardY);
+			freeplayNextCardFrame.setPosition(cardX + cardWidth + FlxG.width * 0.02, cardY);\n\t\t\tfreeplayNextCardFrame.alpha = 0.78;
 
 			freeplayTitle.text = songs[selectedIndex].songName.toUpperCase();
 			shownFreeplayIndex = selectedIndex;
@@ -245,14 +235,14 @@ def main() -> None:
 \t\tif (scoreText != null)
 \t\t{
 \t\t\tscoreText.x = FlxG.width - 340;
-\t\t\tscoreText.y = FlxG.height - 96;
+\t\t\tscoreText.y = FlxG.height - 82;
 \t\t\tscoreText.fieldWidth = 310;
 \t\t\tscoreText.alignment = RIGHT;
 \t\t}
 \t\tif (diffText != null)
 \t\t{
 \t\t\tdiffText.x = FlxG.width - 340;
-\t\t\tdiffText.y = FlxG.height - 60;
+\t\t\tdiffText.y = FlxG.height - 48;
 \t\t\tdiffText.fieldWidth = 310;
 \t\t\tdiffText.alignment = RIGHT;
 \t\t}
