@@ -863,6 +863,13 @@ jobs:
       - name: Add separate Psych Engine credits button
         run: python3 patches/apply_psych_engine_credits.py engine/source/states/MainMenuState.hx engine/source/states/CreditsState.hx
 
+      - name: Validate HTML5 performance patch scripts
+        run: |
+          python3 -m py_compile \
+            patches/apply_loading_optimization.py \
+            patches/apply_lazy_song_loading.py \
+            patches/apply_freeplay_virtualization.py
+
       - name: Defer song audio until the title sequence
         run: |
           mkdir -p engine/source/backend
