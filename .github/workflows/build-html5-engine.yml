@@ -13,6 +13,8 @@ on:
       - "patches/apply_menu_screen_uis.py"
       - "patches/apply_custom_options_ui.py"
       - "patches/apply_loading_optimization.py"
+      - "patches/apply_freeplay_virtualization.py"
+      - "patches/apply_lazy_song_loading.py"
       - "patches/apply_menu_freeze_fixes.py"
       - "patches/apply_psych_engine_credits.py"
       - "patches/SonicEXEAssetLoader.hx"
@@ -752,9 +754,10 @@ jobs:
             output="$2"
             optimized="${output%.mp4}.optimized.mp4"
             test -s "$source"
-            ffmpeg -y -i "$source" -map 0:v:0 -map '0:a?' \
-              -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p \
-              -c:a aac -b:a 128k -movflags +faststart "$optimized"
+            ffmpeg -y -i "$source" -map 0:v:0 \
+              -vf "scale=w='min(1280,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=30" \
+              -an -c:v libx264 -preset veryfast -crf 25 -pix_fmt yuv420p \
+              -movflags +faststart "$optimized"
             test -s "$optimized"
             source_bytes="$(stat -c%s "$source")"
             optimized_bytes="$(stat -c%s "$optimized")"
@@ -780,8 +783,9 @@ jobs:
           source="$(find engine -maxdepth 1 -type f -name 'introexe-source.*' -print -quit)"
           test -n "$source"
           ffmpeg -y -i "$source" -map 0:v:0 -map '0:a?' \
-            -c:v libx264 -preset veryfast -crf 21 -pix_fmt yuv420p \
-            -c:a aac -b:a 160k -movflags +faststart engine/introexe.mp4
+            -vf "scale=w='min(1280,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=30" \
+            -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p \
+            -c:a aac -b:a 128k -movflags +faststart engine/introexe.mp4
           rm -f "$source"
           test -s engine/introexe.mp4
           ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height -of default=noprint_wrappers=1 engine/introexe.mp4
@@ -789,9 +793,10 @@ jobs:
 
       - name: Convert original postIntro video for HTML5 playback
         run: |
-          ffmpeg -y -i engine/postIntro-source.mp4 \
-            -c:v libx264 -preset veryfast -crf 21 -pix_fmt yuv420p \
-            -c:a aac -b:a 160k -movflags +faststart engine/postIntro.mp4
+          ffmpeg -y -i engine/postIntro-source.mp4 -map 0:v:0 -map '0:a?' \
+            -vf "scale=w='min(1280,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=30" \
+            -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p \
+            -c:a aac -b:a 128k -movflags +faststart engine/postIntro.mp4
           rm -f engine/postIntro-source.mp4
           test -s engine/postIntro.mp4
           echo "Checking that the converted postIntro video contains audio:"
@@ -805,7 +810,9 @@ jobs:
           for source in engine/sonicexe-soundtest-source/*.mp4; do
             [ -f "$source" ] || continue
             name="$(basename "$source")"
-            ffmpeg -y -i "$source" -an -c:v libx264 -preset veryfast -crf 24 -pix_fmt yuv420p -movflags +faststart "engine/sonicexe-soundtest-videos/$name"
+            ffmpeg -y -i "$source" -map 0:v:0 -an \
+              -vf "scale=w='min(1280,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=30" \
+              -c:v libx264 -preset veryfast -crf 25 -pix_fmt yuv420p -movflags +faststart "engine/sonicexe-soundtest-videos/$name"
           done
           test -s engine/sonicexe-soundtest-videos/tripletrouble.mp4
           echo "Prepared original custom-song preview videos for HTML5."
@@ -848,6 +855,9 @@ jobs:
       - name: Use original Sonic.EXE Freeplay card carousel
         run: python3 patches/apply_sonicexe_freeplay_menu.py engine/source/states/FreeplayState.hx
 
+      - name: Virtualize the Sonic.EXE Freeplay catalogue for HTML5
+        run: python3 patches/apply_freeplay_virtualization.py engine/source/states/FreeplayState.hx
+
       - name: Use original animated Sonic.EXE Story Mode data select
         run: python3 patches/apply_sonicexe_story_menu.py engine/source/states/StoryMenuState.hx
 
@@ -859,6 +869,7 @@ jobs:
           mkdir -p engine/source/backend
           cp patches/SonicEXEAssetLoader.hx engine/source/backend/SonicEXEAssetLoader.hx
           python3 patches/apply_loading_optimization.py engine/Project.xml engine/source/states/TitleState.hx engine/source/states/MainMenuState.hx
+          python3 patches/apply_lazy_song_loading.py engine/source/states/LoadingState.hx engine/source/states/FreeplayState.hx
 
       - name: Add HTML5 game runtime diagnostics checkpoints
         run: |
@@ -1223,6 +1234,12 @@ jobs:
             <source src="postIntro.mp4" type="video/mp4">
           </video>
           """
+
+          # Hidden videos should not fetch metadata during boot. Playback starts
+          # only when the corresponding title/menu/cutscene screen requests it.
+          if body_markup.count('preload="metadata"') != 5:
+              raise SystemExit("Unexpected Sonic.EXE video markup; expected five lazy video elements.")
+          body_markup = body_markup.replace('preload="metadata"', 'preload="none"')
 
           if "sonicexe-menu-bg" in html:
               raise SystemExit("The Sonic.EXE menu video was already injected.")

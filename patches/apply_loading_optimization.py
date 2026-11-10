@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Keep the songs library preloaded on HTML5.
+"""Defer the large songs library and load only the selected track on HTML5.
 
-The deferred OpenFL AssetLibrary load could remain unresolved in the browser,
-leaving every song-backed destination on a black transition screen. Options
-does not depend on the songs library, which is why it remained accessible.
-Use the engine's normal preload path for reliable menu entry.
+LoadingState initializes the songs manifest and requests the selected
+instrumental/vocals. Freeplay previews use the same per-file loading path.
+This avoids downloading and decoding the entire mod catalogue during boot.
 """
 from pathlib import Path
 import re
@@ -22,7 +21,7 @@ def main() -> None:
     pattern = re.compile(
         r'(?m)^(\s*<library\s+name="songs"\s+preload=")(?:true|false)("\s*/>)$'
     )
-    source, count = pattern.subn(r"\1true\2", source)
+    source, count = pattern.subn(r"\1false\2", source)
     if count != 1:
         raise SystemExit(
             "HTML5 song loading fix stopped: expected exactly one songs library entry, "
@@ -34,7 +33,7 @@ def main() -> None:
     ):
         raise SystemExit("HTML5 song loading fix stopped: week_assets must remain preloaded.")
     project.write_text(source, encoding="utf-8")
-    print("Restored normal HTML5 preload for songs; menu destinations no longer wait on a deferred library request.")
+    print("Deferred the HTML5 songs library; selected tracks will load their MP3s on demand.")
 
 
 if __name__ == "__main__":
