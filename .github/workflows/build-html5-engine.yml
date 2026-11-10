@@ -18,6 +18,7 @@ on:
       - "patches/SonicEXEAssetLoader.hx"
       - "patches/apply_runtime_diagnostics.py"
       - "patches/import_sonicexe_song_data.py"
+      - "patches/import_sonicexe_expanded_content.py"
       - "patches/apply_sonicexe_freeplay_ui.py"
       - "patches/apply_sonicexe_freeplay_menu.py"
       - "patches/apply_sonicexe_story_menu.py"
@@ -703,6 +704,22 @@ jobs:
           python3 patches/import_sonicexe_song_data.py sonicexe-mod-source/assets engine/assets
           rm -rf sonicexe-mod-source
 
+          # Pull the original EXE Freeplay covers, Story Mode art, and all chart/audio
+          # pairs represented by the source game's cover catalogue.
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/Wolfie1985yt/EXEUNOFFICIAL.git sonicexe-expanded-source
+          git -C sonicexe-expanded-source sparse-checkout set --no-cone \
+            '/assets/exe/freeplayassets/' \
+            '/assets/exe/story/' \
+            '/assets/exe/cover/' \
+            '/assets/exe/music/story.ogg' \
+            '/embedded_contents_file/*/data/*/*.json' \
+            '/contents_file/*/data/*/*.json' \
+            '/contents_file/*/songs/*/Inst.ogg' \
+            '/contents_file/*/songs/*/Inst.mp3' \
+            '/contents_file/*/songs/*/Inst.wav'
+          python3 patches/import_sonicexe_expanded_content.py sonicexe-expanded-source engine/assets
+          rm -rf sonicexe-expanded-source
+
       - name: Convert original game menu and Options music for HTML5
         run: |
           ffmpeg -y -i engine/assets/shared/music/menu-source.ogg -vn -c:a libmp3lame -q:a 2 engine/assets/shared/music/menu.mp3
@@ -859,6 +876,13 @@ jobs:
           test -f engine/export/release/html5/bin/index.html
           find engine/export/release/html5/bin -maxdepth 2 -type f | head -80
           du -sh engine/export/release/html5/bin
+
+      - name: Ensure the Sonic.EXE port credit asset exists in the deployed output
+        run: |
+          output="engine/export/release/html5/bin"
+          mkdir -p "$output/assets/shared/images"
+          cp engine/assets/shared/images/sonicexe-port-credit.png "$output/assets/shared/images/sonicexe-port-credit.png"
+          test -s "$output/assets/shared/images/sonicexe-port-credit.png"
 
       - name: Add original animated menu video to the HTML5 page
         run: |

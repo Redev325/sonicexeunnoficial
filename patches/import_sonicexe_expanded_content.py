@@ -212,6 +212,7 @@ def main() -> None:
         chart["player1"] = "bf"
         chart["player2"] = "dad"
         chart["gfVersion"] = "gf"
+        chart["stage"] = "stage"
         chart.pop("player3", None)
         chart["needsVoices"] = False
         chart.setdefault("bpm", 100)

@@ -56,11 +56,13 @@ def main() -> None:
 \t\t\tif (bottomBG != null) bottomBG.visible = false;
 \t\t\tif (bottomText != null) bottomText.visible = false;
 
-\t\t\tbg.frames = Paths.getSparrowAtlas('Main_Menu_Spritesheet_Animation');\n\t\t\tbg.animation.addByPrefix('freeplayBackground', 'BG instance 1', 24, true);\n\t\t\tbg.animation.play('freeplayBackground');
+\t\t\tbg.loadGraphic(Paths.image('sonicexe-freeplay/bgsonic'));
 \t\t\tbg.setGraphicSize(FlxG.width, FlxG.height);
 \t\t\tbg.updateHitbox();
 \t\t\tbg.screenCenter();
 \t\t\tbg.scrollFactor.set();
+\t\t\tbg.color = 0xFFFF0000;
+\t\t\tbg.alpha = 1.0;
 
 \t\t\t// Use the original static fade overlay once, not a tiled scrolling backdrop.
 \t\t\tfreeplayBackdrop = new FlxSprite(0, 0);
@@ -163,6 +165,17 @@ def main() -> None:
     helper = """\tfunction sonicEXEArtForSong(songName:String, songCharacter:String):String
 \t{
 \t\tvar key:String = Paths.formatToSongPath(songName);
+\t\tvar originalCoverNames:Array<String> = [
+\t\t\t'b4cksl4sh', 'black-sun', 'chaos', 'chocolate-milk', 'cycles', 'deception', 'digitalized',
+\t\t\t'endless-jp', 'endless-us', 'fakebaby', 'faker', 'fatality', 'fate', 'fight-or-flight',
+\t\t\t'flash', 'forestall-desire', 'found-you', 'godspeed', 'gotta-go', 'haze', 'hedge', 'hellbent',
+\t\t\t'her-world', 'hijacked-transmission', 'hollow', 'life-and-death', 'longstrider', 'malediction',
+\t\t\t'mania', 'manual-blast', 'miasma', 'monochromatic', 'personel', 'placeholder', 'pre-design',
+\t\t\t'prey', 'round-a-bout', 'sharpy-showdown', 'shocker', 'soulless', 'starline', 'substantial',
+\t\t\t'sunshine', 'too-fest', 'uh-oh', 'universal-collapse', 'vanilla-milk'
+\t\t];
+\t\tif (originalCoverNames.indexOf(key) >= 0)
+\t\t\treturn 'sonicexe-freeplay/covers/' + key;
 \t\treturn switch (key)
 \t\t{
 \t\t\tcase 'cycles': 'lord x';
@@ -206,7 +219,7 @@ def main() -> None:
 			var cardX:Float = (FlxG.width - cardWidth) * 0.5;
 			var cardY:Float = (FlxG.height - cardHeight) * 0.5;
 
-			freeplayCardArt.loadGraphic(Paths.image('fpstuff/' + selectedArt));
+			freeplayCardArt.loadGraphic(Paths.image(selectedArt.indexOf('sonicexe-freeplay/') == 0 ? selectedArt : 'fpstuff/' + selectedArt));
 			freeplayCardArt.setGraphicSize(cardWidth, cardHeight);
 			freeplayCardArt.updateHitbox();
 			freeplayCardArt.setPosition(cardX, cardY);
@@ -214,7 +227,7 @@ def main() -> None:
 			freeplayCardFrame.updateHitbox();
 			freeplayCardFrame.setPosition(cardX, cardY);
 
-			freeplayNextCardArt.loadGraphic(Paths.image('fpstuff/' + nextArt));
+			freeplayNextCardArt.loadGraphic(Paths.image(nextArt.indexOf('sonicexe-freeplay/') == 0 ? nextArt : 'fpstuff/' + nextArt));
 			freeplayNextCardArt.setGraphicSize(cardWidth, cardHeight);
 			freeplayNextCardArt.updateHitbox();
 			freeplayNextCardArt.setPosition(cardX + FlxG.width * 0.5, cardY);

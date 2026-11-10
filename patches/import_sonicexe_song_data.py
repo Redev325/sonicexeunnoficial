@@ -164,7 +164,7 @@ def main() -> None:
             week_data["songs"] = playable_rows
             week_data["startUnlocked"] = True
             week_data["hideFreeplay"] = False
-            week_data["hideStoryMode"] = False
+            week_data["hideStoryMode"] = True
             if not isinstance(week_data.get("weekCharacters"), list) or len(week_data["weekCharacters"]) < 3:
                 week_data["weekCharacters"] = ["", "bf", "gf"]
             if not week_data.get("difficulties"):
@@ -290,7 +290,7 @@ def main() -> None:
         "weekBefore": "",
         "freeplayColor": [146, 0, 0],
         "startUnlocked": True,
-        "hideStoryMode": True,
+        "hideStoryMode": False,
         "songs": story_rows,
         "weekCharacters": ["", "bf", "gf"],
         "weekName": "Sonic.EXE Story",
