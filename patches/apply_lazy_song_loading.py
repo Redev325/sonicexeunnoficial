@@ -164,11 +164,11 @@ def patch_freeplay(path: Path) -> None:
     )
     source = replace_once(
         source,
-        """\t\tif (player.playingMusic)
+        """\t\tif (songs.length == 0 || player.playingMusic)
 \t\t\treturn;
 
 \t\t_updateSongLastDifficulty();""",
-        """\t\tif (player.playingMusic)
+        """\t\tif (songs.length == 0 || player.playingMusic)
 \t\t\treturn;
 
 \t\tif (previewLoading)
@@ -182,16 +182,16 @@ def patch_freeplay(path: Path) -> None:
     )
     source = replace_once(
         source,
-        "else if (controls.ACCEPT && !player.playingMusic)",
-        "else if (controls.ACCEPT && !player.playingMusic && !previewLoading && songs.length > 0)",
+        "else if (controls.ACCEPT && !player.playingMusic && songs.length > 0)",
+        "else if (controls.ACCEPT && !player.playingMusic && songs.length > 0 && !previewLoading)",
         "prevent gameplay launch while a preview is pending",
     )
     source = replace_once(
         source,
-        """\t\tif (controls.BACK)
+        """\t\tif (controls.BACK || FlxG.keys.justPressed.BACKSPACE)
 \t\t{
 \t\t\tif (player.playingMusic)""",
-        """\t\tif (controls.BACK)
+        """\t\tif (controls.BACK || FlxG.keys.justPressed.BACKSPACE)
 \t\t{
 \t\t\tpreviewLoadToken++;
 \t\t\tpreviewLoading = false;
