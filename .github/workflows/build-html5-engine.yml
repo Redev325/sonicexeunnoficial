@@ -266,8 +266,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           mkdir -p package engine/assets/shared/images/sonicexe-menu/options
-          cp patches/assets/sonicexe-port-credit.png engine/assets/shared/images/sonicexe-port-credit.png
-          test -s engine/assets/shared/images/sonicexe-port-credit.png
           cd package
           gh release download v1.0.0 --repo "$GH_REPO" \
             --pattern 'unofficial-windows.1.zip.001' \
@@ -866,6 +864,15 @@ jobs:
         run: |
           python3 patches/apply_runtime_diagnostics.py engine/source/backend/MusicBeatState.hx engine/source/states/FreeplayState.hx engine/source/states/StoryMenuState.hx engine/source/states/LoadingState.hx engine/source/backend/WeekData.hx
 
+      - name: Remove obsolete port-credit image before asset-manifest generation
+        run: |
+          rm -f engine/assets/shared/images/sonicexe-port-credit.png
+          test ! -e engine/assets/shared/images/sonicexe-port-credit.png
+          if grep -R -n --include='*.hx' "sonicexe-port-credit" engine/source; then
+            echo "Unexpected Haxe reference to the removed port-credit image remains."
+            exit 1
+          fi
+
       - name: Compile browser target
         working-directory: engine
         run: |
@@ -877,12 +884,9 @@ jobs:
           find engine/export/release/html5/bin -maxdepth 2 -type f | head -80
           du -sh engine/export/release/html5/bin
 
-      - name: Ensure the Sonic.EXE port credit asset exists in the deployed output
+      - name: Verify obsolete port-credit image is absent from HTML5 output
         run: |
-          output="engine/export/release/html5/bin"
-          mkdir -p "$output/assets/shared/images"
-          cp engine/assets/shared/images/sonicexe-port-credit.png "$output/assets/shared/images/sonicexe-port-credit.png"
-          test -s "$output/assets/shared/images/sonicexe-port-credit.png"
+          test ! -e engine/export/release/html5/bin/assets/shared/images/sonicexe-port-credit.png
 
       - name: Add original animated menu video to the HTML5 page
         run: |
