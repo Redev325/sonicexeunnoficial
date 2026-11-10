@@ -27,12 +27,11 @@ on:
       - "patches/inject_runtime_diagnostics.py"
   workflow_dispatch:
 
-# Trigger a full rebuild against the latest committed asset and intro pipeline.
-# Keep only the newest pending build for this branch; don't interrupt a build
-# that has already started compiling.
+# Always build the newest HTML5 performance/menu pipeline revision.
+# Superseded runs can be cancelled; only the latest source should be published.
 concurrency:
   group: sonicexe-html5-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
