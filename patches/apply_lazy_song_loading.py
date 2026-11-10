@@ -13,6 +13,13 @@ def replace_once(source: str, old: str, new: str, label: str) -> str:
     return source.replace(old, new)
 
 
+def replace_regex_once(source: str, pattern: str, replacement: str, label: str) -> str:
+    source, count = re.subn(pattern, lambda _match: replacement, source, count=1)
+    if count != 1:
+        raise SystemExit(f"Lazy song loading stopped: {label} expected once, found {count}")
+    return source
+
+
 def patch_loading_state(path: Path) -> None:
     source = path.read_text(encoding="utf-8")
 
@@ -53,12 +60,11 @@ def patch_loading_state(path: Path) -> None:
 \t\t\t});""",
         "report individual audio-load failures",
     )
-    source = replace_once(
+    source = replace_regex_once(
         source,
-        """\t\tif (stopMusic && FlxG.sound.music != null)
-\t\t\tFlxG.sound.music.stop();
-
-\t\treturn target;""",
+        r"\t\tif \(stopMusic && FlxG\.sound\.music != null\)\r?\n"
+        r"\t\t\tFlxG\.sound\.music\.stop\(\);\r?\n[ \t]*\r?\n"
+        r"\t\treturn target;",
         """\t\t#if html5
 \t\tif (PlayState.SONG != null)
 \t\t{
@@ -158,11 +164,7 @@ def patch_freeplay(path: Path) -> None:
     )
     source = replace_once(
         source,
-        """\t\tif (songs.length == 0 || player.playingMusic)
-\t\t\treturn;
-
-\t\t_updateSongLastDifficulty();""",
-        """\t\tif (songs.length == 0 || player.playingMusic)
+        """\t\tif (player.playingMusic)
 \t\t\treturn;
 
 \t\tif (previewLoading)
@@ -176,7 +178,7 @@ def patch_freeplay(path: Path) -> None:
     )
     source = replace_once(
         source,
-        "else if (controls.ACCEPT && !player.playingMusic && songs.length > 0)",
+        "else if (controls.ACCEPT && !player.playingMusic)",
         "else if (controls.ACCEPT && !player.playingMusic && !previewLoading && songs.length > 0)",
         "prevent gameplay launch while a preview is pending",
     )
