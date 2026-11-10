@@ -20,8 +20,8 @@ def patch_project(path: Path) -> None:
             rf'(?m)^([ \t]*)<library name="{library}" preload="(?:true|false)"\s*/>$'
         )
         source, count = pattern.subn(
-            rf'\1<library name="{library}" preload="false" if="html5" />\n'
-            rf'\1<library name="{library}" preload="true" unless="html5" />',
+            rf'\1<library name="{library}" preload="false" if="html5" />' + "\n"
+            + rf'\1<library name="{library}" preload="true" unless="html5" />',
             source,
         )
         if count != 1:
