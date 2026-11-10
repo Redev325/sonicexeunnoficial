@@ -109,6 +109,10 @@ def main() -> None:
 \t\t\tlabel.alpha = selected ? 1 : 0.72;
 \t\t\tlabel.color = selected ? FlxColor.WHITE : 0xFFFFC4CC;
 \t\t}
+
+\t\tupdateFreeplayCards();
+\t\tif (!sonicExeCustomSongMode && !sonicExeEncoreMode)
+\t\t\tpositionFreeplayScore();
 \t}
 
 \toverride function destroy"""
