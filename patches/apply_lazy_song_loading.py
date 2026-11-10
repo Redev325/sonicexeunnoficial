@@ -167,6 +167,10 @@ def patch_freeplay(path: Path) -> None:
         """\t\tif (player.playingMusic)
 \t\t\treturn;
 
+\t\t_updateSongLastDifficulty();""",
+        """\t\tif (player.playingMusic)
+\t\t\treturn;
+
 \t\tif (previewLoading)
 \t\t{
 \t\t\tpreviewLoadToken++;
