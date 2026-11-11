@@ -38,12 +38,12 @@ def main() -> None:
         """\t\t#if MODS_ALLOWED
 \t\tvar luaToLoad:String = Paths.modFolders(luaFile);
 \t\tif(!FileSystem.exists(luaToLoad))
-\t\t\tluaToLoad = Paths.getPath(luaFile, TEXT);
+\t\t\tluaToLoad = Paths.getPath(luaFile);
 
-\t\tif(FileSystem.exists(luaToLoad) || OpenFlAssets.exists(luaToLoad, TEXT))
+\t\tif(FileSystem.exists(luaToLoad) || OpenFlAssets.exists(luaToLoad))
 \t\t#elseif sys
-\t\tvar luaToLoad:String = Paths.getPath(luaFile, TEXT);
-\t\tif(OpenFlAssets.exists(luaToLoad, TEXT))
+\t\tvar luaToLoad:String = Paths.getPath(luaFile);
+\t\tif(OpenFlAssets.exists(luaToLoad))
 \t\t#end""",
         "resolve Lua handlers from the active pack before shared scripts",
     )
@@ -62,12 +62,12 @@ def main() -> None:
         """\t\t#if MODS_ALLOWED
 \t\tvar scriptToLoad:String = Paths.modFolders(scriptFile);
 \t\tif(!FileSystem.exists(scriptToLoad))
-\t\t\tscriptToLoad = Paths.getPath(scriptFile, TEXT);
+\t\t\tscriptToLoad = Paths.getPath(scriptFile);
 \t\t#else
-\t\tvar scriptToLoad:String = Paths.getPath(scriptFile, TEXT);
+\t\tvar scriptToLoad:String = Paths.getPath(scriptFile);
 \t\t#end
 
-\t\tif(FileSystem.exists(scriptToLoad) || OpenFlAssets.exists(scriptToLoad, TEXT))""",
+\t\tif(FileSystem.exists(scriptToLoad) || OpenFlAssets.exists(scriptToLoad))""",
         "resolve HScript handlers from the active pack before shared scripts",
     )
 
