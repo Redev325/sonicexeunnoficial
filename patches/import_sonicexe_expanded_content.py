@@ -105,6 +105,8 @@ def find_instrumental(source_root: Path, slug: str) -> Path | None:
 
 def convert_audio(source: Path, target: Path) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
+    if source.resolve() == target.resolve():
+        return
     if source.suffix.casefold() == ".mp3":
         shutil.copy2(source, target)
         return
@@ -116,6 +118,38 @@ def convert_audio(source: Path, target: Path) -> None:
     )
     if result.returncode != 0 or not target.is_file() or target.stat().st_size == 0:
         raise SystemExit(f"Failed to convert {source} to HTML5 MP3:\n{result.stdout[-5000:]}")
+
+
+def merge_vocal_stems(sources: list[Path], target: Path) -> None:
+    """Make the single Voices.mp3 track expected by the base Psych Engine player."""
+    if not sources:
+        return
+    if len(sources) == 1:
+        convert_audio(sources[0], target)
+        return
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    command = ["ffmpeg", "-y"]
+    for source in sources:
+        command.extend(["-i", str(source)])
+    inputs = "".join(f"[{index}:a]" for index in range(len(sources)))
+    filter_complex = (
+        f"{inputs}amix=inputs={len(sources)}:duration=longest:"
+        "dropout_transition=0:normalize=1[vocal_mix]"
+    )
+    command.extend([
+        "-filter_complex", filter_complex,
+        "-map", "[vocal_mix]", "-vn",
+        "-c:a", "libmp3lame", "-q:a", "2", str(target)
+    ])
+    result = subprocess.run(
+        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+    )
+    if result.returncode != 0 or not target.is_file() or target.stat().st_size == 0:
+        raise SystemExit(
+            "Failed to combine player/opponent vocal stems into Voices.mp3:\n"
+            + result.stdout[-5000:]
+        )
 
 
 
@@ -256,8 +290,15 @@ def find_playable_pairs(source_root: Path):
                 chart = song_dir / f"{song_dir.name}.json"
                 if not chart.is_file() or (pack_dir.name, slug) in seen:
                     continue
-                audio_dir = source_root / "contents_file" / pack_dir.name / "songs" / song_dir.name
-                if not audio_dir.is_dir():
+                audio_dir = next(
+                    (
+                        source_root / audio_branch / pack_dir.name / "songs" / song_dir.name
+                        for audio_branch in ("contents_file", "embedded_contents_file")
+                        if (source_root / audio_branch / pack_dir.name / "songs" / song_dir.name).is_dir()
+                    ),
+                    None,
+                )
+                if audio_dir is None:
                     continue
                 instrumental = next((audio_dir / f"Inst{ext}" for ext in (".ogg", ".mp3", ".wav")
                                      if (audio_dir / f"Inst{ext}").is_file()), None)
@@ -461,13 +502,12 @@ def main() -> None:
         convert_audio(instrumental, song_output / "Inst.mp3")
         copied_audio += 1
         voice_names = []
-        for voice in voices:
-            name = voice.stem + ".mp3"
-            convert_audio(voice, song_output / name)
-            voice_names.append(name)
-            copied_vocals += 1
+        if voices:
+            merge_vocal_stems(voices, song_output / "Voices.mp3")
+            voice_names.append("Voices.mp3")
+            copied_vocals += len(voices)
         if voice_names:
-            audio_index[output_slug] = sorted(voice_names)
+            audio_index[output_slug] = voice_names
 
         row_character = str(chart.get("player2") or chart.get("player1") or "dad")
         song_color = chart.get("freeplayColor", [146, 0, 0])
@@ -476,12 +516,15 @@ def main() -> None:
         others_rows.append([display_name, row_character, song_color])
         added_slugs.add(output_slug)
 
-    # Keep an index for both expanded-pack vocals and the restored root game's
-    # ordinary Voices.mp3 tracks so the HTML5 loader can fetch the correct stems.
+    # Keep a manifest for expanded-pack vocal mixes and the restored root game's
+    # ordinary Voices.mp3 tracks so HTML5 preloads the exact playable asset.
     for song_dir in sorted((p for p in (output_assets / "songs").iterdir() if p.is_dir()), key=lambda p: p.name):
-        names = sorted(p.name for p in song_dir.glob("Voices*.mp3") if p.is_file())
-        if names:
-            audio_index[song_dir.name] = names
+        if (song_dir / "Voices.mp3").is_file():
+            audio_index[song_dir.name] = ["Voices.mp3"]
+        else:
+            names = sorted(p.name for p in song_dir.glob("Voices*.mp3") if p.is_file())
+            if names:
+                audio_index[song_dir.name] = names
     index_file = output_assets / "shared/data/sonicexe-audio-index.json"
     index_file.parent.mkdir(parents=True, exist_ok=True)
     index_file.write_text(json.dumps(audio_index, ensure_ascii=False, separators=(",", ":")) + "\n",
