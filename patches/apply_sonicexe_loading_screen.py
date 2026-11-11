@@ -108,7 +108,7 @@ def main() -> None:
     if len(sys.argv) != 4:
         raise SystemExit(
             "Usage: apply_sonicexe_loading_screen.py LoadingState.hx "
-            "Sonic.exeloadingscreen.png engine/assets/images/Sonic.exeloadingscreen.png"
+            "Sonic.exeloadingscreen.png engine/assets/shared/images/Sonic.exeloadingscreen.png"
         )
     patch_loading_state(Path(sys.argv[1]))
     install_asset(Path(sys.argv[2]), Path(sys.argv[3]))
