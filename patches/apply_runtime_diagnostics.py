@@ -186,8 +186,8 @@ def patch_loading(path: Path) -> None:
     source = path.read_text(encoding="utf-8")
     source = replace_regex_once(
         source,
-        r"(\\toverride function create\\(\\)\\r?\\n\\t\\{\\r?\\n)(?=\\t\\t(?:var bg:FlxSprite|// Keep a black fallback behind the supplied full-screen artwork\\.))",
-        lambda match: match.group(1) + "\\t\\tMusicBeatState.sonicEXEDebug(\\"LOADING STATE CREATE: start\\");\\n",
+        r"(\toverride function create\(\)\r?\n\t\{\r?\n)(?=\t\t(?:var bg:FlxSprite|// Keep a black fallback behind the supplied full-screen artwork\.))",
+        lambda match: match.group(1) + "\t\tMusicBeatState.sonicEXEDebug(\"LOADING STATE CREATE: start\");\n",
         "LoadingState create start (stock or Sonic.EXE loading screen)",
     )
     source = replace_once(
