@@ -298,7 +298,9 @@ def copy_pack_runtime_data(source_root: Path, output_assets: Path, pack: str,
             source_folder = source_root / branch / pack / category
             if not source_folder.is_dir():
                 continue
-            target_folder = output_assets / "week_assets" / pack_id / category
+            # PlayState.startLuasNamed/startHScriptsNamed resolve custom
+            # notetypes/events from shared assets, not week_assets.
+            target_folder = output_assets / "shared" / category
             for file in source_folder.rglob("*"):
                 if not file.is_file():
                     continue
