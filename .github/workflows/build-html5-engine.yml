@@ -25,6 +25,7 @@ on:
       - "patches/import_sonicexe_song_data.py"
       - "patches/import_sonicexe_expanded_content.py"
       - "patches/prepare_sonicexe_asset_checkout.py"
+      - "patches/apply_pack_song_script_resolution.py"
       - "patches/apply_sonicexe_freeplay_ui.py"
       - "patches/apply_sonicexe_freeplay_menu.py"
       - "patches/apply_sonicexe_story_menu.py"
@@ -881,6 +882,9 @@ jobs:
       - name: Add separate Psych Engine credits button
         run: python3 patches/apply_psych_engine_credits.py engine/source/states/MainMenuState.hx engine/source/states/CreditsState.hx
 
+      - name: Resolve EXE pack-specific chart scripts
+        run: python3 patches/apply_pack_song_script_resolution.py engine/source/states/PlayState.hx
+
       - name: Validate HTML5 performance patch scripts
         run: |
           python3 -m py_compile \
@@ -892,7 +896,8 @@ jobs:
             patches/apply_sonicexe_menu_music.py \
             patches/apply_custom_options_ui.py \
             patches/import_sonicexe_expanded_content.py \
-            patches/prepare_sonicexe_asset_checkout.py
+            patches/prepare_sonicexe_asset_checkout.py \
+            patches/apply_pack_song_script_resolution.py
 
       - name: Defer song audio until the title sequence
         run: |
