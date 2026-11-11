@@ -391,6 +391,13 @@ def main() -> None:
             print(f"Warning: no stage metadata found for {stage}")
             continue
         copied_stages += 1
+        # A number of original Sonic.EXE stages rely on their adjacent Lua/HScript
+        # file for animated backgrounds, camera events and other chart behavior.
+        for ext in (".lua", ".hx"):
+            copy_file(
+                source_assets / "stages" / f"{stage}{ext}",
+                output_assets / "shared" / "stages" / f"{stage}{ext}",
+            )
         try:
             stage_data = json.loads(stage_file.read_text(encoding="utf-8-sig"))
         except Exception:
