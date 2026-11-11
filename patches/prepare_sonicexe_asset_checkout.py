@@ -50,8 +50,15 @@ def main() -> None:
         pack, slug = match.group(1), match.group(2)
         if fmt_song(slug) in existing:
             continue
-        audio = f"contents_file/{pack}/songs/{slug}/"
-        if any(audio + f"Inst{ext}" in tree_set for ext in (".ogg", ".mp3", ".wav")):
+        audio_prefixes = (
+            f"contents_file/{pack}/songs/{slug}/",
+            f"embedded_contents_file/{pack}/songs/{slug}/",
+        )
+        if any(
+            prefix + f"Inst{ext}" in tree_set
+            for prefix in audio_prefixes
+            for ext in (".ogg", ".mp3", ".wav")
+        ):
             candidates[(pack, slug)] = path
 
     selected_packs = {pack for pack, _ in candidates}
