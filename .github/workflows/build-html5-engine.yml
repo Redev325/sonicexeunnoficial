@@ -883,8 +883,9 @@ jobs:
 
       - name: Install Sonic.EXE loading screen and red progress bar
         run: |
-          python3 patches/apply_sonicexe_loading_screen.py engine/source/states/LoadingState.hx Sonic.exeloadingscreen.png engine/assets/images/Sonic.exeloadingscreen.png
-          test -s engine/assets/images/Sonic.exeloadingscreen.png
+          python3 patches/apply_sonicexe_loading_screen.py engine/source/states/LoadingState.hx Sonic.exeloadingscreen.png engine/assets/shared/images/Sonic.exeloadingscreen.png
+          test -s engine/assets/shared/images/Sonic.exeloadingscreen.png
+          echo "Verified Sonic.EXE loading image at the shared asset path used by Paths.getPath()."
 
       - name: Add HTML5 game runtime diagnostics checkpoints
         run: |
