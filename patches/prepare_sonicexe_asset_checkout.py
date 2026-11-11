@@ -98,6 +98,12 @@ def main() -> None:
                 continue
             if "/" in value:
                 add_image(pack, value, include_parent=True)
+            else:
+                # Several source stage helpers prepend the pack's image folder
+                # to short entries such as path: 'bee' or path: 'moto'.
+                add_image(pack, value)
+                add_image(pack, f"{pack_key(pack)}/{value}", include_parent=True)
+                add_image(pack, f"{pack.casefold()}/{value}", include_parent=True)
             add_sound(pack, value)
 
     for pack, slug in sorted(candidates):
