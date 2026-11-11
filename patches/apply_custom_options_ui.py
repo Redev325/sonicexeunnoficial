@@ -608,21 +608,67 @@ def patch_note_splash(path: Path) -> None:
         """\tpublic static function getSplashSkinPostfix()
 \t{
 \t\tvar skin:String = '';
-\t\tif(ClientPrefs.data.splashSkin != ClientPrefs.defaultData.splashSkin)
+\t\tif(ClientPrefs.data.splashSkin != ClientPrefs.defaultData.splashSkin && ClientPrefs.data.splashSkin != 'Psych')
 \t\t\tskin = '-' + ClientPrefs.data.splashSkin.trim().toLowerCase().replace(' ', '_');
 \t\treturn skin;
-\t}""",
-        """\tpublic static function getSplashSkinPostfix()
+\t}
+\n\tpublic static function getSplashSkinPath():String
 \t{
-\t\tvar skin:String = '';
-\t\t// Sonic.EXE is the saved default, but its artwork uses a named atlas suffix.
 \t\tif (ClientPrefs.data.splashSkin == 'Sonic.EXE')
-\t\t\tskin = '-sonic.exe';
-\t\telse if(ClientPrefs.data.splashSkin != 'Psych' && ClientPrefs.data.splashSkin != ClientPrefs.defaultData.splashSkin)
-\t\t\tskin = '-' + ClientPrefs.data.splashSkin.trim().toLowerCase().replace(' ', '_');
-\t\treturn skin;
+\t\t\treturn PlayState.isPixelStage ? 'noteSplashes/sonicexe-blood-pixel' : 'noteSplashes/sonicexe-blood';
+\t\treturn defaultNoteSplash + getSplashSkinPostfix();
 \t}""",
-        "resolve the default Sonic.EXE splash to its named atlas",
+        "resolve Sonic.EXE selection to the animated BloodSplash atlas",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tif(PlayState.SONG.splashSkin != null && PlayState.SONG.splashSkin.length > 0) skin = PlayState.SONG.splashSkin;
+\t\telse skin = defaultNoteSplash + getSplashSkinPostfix();""",
+        """\t\tif (ClientPrefs.data.splashSkin == 'Sonic.EXE') skin = getSplashSkinPath();
+\t\telse if(PlayState.SONG.splashSkin != null && PlayState.SONG.splashSkin.length > 0) skin = PlayState.SONG.splashSkin;
+\t\telse skin = getSplashSkinPath();""",
+        "make the selected Sonic.EXE blood atlas override song-level splash defaults",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tif(note != null && note.noteSplashData.texture != null) texture = note.noteSplashData.texture;
+\t\telse if(PlayState.SONG.splashSkin != null && PlayState.SONG.splashSkin.length > 0) texture = PlayState.SONG.splashSkin;
+\t\telse texture = defaultNoteSplash + getSplashSkinPostfix();""",
+        """\t\tif (ClientPrefs.data.splashSkin == 'Sonic.EXE' &&
+\t\t\t(note == null || note.noteSplashData.texture == null || note.noteSplashData.texture == PlayState.SONG.splashSkin))
+\t\t\ttexture = getSplashSkinPath();
+\t\telse if(note != null && note.noteSplashData.texture != null) texture = note.noteSplashData.texture;
+\t\telse if(PlayState.SONG.splashSkin != null && PlayState.SONG.splashSkin.length > 0) texture = PlayState.SONG.splashSkin;
+\t\telse texture = getSplashSkinPath();""",
+        "prioritize the selected Sonic.EXE BloodSplash while preserving explicit note-type textures",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tif(animName == null)
+\t\t\tanimName = config != null ? config.anim : 'note splash';""",
+        """\t\tif (StringTools.startsWith(skin, 'noteSplashes/sonicexe-blood'))
+\t\t{
+\t\t\tmaxAnims = 1;
+\t\t\tanimation.addByPrefix('blood', 'Squirt', 24, false);
+\t\t\treturn config;
+\t\t}
+
+\t\tif(animName == null)
+\t\t\tanimName = config != null ? config.anim : 'note splash';""",
+        "register the EXE Squirt animation frames",
+    )
+
+    source = replace_once(
+        source,
+        "\t\tanimation.play('note' + direction + '-' + animNum, true);",
+        """\t\tif (StringTools.startsWith(texture, 'noteSplashes/sonicexe-blood'))
+\t\t\tanimation.play('blood', true);
+\t\telse
+\t\t\tanimation.play('note' + direction + '-' + animNum, true);""",
+        "play the BloodSplash animation for the Sonic.EXE skin",
     )
 
     path.write_text(source, encoding="utf-8")
