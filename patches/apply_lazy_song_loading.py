@@ -25,6 +25,13 @@ def patch_loading_state(path: Path) -> None:
 
     source = replace_once(
         source,
+        "import haxe.io.Path;",
+        "import haxe.io.Path;\\nimport haxe.Json;",
+        "import JSON support for the per-song vocal index",
+    )
+
+    source = replace_once(
+        source,
         """\tstatic function getSongPath()
 \t{
 \t\treturn Paths.inst(PlayState.SONG.song);
@@ -35,17 +42,34 @@ def patch_loading_state(path: Path) -> None:
 \t}""",
         "use a manifest key for the instrumental asset",
     )
+    source = replace_regex_once(
+        source,
+        r"if \\(PlayState\\.SONG\\.needsVoices\\)\\r?\\n\\s*checkLoadSong\\(getVocalPath\\(\\)\\);",
+        """if (PlayState.SONG.needsVoices)
+\\t\\t\\t\\t\\t\\tfor (voicePath in getVocalPaths(PlayState.SONG.song))
+\\t\\t\\t\\t\\t\\t\\tcheckLoadSong(voicePath);""",
+        "load every vocal stem in the selected song",
+    )
     source = replace_once(
         source,
-        """\tstatic function getVocalPath()
+        """\tstatic function getVocalPaths(song:String):Array<String>
 \t{
-\t\treturn Paths.voices(PlayState.SONG.song);
+\t\tvar slug:String = Paths.formatToSongPath(song);
+\t\tvar result:Array<String> = [];
+\t\ttry
+\t\t{
+\t\t\tvar index:Dynamic = Json.parse(Assets.getText(Paths.getSharedPath('data/sonicexe-audio-index.json')));
+\t\t\tvar names:Array<String> = cast Reflect.field(index, slug);
+\t\t\tif (names != null)
+\t\t\t\tfor (name in names)
+\t\t\t\t\tresult.push(Paths.getLibraryPath(slug + '/' + name, 'songs'));
+\t\t}
+\t\tcatch (e:Dynamic) {}
+\t\tif (result.length == 0)
+\t\t\tresult.push(Paths.getLibraryPath(slug + '/Voices.mp3', 'songs'));
+\t\treturn result;
 \t}""",
-        """\tstatic function getVocalPath():String
-\t{
-\t\treturn Paths.getLibraryPath(Paths.formatToSongPath(PlayState.SONG.song) + '/Voices.mp3', 'songs');
-\t}""",
-        "use a manifest key for the vocal asset",
+        "use the per-song audio index for all vocal files",
     )
     source = replace_once(
         source,
@@ -70,7 +94,8 @@ def patch_loading_state(path: Path) -> None:
 \t\t{
 \t\t\tvar selectedAudioLoaded:Bool = Assets.cache.hasSound(getSongPath());
 \t\t\tif (PlayState.SONG.needsVoices)
-\t\t\t\tselectedAudioLoaded = selectedAudioLoaded && Assets.cache.hasSound(getVocalPath());
+\t\t\t\tfor (voicePath in getVocalPaths(PlayState.SONG.song))
+\t\t\t\t\tselectedAudioLoaded = selectedAudioLoaded && Assets.cache.hasSound(voicePath);
 
 \t\t\t// Stage sprites are large too; register their library only when a
 \t\t\t// selected song needs a non-shared stage directory.
@@ -99,7 +124,8 @@ def patch_loading_state(path: Path) -> None:
 \t\t\tPaths.getLibraryPath(slug + '/Inst.mp3', 'songs')
 \t\t];
 \t\tif (needsVoices)
-\t\t\trequested.push(Paths.getLibraryPath(slug + '/Voices.mp3', 'songs'));
+\t\t\tfor (voicePath in getVocalPaths(song))
+\t\t\t\trequested.push(voicePath);
 
 \t\tinitSongsManifest().onComplete(function (_)
 \t\t{
@@ -231,10 +257,16 @@ def patch_freeplay(path: Path) -> None:
 \t\t\t\t\tFlxG.sound.music.volume = 0;
 \t\t\t\t\tif (requestedNeedsVoices)
 \t\t\t\t\t{
-\t\t\t\t\t\tvocals = new FlxSound().loadEmbedded(Paths.voices(requestedSong));
-\t\t\t\t\t\tFlxG.sound.list.add(vocals);
-\t\t\t\t\t\tvocals.persist = true;
-\t\t\t\t\t\tvocals.looped = true;
+\t\t\t\t\t\tvar previewVoice = Paths.voices(requestedSong, 'Player');
+\t\t\t\t\t\tif (previewVoice == null) previewVoice = Paths.voices(requestedSong, 'Opponent');
+\t\t\t\t\t\tif (previewVoice == null) previewVoice = Paths.voices(requestedSong);
+\t\t\t\t\t\tif (previewVoice != null)
+\t\t\t\t\t\t{
+\t\t\t\t\t\t\tvocals = new FlxSound().loadEmbedded(previewVoice);
+\t\t\t\t\t\t\tFlxG.sound.list.add(vocals);
+\t\t\t\t\t\t\tvocals.persist = true;
+\t\t\t\t\t\t\tvocals.looped = true;
+\t\t\t\t\t\t}
 \t\t\t\t\t}
 
 \t\t\t\t\tFlxG.sound.playMusic(Paths.inst(requestedSong), 0.8);
