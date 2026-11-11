@@ -48,7 +48,7 @@ def main() -> None:
         if not match:
             continue
         pack, slug = match.group(1), match.group(2)
-        if norm(slug) in existing:
+        if fmt_song(slug) in existing:
             continue
         audio = f"contents_file/{pack}/songs/{slug}/"
         if any(audio + f"Inst{ext}" in tree_set for ext in (".ogg", ".mp3", ".wav")):
