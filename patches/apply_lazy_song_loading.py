@@ -26,7 +26,7 @@ def patch_loading_state(path: Path) -> None:
     source = replace_once(
         source,
         "import haxe.io.Path;",
-        "import haxe.io.Path;\\nimport haxe.Json;",
+        "import haxe.io.Path;\nimport haxe.Json;",
         "import JSON support for the per-song vocal index",
     )
 
@@ -44,10 +44,10 @@ def patch_loading_state(path: Path) -> None:
     )
     source = replace_regex_once(
         source,
-        r"if \\(PlayState\\.SONG\\.needsVoices\\)\\r?\\n\\s*checkLoadSong\\(getVocalPath\\(\\)\\);",
+        r"if \(PlayState\.SONG\.needsVoices\)\r?\n\s*checkLoadSong\(getVocalPath\(\)\);",
         """if (PlayState.SONG.needsVoices)
-\\t\\t\\t\\t\\t\\tfor (voicePath in getVocalPaths(PlayState.SONG.song))
-\\t\\t\\t\\t\\t\\t\\tcheckLoadSong(voicePath);""",
+\t\t\t\t\t\tfor (voicePath in getVocalPaths(PlayState.SONG.song))
+\t\t\t\t\t\t\tcheckLoadSong(voicePath);""",
         "load every vocal stem in the selected song",
     )
     source = replace_once(
