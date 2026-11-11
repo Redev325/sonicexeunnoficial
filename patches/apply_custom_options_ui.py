@@ -608,11 +608,19 @@ def patch_note_splash(path: Path) -> None:
         """\tpublic static function getSplashSkinPostfix()
 \t{
 \t\tvar skin:String = '';
+\t\tif(ClientPrefs.data.splashSkin != ClientPrefs.defaultData.splashSkin)
+\t\t\tskin = '-' + ClientPrefs.data.splashSkin.trim().toLowerCase().replace(' ', '_');
+\t\treturn skin;
+\t}""",
+        """\tpublic static function getSplashSkinPostfix()
+\t{
+\t\tvar skin:String = '';
 \t\tif(ClientPrefs.data.splashSkin != ClientPrefs.defaultData.splashSkin && ClientPrefs.data.splashSkin != 'Psych')
 \t\t\tskin = '-' + ClientPrefs.data.splashSkin.trim().toLowerCase().replace(' ', '_');
 \t\treturn skin;
 \t}
-\n\tpublic static function getSplashSkinPath():String
+
+\tpublic static function getSplashSkinPath():String
 \t{
 \t\tif (ClientPrefs.data.splashSkin == 'Sonic.EXE')
 \t\t\treturn PlayState.isPixelStage ? 'noteSplashes/sonicexe-blood-pixel' : 'noteSplashes/sonicexe-blood';
