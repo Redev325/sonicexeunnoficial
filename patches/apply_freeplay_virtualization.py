@@ -63,6 +63,22 @@ def main() -> None:
 \t\tif (songs.length == 0)
 \t\t\treturn;
 
+\t\t// Animate the top and bottom borders by pulsing the teeth in opposite phases.
+\t\t// Keep the dark bands anchored to each screen edge to avoid exposed gaps.
+\t\tif (!sonicExeCustomSongMode && !sonicExeEncoreMode && freeplaySpikeBaseHeight > 0 && freeplayTopSpikes != null && freeplaySpikes != null)
+\t\t{
+\t\t\tfreeplaySpikeTimer += elapsed;
+\t\t\tvar spikeMotion:Float = Math.sin(freeplaySpikeTimer * 2.2) * 7.0;
+\t\t\tvar topHeight:Int = Std.int(freeplaySpikeBaseHeight + spikeMotion);
+\t\t\tvar bottomHeight:Int = Std.int(freeplaySpikeBaseHeight - spikeMotion);
+\t\t\tfreeplayTopSpikes.setGraphicSize(FlxG.width, topHeight);
+\t\t\tfreeplayTopSpikes.updateHitbox();
+\t\t\tfreeplayTopSpikes.setPosition(0, 0);
+\t\t\tfreeplaySpikes.setGraphicSize(FlxG.width, bottomHeight);
+\t\t\tfreeplaySpikes.updateHitbox();
+\t\t\tfreeplaySpikes.setPosition(0, FlxG.height - freeplaySpikes.height);
+\t\t}
+
 \t\tlerpSelected = FlxMath.lerp(curSelected, lerpSelected, Math.exp(-elapsed * 9.6));
 \t\tvar plateWidth:Float = FlxG.width * (sonicExeEncoreMode ? 0.40 : 0.55);
 \t\tvar plateHeight:Float = plateWidth * (322.0 / 1673.0);
