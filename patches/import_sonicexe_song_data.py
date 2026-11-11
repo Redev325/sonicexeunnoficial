@@ -344,6 +344,22 @@ def main() -> None:
     copied_icons = 0
     char_root = source_assets / "characters"
     image_root = source_assets / "images"
+    root_blood_png = image_root / "BloodSplash.png"
+    root_blood_xml = image_root / "BloodSplash.xml"
+    if root_blood_png.is_file() and root_blood_xml.is_file():
+        splash_output = output_assets / "shared" / "images" / "noteSplashes"
+        copy_file(root_blood_png, splash_output / "sonicexe-blood.png")
+        splash_xml = root_blood_xml.read_text(encoding="utf-8-sig")
+        splash_xml, splash_count = re.subn(
+            r'imagePath\\s*=\\s*["\\'][^"\\']+["\\']',
+            'imagePath="sonicexe-blood.png"',
+            splash_xml,
+            count=1,
+        )
+        if splash_count != 1:
+            raise SystemExit("Sonic.EXE BloodSplash XML has no imagePath entry.")
+        (splash_output / "sonicexe-blood.xml").write_text(splash_xml, encoding="utf-8")
+
     for character in sorted(selected_characters):
         char_json = char_root / f"{character}.json"
         if not char_json.is_file():

@@ -204,6 +204,24 @@ def install_blood_splash(source_root: Path, output_assets: Path, source_stem: st
     (out_dir / f"{target_stem}.xml").write_text(xml, encoding="utf-8")
 
 
+def copy_pack_sounds(source_root: Path, output_assets: Path) -> int:
+    manifest_file = output_assets.parent / "sonicexe-pack-sounds.json"
+    if not manifest_file.is_file():
+        return 0
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8-sig"))
+    copied = 0
+    for pack, files in manifest.items():
+        pack_id = pack_key(pack)
+        for relative in files:
+            relative = Path(relative)
+            source = source_root / "contents_file" / pack / "sounds" / relative
+            if not source.is_file():
+                source = source_root / "embedded_contents_file" / pack / "sounds" / relative
+            if copy_file(source, output_assets / "week_assets" / pack_id / "sounds" / relative):
+                copied += 1
+    return copied
+
+
 def find_playable_pairs(source_root: Path):
     """Return charts with their same-pack instrumental and every available vocal stem."""
     seen = set()
@@ -292,6 +310,11 @@ def copy_pack_runtime_data(source_root: Path, output_assets: Path, pack: str,
                         )
                     continue
                 copy_file(file, target)
+    # The content-pack shader names resolve under the active stage library.
+    for branch in ("embedded_contents_file", "contents_file"):
+        shader_folder = source_root / branch / pack / "shaders"
+        if shader_folder.is_dir():
+            copy_folder(shader_folder, output_assets / "week_assets" / pack_id / "shaders")
     return mapped_stage
 
 
@@ -357,7 +380,9 @@ def main() -> None:
     cover_files = sorted((freeplay_source / "covers").glob("*.webp"), key=lambda p: p.stem.casefold())
     cover_slugs = {p.stem.casefold() for p in cover_files}
     pack_asset_counts = copy_pack_assets(source_root, output_assets)
-    install_blood_splash(source_root, output_assets, "BloodSplash", "sonicexe-blood")
+    copied_pack_sounds = copy_pack_sounds(source_root, output_assets)
+    if not (output_assets / "shared/images/noteSplashes/sonicexe-blood.png").is_file():
+        install_blood_splash(source_root, output_assets, "BloodSplash", "sonicexe-blood")
     install_blood_splash(source_root, output_assets, "BloodSplashPixel", "sonicexe-blood-pixel")
 
     others_rows = []
@@ -488,7 +513,7 @@ def main() -> None:
     print(f"Imported original EXE Freeplay art: {freeplay_count} files ({len(cover_files)} cover files scanned).")
     print(f"Imported original EXE Story Mode art: {story_count + story_cover_count} files.")
     print(f"Imported all playable expanded-pack tracks: {len(others_rows)} (charts: {copied_charts}, MP3 instrumentals: {copied_audio}).")
-    print(f"Imported vocal stems: {copied_vocals}; referenced pack images/atlases: {sum(pack_asset_counts.values())}.")
+    print(f"Imported vocal stems: {copied_vocals}; referenced pack images/atlases: {sum(pack_asset_counts.values())}; pack sound effects: {copied_pack_sounds}.")
     if added_slugs:
         print("Others songs: " + ", ".join(DISPLAY_NAMES.get(s, s.replace("-", " ").title()) for s in sorted(added_slugs)))
     if skipped:
