@@ -2,6 +2,7 @@
 """Add HTML5 runtime checkpoints without changing any menu visuals or behavior."""
 
 from pathlib import Path
+import re
 import sys
 
 
@@ -12,6 +13,15 @@ def replace_once(source: str, old: str, new: str, label: str) -> str:
             f"Runtime diagnostics patch stopped: expected one {label} anchor, found {count}"
         )
     return source.replace(old, new)
+
+
+def replace_regex_once(source: str, pattern: str, replacement, label: str) -> str:
+    source, count = re.subn(pattern, replacement, source, count=1)
+    if count != 1:
+        raise SystemExit(
+            f"Runtime diagnostics patch stopped: expected one {label} anchor, found {count}"
+        )
+    return source
 
 
 def patch_music_beat(path: Path) -> None:
@@ -174,11 +184,11 @@ def patch_story(path: Path) -> None:
 
 def patch_loading(path: Path) -> None:
     source = path.read_text(encoding="utf-8")
-    source = replace_once(
+    source = replace_regex_once(
         source,
-        "\toverride function create()\n\t{\n\t\tvar bg:FlxSprite",
-        "\toverride function create()\n\t{\n\t\tMusicBeatState.sonicEXEDebug(\"LOADING STATE CREATE: start\");\n\t\tvar bg:FlxSprite",
-        "LoadingState create start",
+        r"(\\toverride function create\\(\\)\\r?\\n\\t\\{\\r?\\n)(?=\\t\\t(?:var bg:FlxSprite|// Keep a black fallback behind the supplied full-screen artwork\\.))",
+        lambda match: match.group(1) + "\\t\\tMusicBeatState.sonicEXEDebug(\\"LOADING STATE CREATE: start\\");\\n",
+        "LoadingState create start (stock or Sonic.EXE loading screen)",
     )
     source = replace_once(
         source,
