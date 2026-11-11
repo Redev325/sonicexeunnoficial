@@ -39,7 +39,7 @@ DISPLAY_NAMES = {
     "sharpy-showdown": "Sharpy Showdown",
     "found-you": "Found You",
     "endless-og": "Endless OG",
-    "endless-us": "Endless",
+    "endless-us": "Endless US",
     "endless-jp": "Endless JP",
 }
 
@@ -235,7 +235,7 @@ def find_playable_pairs(source_root: Path):
 
 
 def copy_pack_runtime_data(source_root: Path, output_assets: Path, pack: str,
-                           slug: str, chart: dict) -> str:
+                           slug: str, output_slug: str, chart: dict) -> str:
     pack_id = pack_key(pack)
     original_stage = str(chart.get("stage") or "stage").strip()
     mapped_stage = f"{fmt_song(original_stage)}-{pack_id}"
@@ -270,7 +270,7 @@ def copy_pack_runtime_data(source_root: Path, output_assets: Path, pack: str,
     for branch in ("embedded_contents_file", "contents_file"):
         support = source_root / branch / pack / "data" / slug
         if support.is_dir():
-            copy_folder(support, output_assets / "week_assets" / pack_id / "data" / slug)
+            copy_folder(support, output_assets / "shared" / "data" / output_slug)
     return mapped_stage
 
 
@@ -376,7 +376,7 @@ def main() -> None:
         chart.setdefault("events", [])
         chart["needsVoices"] = bool(voices)
 
-        mapped_stage = copy_pack_runtime_data(source_root, output_assets, pack, slug, chart)
+        mapped_stage = copy_pack_runtime_data(source_root, output_assets, pack, slug, output_slug, chart)
         chart["stage"] = mapped_stage
 
         chart_output = output_assets / "shared/data" / output_slug / f"{output_slug}-hard.json"
