@@ -121,6 +121,24 @@ def convert_audio(source: Path, target: Path) -> None:
 
 
 
+def copy_file(source: Path, destination: Path) -> bool:
+    if not source.is_file():
+        return False
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
+    return True
+
+
+def copy_folder(source: Path, destination: Path) -> int:
+    if not source.is_dir():
+        return 0
+    copied = 0
+    for path in source.rglob("*"):
+        if path.is_file() and copy_file(path, destination / path.relative_to(source)):
+            copied += 1
+    return copied
+
+
 def pack_key(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.casefold()).strip("-")
 
