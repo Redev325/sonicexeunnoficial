@@ -50,7 +50,7 @@ def patch_loading_state(path: Path) -> None:
 \t\tvar barWidth:Int = Std.int(FlxG.width * 0.24);
 \t\tvar barHeight:Int = Std.int(Math.max(10, FlxG.height * 0.016));
 \t\tvar barX:Int = Std.int((FlxG.width - barWidth) * 0.5);
-\t\tvar barY:Int = Std.int(FlxG.height * 0.86);
+\t\tvar barY:Int = Std.int(FlxG.height * 0.94);
 
 \t\tloadBarBackground = new FlxSprite(barX, barY).makeGraphic(barWidth, barHeight, 0xFF280000);
 \t\tloadBarBackground.scrollFactor.set();
@@ -85,7 +85,7 @@ def patch_loading_state(path: Path) -> None:
 
     if "images/Sonic.exeloadingscreen.png" not in source:
         raise SystemExit("Sonic.EXE loading-screen image reference was not installed.")
-    if "0xFFFF2020" not in source or "FlxG.height * 0.86" not in source:
+    if "0xFFFF2020" not in source or "FlxG.height * 0.94" not in source:
         raise SystemExit("Red loading bar placement was not installed.")
     if "Paths.getPath('images/funkay.png', IMAGE)" in source:
         raise SystemExit("Psych Engine's default loading image is still referenced.")
