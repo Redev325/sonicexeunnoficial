@@ -97,15 +97,18 @@ def main() -> None:
         key = str(key or "").replace("\\", "/").strip(" /")
         if not key or ".." in key:
             return
-        prefix = f"contents_file/{pack}/images/{key}"
-        for path in tree:
-            if path.startswith(prefix) and Path(path).suffix.casefold() in {".webp", ".png", ".xml", ".json", ".txt"}:
-                needed.add(path)
-        if include_parent:
-            parent = prefix.rsplit("/", 1)[0] if "/" in prefix else prefix
+        # Pack artwork can be stored in either source tree. Keep the source
+        # marker in the manifest so the matching embedded atlas is not omitted.
+        for branch in ("contents_file", "embedded_contents_file"):
+            prefix = f"{branch}/{pack}/images/{key}"
             for path in tree:
-                if path.startswith(parent + "/") and Path(path).suffix.casefold() in {".webp", ".png", ".xml", ".json", ".txt"}:
+                if path.startswith(prefix) and Path(path).suffix.casefold() in {".webp", ".png", ".xml", ".json", ".txt"}:
                     needed.add(path)
+            if include_parent:
+                parent = prefix.rsplit("/", 1)[0] if "/" in prefix else prefix
+                for path in tree:
+                    if path.startswith(parent + "/") and Path(path).suffix.casefold() in {".webp", ".png", ".xml", ".json", ".txt"}:
+                        needed.add(path)
 
     def read_script_refs(pack: str, file: Path) -> None:
         try:
@@ -221,9 +224,12 @@ def main() -> None:
 
     manifest: dict[str, list[str]] = {}
     for path in sorted(needed):
-        match = re.match(r"contents_file/([^/]+)/images/(.+)$", path)
+        match = re.match(r"(contents_file|embedded_contents_file)/([^/]+)/images/(.+)$", path)
         if match:
-            manifest.setdefault(match.group(1), []).append(match.group(2))
+            branch, pack, relative = match.groups()
+            if branch == "embedded_contents_file":
+                relative = "@embedded/" + relative
+            manifest.setdefault(pack, []).append(relative)
         elif path.startswith("contents_file/images/"):
             manifest.setdefault("__shared__", []).append(path.removeprefix("contents_file/images/"))
 
