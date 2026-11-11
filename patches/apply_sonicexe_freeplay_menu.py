@@ -26,7 +26,7 @@ def main() -> None:
 
 \t// Original Sonic.EXE Freeplay carousel layers. The Extras and Sound Test
 \t// lists keep the compact row UI installed by the existing patch.
-\tvar freeplayBackdrop:FlxSprite;
+\tvar freeplaySpikes:FlxSprite;
 \tvar freeplayCardArt:FlxSprite;
 \tvar freeplayCardFrame:FlxSprite;\n\tvar freeplayNextCardArt:FlxSprite;\n\tvar freeplayNextCardFrame:FlxSprite;
 \tvar freeplayTitle:FlxText;
@@ -56,22 +56,27 @@ def main() -> None:
 \t\t\tif (bottomBG != null) bottomBG.visible = false;
 \t\t\tif (bottomText != null) bottomText.visible = false;
 
+\t\t\t// Use the original bgsonic.webp exactly as supplied, without a red tint.
 \t\t\tbg.loadGraphic(Paths.image('sonicexe-freeplay/bgsonic'));
 \t\t\tbg.setGraphicSize(FlxG.width, FlxG.height);
 \t\t\tbg.updateHitbox();
 \t\t\tbg.screenCenter();
 \t\t\tbg.scrollFactor.set();
-\t\t\tbg.color = 0xFFFF7777;
+\t\t\tbg.color = 0xFFFFFFFF;
 \t\t\tbg.alpha = 1.0;
 
-\t\t\t// Use the original static fade overlay once, not a tiled scrolling backdrop.
-\t\t\tfreeplayBackdrop = new FlxSprite(0, 0);
-\t\t\tfreeplayBackdrop.loadGraphic(Paths.image('sidebar'));
-\t\t\tfreeplayBackdrop.setGraphicSize(FlxG.width, FlxG.height);
-\t\t\tfreeplayBackdrop.updateHitbox();
-\t\t\tfreeplayBackdrop.scrollFactor.set();
-\t\t\tfreeplayBackdrop.alpha = 0.32;
-\t\t\tinsert(1, freeplayBackdrop);
+\t\t\t// Freeplay uses the supplied 2048x157 spikesup.webp strip.
+\t\t\t// Flip it vertically and anchor it to the bottom so the points rise up.
+\t\t\tfreeplaySpikes = new FlxSprite(0, 0);
+\t\t\tfreeplaySpikes.loadGraphic(Paths.image('sonicexe-freeplay/spikesup'));
+\t\t\tvar spikeHeight:Int = Std.int(FlxG.width * (157.0 / 2048.0));
+\t\t\tfreeplaySpikes.setGraphicSize(FlxG.width, spikeHeight);
+\t\t\tfreeplaySpikes.updateHitbox();
+\t\t\tfreeplaySpikes.flipY = true;
+\t\t\tfreeplaySpikes.setPosition(0, FlxG.height - freeplaySpikes.height);
+\t\t\tfreeplaySpikes.scrollFactor.set();
+\t\t\tfreeplaySpikes.antialiasing = false;
+\t\t\tadd(freeplaySpikes);
 
 \t\t\t// Original 1280x720 transparent card canvases, displayed at 60% scale
 			// with a small preview of the next song to the right.
