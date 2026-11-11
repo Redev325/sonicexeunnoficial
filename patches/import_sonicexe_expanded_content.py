@@ -214,23 +214,26 @@ def copy_pack_sounds(source_root: Path, output_assets: Path) -> int:
         pack_id = pack_key(pack)
         for relative_name in files:
             relative = Path(relative_name)
-            source = source_root / "contents_file" / pack / "sounds" / relative
+            if len(relative.parts) < 2 or relative.parts[0] not in {"sounds", "music"}:
+                continue
+            category = relative.parts[0]
+            asset_relative = Path(*relative.parts[1:])
+            source = source_root / "contents_file" / pack / category / asset_relative
             if not source.is_file():
-                source = source_root / "embedded_contents_file" / pack / "sounds" / relative
+                source = source_root / "embedded_contents_file" / pack / category / asset_relative
             if not source.is_file():
                 continue
 
-            # Paths.sound() uses mp3 on HTML5. Convert OGG/WAV dependencies
-            # and write both the extensionless-key path and a compatibility
-            # path for scripts that included the original extension in a key.
-            browser_relative = relative.with_suffix(".mp3")
-            browser_target = output_assets / "week_assets" / pack_id / "sounds" / browser_relative
+            # Browser music and sound effects are MP3, but each category stays
+            # in its own pack library so Paths.music() and Paths.sound() resolve.
+            browser_relative = asset_relative.with_suffix(".mp3")
+            browser_target = output_assets / "week_assets" / pack_id / category / browser_relative
             if not browser_target.is_file():
                 convert_audio(source, browser_target)
                 copied += 1
 
             explicit_extension_target = (
-                output_assets / "week_assets" / pack_id / "sounds" / Path(str(relative) + ".mp3")
+                output_assets / "week_assets" / pack_id / category / Path(str(asset_relative) + ".mp3")
             )
             if explicit_extension_target != browser_target and not explicit_extension_target.is_file():
                 convert_audio(source, explicit_extension_target)

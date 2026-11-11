@@ -65,12 +65,22 @@ def main() -> None:
             return
         key_path = Path(key)
         extensions = [key_path.suffix] if key_path.suffix else [".ogg", ".mp3", ".wav"]
+        categories = ("sounds", "music")
+        if key.startswith("sounds/"):
+            categories = ("sounds",)
+            key = key[len("sounds/"):]
+        elif key.startswith("music/"):
+            categories = ("music",)
+            key = key[len("music/"):]
+        key_path = Path(key)
+        extensions = [key_path.suffix] if key_path.suffix else [".ogg", ".mp3", ".wav"]
         for branch in ("contents_file", "embedded_contents_file"):
-            sound_root = root / branch / pack / "sounds"
-            for ext in extensions:
-                candidate = sound_root / (key if key_path.suffix else key + ext)
-                if candidate.is_file():
-                    needed_sounds.add(candidate.relative_to(root).as_posix())
+            for category in categories:
+                sound_root = root / branch / pack / category
+                for ext in extensions:
+                    candidate = sound_root / (key if key_path.suffix else key + ext)
+                    if candidate.is_file():
+                        needed_sounds.add(candidate.relative_to(root).as_posix())
 
     def add_image(pack: str, key: str, include_parent: bool = False) -> None:
         key = str(key or "").replace("\\", "/").strip(" /")
@@ -208,9 +218,9 @@ def main() -> None:
 
     sound_manifest: dict[str, list[str]] = {}
     for path in sorted(needed_sounds):
-        match = re.match(r"(?:contents_file|embedded_contents_file)/([^/]+)/sounds/(.+)$", path)
+        match = re.match(r"(?:contents_file|embedded_contents_file)/([^/]+)/(sounds|music)/(.+)$", path)
         if match:
-            sound_manifest.setdefault(match.group(1), []).append(match.group(2))
+            sound_manifest.setdefault(match.group(1), []).append(f"{match.group(2)}/{match.group(3)}")
 
     output = assets.parent / "sonicexe-pack-assets.json"
     output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
