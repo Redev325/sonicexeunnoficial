@@ -26,7 +26,7 @@ def main() -> None:
 
 \t// Original Sonic.EXE Freeplay carousel layers. The Extras and Sound Test
 \t// lists keep the compact row UI installed by the existing patch.
-\tvar freeplaySpikes:FlxSprite;
+\tvar freeplaySpikes:FlxSprite;\n\tvar freeplayTopSpikes:FlxSprite;
 \tvar freeplayCardArt:FlxSprite;
 \tvar freeplayCardFrame:FlxSprite;\n\tvar freeplayNextCardArt:FlxSprite;\n\tvar freeplayNextCardFrame:FlxSprite;
 \tvar freeplayTitle:FlxText;
@@ -56,20 +56,31 @@ def main() -> None:
 \t\t\tif (bottomBG != null) bottomBG.visible = false;
 \t\t\tif (bottomText != null) bottomText.visible = false;
 
-\t\t\t// Use the original bgsonic.webp exactly as supplied, without a red tint.
+\t\t\t// Use the original bgsonic.webp with the original red Freeplay tint.
 \t\t\tbg.loadGraphic(Paths.image('sonicexe-freeplay/bgsonic'));
 \t\t\tbg.setGraphicSize(FlxG.width, FlxG.height);
 \t\t\tbg.updateHitbox();
 \t\t\tbg.screenCenter();
 \t\t\tbg.scrollFactor.set();
-\t\t\tbg.color = 0xFFFFFFFF;
+\t\t\tbg.color = 0xFFFF0000;
 \t\t\tbg.alpha = 1.0;
 
-\t\t\t// Freeplay uses the supplied 2048x157 spikesup.webp strip.
-\t\t\t// Flip it vertically and anchor it to the bottom so the points rise up.
-\t\t\tfreeplaySpikes = new FlxSprite(0, 0);
-\t\t\tfreeplaySpikes.loadGraphic(Paths.image('sonicexe-freeplay/spikesup'));
+\t\t\t// The original image has its dark band at the top and teeth pointing down.
+\t\t\t// Use it normally at the top edge, then flip a second copy for the bottom.
 \t\t\tvar spikeHeight:Int = Std.int(FlxG.width * (157.0 / 2048.0));
+
+\t\t\tfreeplayTopSpikes = new FlxSprite(0, 0);
+\t\t\tfreeplayTopSpikes.loadGraphic(Paths.image('sonicexe-freeplay/spikesup'));
+\t\t\tfreeplayTopSpikes.setGraphicSize(FlxG.width, spikeHeight);
+\t\t\tfreeplayTopSpikes.updateHitbox();
+\t\t\tfreeplayTopSpikes.flipY = false;
+\t\t\tfreeplayTopSpikes.setPosition(0, 0);
+\t\t\tfreeplayTopSpikes.scrollFactor.set();
+\t\t\tfreeplayTopSpikes.antialiasing = false;
+\t\t\tadd(freeplayTopSpikes);
+
+\t\t\tfreeplaySpikes = new FlxSprite(0, FlxG.height - spikeHeight);
+\t\t\tfreeplaySpikes.loadGraphic(Paths.image('sonicexe-freeplay/spikesup'));
 \t\t\tfreeplaySpikes.setGraphicSize(FlxG.width, spikeHeight);
 \t\t\tfreeplaySpikes.updateHitbox();
 \t\t\tfreeplaySpikes.flipY = true;
