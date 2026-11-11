@@ -160,7 +160,7 @@ def copy_pack_assets(source_root: Path, output_assets: Path) -> dict[str, int]:
                         xml = target.read_text(encoding="utf-8-sig")
                         sibling_png = target.with_suffix(".png")
                         if sibling_png.is_file():
-                            xml = re.sub(r'imagePath\\s*=\\s*["\\'][^"\\']+["\\']',
+                            xml = re.sub(r"""imagePath\s*=\s*["'][^"']+["']""",
                                          f'imagePath="{sibling_png.name}"', xml, count=1)
                             target.write_text(xml, encoding="utf-8")
                     copied += 1
@@ -179,7 +179,7 @@ def install_blood_splash(source_root: Path, output_assets: Path, source_stem: st
     with Image.open(image_source) as image:
         image.convert("RGBA").save(out_dir / f"{target_stem}.png", format="PNG", optimize=True)
     xml = xml_source.read_text(encoding="utf-8-sig")
-    xml, changed = re.subn(r'imagePath\\s*=\\s*["\\'][^"\\']+["\\']',
+    xml, changed = re.subn(r"""imagePath\s*=\s*["'][^"']+["']""",
                            f'imagePath="{target_stem}.png"', xml, count=1)
     if changed != 1:
         raise SystemExit(f"Could not update BloodSplash atlas XML: {xml_source}")
@@ -232,7 +232,7 @@ def copy_pack_runtime_data(source_root: Path, output_assets: Path, pack: str,
     stage_data["directory"] = pack_id
     stage_out = output_assets / "shared/stages" / f"{mapped_stage}.json"
     stage_out.parent.mkdir(parents=True, exist_ok=True)
-    stage_out.write_text(json.dumps(stage_data, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    stage_out.write_text(json.dumps(stage_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     for ext in (".lua", ".hx"):
         script = source_root / "embedded_contents_file" / pack / "stages" / f"{original_stage}{ext}"
         if script.is_file():
@@ -361,7 +361,7 @@ def main() -> None:
         chart_output = output_assets / "shared/data" / slug / f"{slug}-hard.json"
         chart_output.parent.mkdir(parents=True, exist_ok=True)
         chart_output.write_text(
-            json.dumps({"song": chart}, ensure_ascii=False, separators=(",", ":")) + "\\n",
+            json.dumps({"song": chart}, ensure_ascii=False, separators=(",", ":")) + "\n",
             encoding="utf-8",
         )
         copied_charts += 1
@@ -393,7 +393,7 @@ def main() -> None:
             audio_index[song_dir.name] = names
     index_file = output_assets / "shared/data/sonicexe-audio-index.json"
     index_file.parent.mkdir(parents=True, exist_ok=True)
-    index_file.write_text(json.dumps(audio_index, ensure_ascii=False, separators=(",", ":")) + "\\n",
+    index_file.write_text(json.dumps(audio_index, ensure_ascii=False, separators=(",", ":")) + "\n",
                           encoding="utf-8")
 
     # Add an explicit Others category to Freeplay + Other songs. The ordinary
