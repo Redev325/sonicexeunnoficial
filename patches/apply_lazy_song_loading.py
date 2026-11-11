@@ -52,6 +52,10 @@ def patch_loading_state(path: Path) -> None:
     )
     source = replace_once(
         source,
+        """\tstatic function getVocalPath()
+\t{
+\t\treturn Paths.voices(PlayState.SONG.song);
+\t}""",
         """\tstatic function getVocalPaths(song:String):Array<String>
 \t{
 \t\tvar slug:String = Paths.formatToSongPath(song);
