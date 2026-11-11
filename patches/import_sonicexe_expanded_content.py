@@ -118,6 +118,144 @@ def convert_audio(source: Path, target: Path) -> None:
         raise SystemExit(f"Failed to convert {source} to HTML5 MP3:\n{result.stdout[-5000:]}")
 
 
+
+
+
+def pack_key(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", value.casefold()).strip("-")
+
+
+def copy_pack_assets(source_root: Path, output_assets: Path) -> dict[str, int]:
+    manifest_file = output_assets.parent / "sonicexe-pack-assets.json"
+    if not manifest_file.is_file():
+        raise SystemExit(f"Song asset manifest is missing: {manifest_file}")
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8-sig"))
+    result = {}
+    for pack, files in manifest.items():
+        if pack == "__shared__":
+            src_root = source_root / "contents_file/images"
+            out_root = output_assets / "shared/images"
+        else:
+            src_root = source_root / "contents_file" / pack / "images"
+            out_root = output_assets / "week_assets" / pack_key(pack) / "images"
+        copied = 0
+        for relative in files:
+            relative = Path(relative)
+            src = src_root / relative
+            if not src.is_file():
+                continue
+            suffix = src.suffix.casefold()
+            if suffix == ".webp":
+                target = (out_root / relative).with_suffix(".png")
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with Image.open(src) as image:
+                    image.convert("RGBA").save(target, format="PNG", optimize=True)
+                copied += 1
+            elif suffix in {".png", ".xml", ".json", ".txt"}:
+                target = out_root / relative
+                if copy_file(src, target):
+                    if suffix == ".xml":
+                        # WebP inputs were converted to PNG, so keep Sparrow's
+                        # imagePath in sync with the generated sibling image.
+                        xml = target.read_text(encoding="utf-8-sig")
+                        sibling_png = target.with_suffix(".png")
+                        if sibling_png.is_file():
+                            xml = re.sub(r'imagePath\\s*=\\s*["\\'][^"\\']+["\\']',
+                                         f'imagePath="{sibling_png.name}"', xml, count=1)
+                            target.write_text(xml, encoding="utf-8")
+                    copied += 1
+        result[pack] = copied
+    return result
+
+
+def install_blood_splash(source_root: Path, output_assets: Path, source_stem: str, target_stem: str) -> None:
+    source_dir = source_root / "contents_file/images/exeSplashes"
+    image_source = source_dir / f"{source_stem}.webp"
+    xml_source = source_dir / f"{source_stem}.xml"
+    if not image_source.is_file() or not xml_source.is_file():
+        raise SystemExit(f"Required Sonic.EXE BloodSplash source is missing: {source_stem}")
+    out_dir = output_assets / "shared/images/noteSplashes"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with Image.open(image_source) as image:
+        image.convert("RGBA").save(out_dir / f"{target_stem}.png", format="PNG", optimize=True)
+    xml = xml_source.read_text(encoding="utf-8-sig")
+    xml, changed = re.subn(r'imagePath\\s*=\\s*["\\'][^"\\']+["\\']',
+                           f'imagePath="{target_stem}.png"', xml, count=1)
+    if changed != 1:
+        raise SystemExit(f"Could not update BloodSplash atlas XML: {xml_source}")
+    (out_dir / f"{target_stem}.xml").write_text(xml, encoding="utf-8")
+
+
+def find_playable_pairs(source_root: Path):
+    """Return charts with their same-pack instrumental and every available vocal stem."""
+    seen = set()
+    for branch in ("embedded_contents_file", "contents_file"):
+        root = source_root / branch
+        if not root.is_dir():
+            continue
+        for pack_dir in sorted((p for p in root.iterdir() if p.is_dir()), key=lambda p: p.name.casefold()):
+            data_root = pack_dir / "data"
+            if not data_root.is_dir():
+                continue
+            for song_dir in sorted((p for p in data_root.iterdir() if p.is_dir()), key=lambda p: p.name.casefold()):
+                slug = song_dir.name.casefold()
+                chart = song_dir / f"{song_dir.name}.json"
+                if not chart.is_file() or (pack_dir.name, slug) in seen:
+                    continue
+                audio_dir = source_root / "contents_file" / pack_dir.name / "songs" / song_dir.name
+                if not audio_dir.is_dir():
+                    continue
+                instrumental = next((audio_dir / f"Inst{ext}" for ext in (".ogg", ".mp3", ".wav")
+                                     if (audio_dir / f"Inst{ext}").is_file()), None)
+                if instrumental is None:
+                    continue
+                voices = sorted((p for p in audio_dir.glob("Voices*.*")
+                                 if p.suffix.casefold() in {".ogg", ".mp3", ".wav"}),
+                                key=lambda p: p.name.casefold())
+                seen.add((pack_dir.name, slug))
+                yield pack_dir.name, slug, chart, instrumental, voices
+
+
+def copy_pack_runtime_data(source_root: Path, output_assets: Path, pack: str,
+                           slug: str, chart: dict) -> str:
+    pack_id = pack_key(pack)
+    original_stage = str(chart.get("stage") or "stage").strip()
+    mapped_stage = f"{fmt_song(original_stage)}-{pack_id}"
+    stage_source = source_root / "embedded_contents_file" / pack / "stages" / f"{original_stage}.json"
+    if stage_source.is_file():
+        stage_data = json.loads(stage_source.read_text(encoding="utf-8-sig"))
+    else:
+        stage_data = {
+            "defaultZoom": 0.9, "stageUI": "normal",
+            "boyfriend": [770, 100], "opponent": [100, 100], "girlfriend": [400, 130]
+        }
+    stage_data["directory"] = pack_id
+    stage_out = output_assets / "shared/stages" / f"{mapped_stage}.json"
+    stage_out.parent.mkdir(parents=True, exist_ok=True)
+    stage_out.write_text(json.dumps(stage_data, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    for ext in (".lua", ".hx"):
+        script = source_root / "embedded_contents_file" / pack / "stages" / f"{original_stage}{ext}"
+        if script.is_file():
+            copy_file(script, output_assets / "shared/stages" / f"{mapped_stage}{ext}")
+
+    characters = {
+        str(chart.get(key, "")).strip()
+        for key in ("player1", "player2", "player3", "gfVersion")
+        if str(chart.get(key, "")).strip()
+    }
+    char_out = output_assets / "week_assets" / pack_id / "characters"
+    for character in characters:
+        char_file = source_root / "embedded_contents_file" / pack / "characters" / f"{character}.json"
+        copy_file(char_file, char_out / char_file.name)
+
+    # Pack-specific event, credits, and script files load through currentLevel.
+    for branch in ("embedded_contents_file", "contents_file"):
+        support = source_root / branch / pack / "data" / slug
+        if support.is_dir():
+            copy_folder(support, output_assets / "week_assets" / pack_id / "data" / slug)
+    return mapped_stage
+
+
 def main() -> None:
     if len(sys.argv) != 3:
         raise SystemExit("Usage: import_sonicexe_expanded_content.py exe-source-root engine/assets")
@@ -178,58 +316,85 @@ def main() -> None:
                 existing_rows.add(fmt_song(str(row[0])))
 
     cover_files = sorted((freeplay_source / "covers").glob("*.webp"), key=lambda p: p.stem.casefold())
+    cover_slugs = {p.stem.casefold() for p in cover_files}
+    pack_asset_counts = copy_pack_assets(source_root, output_assets)
+    install_blood_splash(source_root, output_assets, "BloodSplash", "sonicexe-blood")
+    install_blood_splash(source_root, output_assets, "BloodSplashPixel", "sonicexe-blood-pixel")
+
     others_rows = []
     copied_charts = 0
     copied_audio = 0
+    copied_vocals = 0
     skipped = []
     added_slugs = set()
+    audio_index = {}
 
-    for cover in cover_files:
-        slug = cover.stem.casefold()
-        chart_path = find_chart(source_root, slug)
-        instrumental = find_instrumental(source_root, slug)
-        if chart_path is None or instrumental is None:
-            skipped.append(slug)
+    for pack, slug, chart_path, instrumental, voices in find_playable_pairs(source_root):
+        if slug in existing_rows or slug in added_slugs:
             continue
-        if slug in existing_rows:
-            continue
-
         try:
             chart = json.loads(chart_path.read_text(encoding="utf-8-sig"))
         except Exception as exc:
-            skipped.append(f"{slug} (invalid chart: {exc})")
+            skipped.append(f"{pack}/{slug} (invalid chart: {exc})")
             continue
         if isinstance(chart.get("song"), dict):
             chart = chart["song"]
-        if not isinstance(chart, dict) or not isinstance(chart.get("notes"), list):
-            skipped.append(f"{slug} (unsupported chart structure)")
+        if not isinstance(chart, dict) or not isinstance(chart.get("notes"), list) or not chart["notes"]:
+            skipped.append(f"{pack}/{slug} (chart has no playable note sections)")
             continue
 
-        display_name = DISPLAY_NAMES.get(slug, slug.replace("-", " ").title())
+        display_name = DISPLAY_NAMES.get(slug, str(chart.get("song") or slug.replace("-", " ").title()))
         chart["song"] = display_name
-        # Use engine-native characters/stage so these charts never request an
-        # unavailable content-pack character or stage atlas in this browser build.
-        chart["player1"] = "bf"
-        chart["player2"] = "dad"
-        chart["gfVersion"] = "gf"
-        chart["stage"] = "stage"
-        chart.pop("player3", None)
-        chart["needsVoices"] = False
+        # Preserve the actual EXE pack characters, stage, note events, BPM, speed,
+        # and chart note lanes. Do not replace them with generic BF/Dad/stage data.
+        chart.setdefault("player1", "bf")
+        chart.setdefault("player2", "dad")
+        chart.setdefault("gfVersion", "gf")
         chart.setdefault("bpm", 100)
         chart.setdefault("speed", 1)
         chart.setdefault("events", [])
+        chart["needsVoices"] = bool(voices)
+
+        mapped_stage = copy_pack_runtime_data(source_root, output_assets, pack, slug, chart)
+        chart["stage"] = mapped_stage
 
         chart_output = output_assets / "shared/data" / slug / f"{slug}-hard.json"
         chart_output.parent.mkdir(parents=True, exist_ok=True)
-        chart_output.write_text(json.dumps({"song": chart}, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+        chart_output.write_text(
+            json.dumps({"song": chart}, ensure_ascii=False, separators=(",", ":")) + "\\n",
+            encoding="utf-8",
+        )
         copied_charts += 1
 
-        convert_audio(instrumental, output_assets / "songs" / slug / "Inst.mp3")
+        song_output = output_assets / "songs" / slug
+        convert_audio(instrumental, song_output / "Inst.mp3")
         copied_audio += 1
+        voice_names = []
+        for voice in voices:
+            name = voice.stem + ".mp3"
+            convert_audio(voice, song_output / name)
+            voice_names.append(name)
+            copied_vocals += 1
+        if voice_names:
+            audio_index[slug] = sorted(voice_names)
 
-        others_rows.append([display_name, "dad", [146, 0, 0]])
-        existing_rows.add(slug)
+        row_character = str(chart.get("player2") or chart.get("player1") or "dad")
+        song_color = chart.get("freeplayColor", [146, 0, 0])
+        if not isinstance(song_color, list) or len(song_color) < 3:
+            song_color = [146, 0, 0]
+        others_rows.append([display_name, row_character, song_color])
         added_slugs.add(slug)
+
+    # Keep an index for both expanded-pack vocals and the restored root game's
+    # ordinary Voices.mp3 tracks so the HTML5 loader can fetch the correct stems.
+    for song_dir in sorted((p for p in (output_assets / "songs").iterdir() if p.is_dir()), key=lambda p: p.name):
+        names = sorted(p.name for p in song_dir.glob("Voices*.mp3") if p.is_file())
+        if names:
+            audio_index[song_dir.name] = names
+    index_file = output_assets / "shared/data/sonicexe-audio-index.json"
+    index_file.parent.mkdir(parents=True, exist_ok=True)
+    index_file.write_text(json.dumps(audio_index, ensure_ascii=False, separators=(",", ":")) + "\\n",
+                          encoding="utf-8")
 
     # Add an explicit Others category to Freeplay + Other songs. The ordinary
     # Freeplay songs remain in their existing weeks; this category contains the
@@ -254,10 +419,9 @@ def main() -> None:
             week_ids.append("others")
             week_list_path.write_text("\n".join(week_ids) + "\n", encoding="utf-8")
 
-    # Ensure every track known to the existing weeks has a real cover path. The
-    # original placeholder is used only when the source does not provide a cover.
+    # Supply a genuine alias cover when one exists; only use the placeholder as a last resort.
     placeholder = freeplay_output / "covers/placeholder.png"
-    for week_id in week_ids:
+    for week_id in week_ids + (["others"] if others_rows else []):
         week_path = weeks_dir / f"{week_id}.json"
         if not week_path.is_file():
             continue
@@ -268,15 +432,21 @@ def main() -> None:
         for row in week_data.get("songs", []):
             if not isinstance(row, list) or not row:
                 continue
-            slug = fmt_song(row[0])
-            target = freeplay_output / "covers" / f"{slug}.png"
-            if not target.is_file():
-                target.parent.mkdir(parents=True, exist_ok=True)
+            song_slug = fmt_song(row[0])
+            target = freeplay_output / "covers" / f"{song_slug}.png"
+            if target.is_file():
+                continue
+            alias = COVER_ALIASES.get(song_slug)
+            alias_target = freeplay_output / "covers" / f"{alias}.png" if alias else None
+            if alias_target and alias_target.is_file():
+                shutil.copy2(alias_target, target)
+            else:
                 shutil.copy2(placeholder, target)
 
     print(f"Imported original EXE Freeplay art: {freeplay_count} files ({len(cover_files)} cover files scanned).")
     print(f"Imported original EXE Story Mode art: {story_count + story_cover_count} files.")
-    print(f"Imported new playable Others tracks: {len(others_rows)} (charts: {copied_charts}, MP3 instrumentals: {copied_audio}).")
+    print(f"Imported all playable expanded-pack tracks: {len(others_rows)} (charts: {copied_charts}, MP3 instrumentals: {copied_audio}).")
+    print(f"Imported vocal stems: {copied_vocals}; referenced pack images/atlases: {sum(pack_asset_counts.values())}.")
     if added_slugs:
         print("Others songs: " + ", ".join(DISPLAY_NAMES.get(s, s.replace("-", " ").title()) for s in sorted(added_slugs)))
     if skipped:
