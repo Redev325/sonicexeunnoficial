@@ -871,7 +871,8 @@ jobs:
             patches/apply_loading_optimization.py \
             patches/apply_lazy_song_loading.py \
             patches/apply_freeplay_virtualization.py \
-            patches/apply_sonicexe_loading_screen.py
+            patches/apply_sonicexe_loading_screen.py \
+            patches/apply_runtime_diagnostics.py
 
       - name: Defer song audio until the title sequence
         run: |
