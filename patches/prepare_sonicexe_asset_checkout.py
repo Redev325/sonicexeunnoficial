@@ -199,9 +199,9 @@ def main() -> None:
             sound_manifest.setdefault(match.group(1), []).append(match.group(2))
 
     output = assets.parent / "sonicexe-pack-assets.json"
-    output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     sound_output = assets.parent / "sonicexe-pack-sounds.json"
-    sound_output.write_text(json.dumps(sound_manifest, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    sound_output.write_text(json.dumps(sound_manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Selected {len(candidates)} additional playable chart/audio pairs across {len(selected_packs)} packs.")
     print(f"Fetched {len(patterns)} referenced metadata, image, atlas, script and sound files.")
     print(f"Wrote image manifest with {sum(map(len, manifest.values()))} entries and sound manifest with {sum(map(len, sound_manifest.values()))} entries.")

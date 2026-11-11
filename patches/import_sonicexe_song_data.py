@@ -351,7 +351,7 @@ def main() -> None:
         copy_file(root_blood_png, splash_output / "sonicexe-blood.png")
         splash_xml = root_blood_xml.read_text(encoding="utf-8-sig")
         splash_xml, splash_count = re.subn(
-            r'imagePath\\s*=\\s*["\\'][^"\\']+["\\']',
+            r"""imagePath\s*=\s*["'][^"']+["']""",
             'imagePath="sonicexe-blood.png"',
             splash_xml,
             count=1,
