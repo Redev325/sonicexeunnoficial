@@ -26,7 +26,7 @@ def main() -> None:
 
 \t// Original Sonic.EXE Freeplay carousel layers. The Extras and Sound Test
 \t// lists keep the compact row UI installed by the existing patch.
-\tvar freeplaySpikes:FlxSprite;\n\tvar freeplayTopSpikes:FlxSprite;
+\tvar freeplaySpikes:FlxSprite;\n\tvar freeplayTopSpikes:FlxSprite;\n\tvar freeplaySpikeBaseHeight:Int = 0;\n\tvar freeplaySpikeTimer:Float = 0;
 \tvar freeplayCardArt:FlxSprite;
 \tvar freeplayCardFrame:FlxSprite;\n\tvar freeplayNextCardArt:FlxSprite;\n\tvar freeplayNextCardFrame:FlxSprite;
 \tvar freeplayTitle:FlxText;
@@ -67,7 +67,7 @@ def main() -> None:
 
 \t\t\t// The original image has its dark band at the top and teeth pointing down.
 \t\t\t// Use it normally at the top edge, then flip a second copy for the bottom.
-\t\t\tvar spikeHeight:Int = Std.int(FlxG.width * (157.0 / 2048.0));
+\t\t\tvar spikeHeight:Int = Std.int(FlxG.width * (157.0 / 2048.0));\n\t\t\tfreeplaySpikeBaseHeight = spikeHeight;
 
 \t\t\tfreeplayTopSpikes = new FlxSprite(0, 0);
 \t\t\tfreeplayTopSpikes.loadGraphic(Paths.image('sonicexe-freeplay/spikesup'));
@@ -209,6 +209,27 @@ def main() -> None:
 \t\t};
 \t}
 
+\tfunction fitFreeplayCardArt(sprite:FlxSprite, artName:String, cardX:Float, cardY:Float, cardWidth:Int, cardHeight:Int):Void
+\t{
+\t\tvar imagePath:String = artName.indexOf('sonicexe-freeplay/') == 0 ? artName : 'fpstuff/' + artName;
+\t\tsprite.loadGraphic(Paths.image(imagePath));
+\t\tif (artName.indexOf('sonicexe-freeplay/covers/') == 0)
+\t\t{
+\t\t\t// FreeBox is 1280x720; the visible inner opening is approximately 620x465.
+\t\t\t// Imported cover pictures are 4:3, so fit them inside that opening.
+\t\t\tvar artWidth:Int = Std.int(cardWidth * (620.0 / 1280.0));
+\t\t\tvar artHeight:Int = Std.int(cardHeight * (465.0 / 720.0));
+\t\t\tsprite.setGraphicSize(artWidth, artHeight);
+\t\t}
+\t\telse
+\t\t{
+\t\t\t// fpstuff images already use the full transparent 1280x720 canvas.
+\t\t\tsprite.setGraphicSize(cardWidth, cardHeight);
+\t\t}
+\t\tsprite.updateHitbox();
+\t\tsprite.setPosition(cardX + (cardWidth - sprite.width) * 0.5, cardY + (cardHeight - sprite.height) * 0.5);
+\t}
+
 \tfunction updateFreeplayCards():Void
 \t{
 \t\tif (sonicExeCustomSongMode || sonicExeEncoreMode || songs.length == 0 || freeplayCardArt == null)
@@ -228,18 +249,12 @@ def main() -> None:
 			var cardX:Float = (FlxG.width - cardWidth) * 0.5;
 			var cardY:Float = (FlxG.height - cardHeight) * 0.5;
 
-			freeplayCardArt.loadGraphic(Paths.image(selectedArt.indexOf('sonicexe-freeplay/') == 0 ? selectedArt : 'fpstuff/' + selectedArt));
-			freeplayCardArt.setGraphicSize(cardWidth, cardHeight);
-			freeplayCardArt.updateHitbox();
-			freeplayCardArt.setPosition(cardX, cardY);
+			fitFreeplayCardArt(freeplayCardArt, selectedArt, cardX, cardY, cardWidth, cardHeight);
 			freeplayCardFrame.setGraphicSize(cardWidth, cardHeight);
 			freeplayCardFrame.updateHitbox();
 			freeplayCardFrame.setPosition(cardX, cardY);
 
-			freeplayNextCardArt.loadGraphic(Paths.image(nextArt.indexOf('sonicexe-freeplay/') == 0 ? nextArt : 'fpstuff/' + nextArt));
-			freeplayNextCardArt.setGraphicSize(cardWidth, cardHeight);
-			freeplayNextCardArt.updateHitbox();
-			freeplayNextCardArt.setPosition(cardX + cardWidth + FlxG.width * 0.02, cardY);
+			fitFreeplayCardArt(freeplayNextCardArt, nextArt, cardX + cardWidth + FlxG.width * 0.02, cardY, cardWidth, cardHeight);
 \t\t\tfreeplayNextCardArt.alpha = 0.78;
 			freeplayNextCardFrame.setGraphicSize(cardWidth, cardHeight);
 			freeplayNextCardFrame.updateHitbox();
