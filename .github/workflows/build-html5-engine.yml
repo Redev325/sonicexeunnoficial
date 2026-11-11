@@ -704,6 +704,7 @@ jobs:
             '/assets/shared/images/characters/' \
             '/assets/shared/images/icons/' \
             '/assets/stages/' \
+            '/assets/sounds/' \
             '/assets/exe/'
           python3 patches/import_sonicexe_song_data.py sonicexe-mod-source/assets engine/assets
           rm -rf sonicexe-mod-source

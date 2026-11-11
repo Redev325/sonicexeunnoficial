@@ -360,6 +360,12 @@ def main() -> None:
             raise SystemExit("Sonic.EXE BloodSplash XML has no imagePath entry.")
         (splash_output / "sonicexe-blood.xml").write_text(splash_xml, encoding="utf-8")
 
+    # Root-project gameplay and stage scripts reference shared sound effects.
+    copied_root_sounds = copy_folder(
+        source_assets / "sounds",
+        output_assets / "shared" / "sounds",
+    )
+
     for character in sorted(selected_characters):
         char_json = char_root / f"{character}.json"
         if not char_json.is_file():
@@ -466,6 +472,7 @@ def main() -> None:
         f"Copied original EXE image assets: {copied_exe_image_assets} files; "
         f"validated {len(required_exe_images)} required Sunky/Final Escape files."
     )
+    print(f"Imported original Sonic.EXE sound effects: {copied_root_sounds} files.")
 
     # Original Freeplay and Story Mode visuals. These are source-game files,
     # not generated replacements. Keep them in the shared image library so
