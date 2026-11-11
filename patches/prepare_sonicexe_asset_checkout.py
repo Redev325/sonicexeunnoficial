@@ -129,6 +129,17 @@ def main() -> None:
                         needed.add(script.relative_to(root).as_posix())
                         read_script_refs(pack, script)
 
+    # Song charts can rely on pack-defined note and event handlers.
+    # PlayState loads these from shared/custom_notetypes and shared/custom_events.
+    for pack in sorted(selected_packs):
+        for branch in ("embedded_contents_file", "contents_file"):
+            for category in ("custom_notetypes", "custom_events"):
+                folder = root / branch / pack / category
+                if folder.is_dir():
+                    for file in folder.rglob("*"):
+                        if file.is_file():
+                            needed.add(file.relative_to(root).as_posix())
+
     for path in tree:
         if path.startswith("contents_file/images/exeSplashes/") and Path(path).suffix.casefold() in {".webp", ".png", ".xml", ".txt"}:
             needed.add(path)

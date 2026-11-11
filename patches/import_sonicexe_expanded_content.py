@@ -266,11 +266,33 @@ def copy_pack_runtime_data(source_root: Path, output_assets: Path, pack: str,
         char_file = source_root / "embedded_contents_file" / pack / "characters" / f"{character}.json"
         copy_file(char_file, char_out / char_file.name)
 
-    # Pack-specific event, credits, and script files load through currentLevel.
+    # Song-specific events/scripts are loaded from shared/data/<song>.
     for branch in ("embedded_contents_file", "contents_file"):
         support = source_root / branch / pack / "data" / slug
         if support.is_dir():
             copy_folder(support, output_assets / "shared" / "data" / output_slug)
+
+    # PlayState dynamically loads these by noteType/event name. Keeping them in
+    # the shared directories makes the imported charts' special notes/events
+    # available even though this browser build does not mount each source pack
+    # as a separate mod folder.
+    for branch in ("embedded_contents_file", "contents_file"):
+        for category in ("custom_notetypes", "custom_events"):
+            source_folder = source_root / branch / pack / category
+            if not source_folder.is_dir():
+                continue
+            target_folder = output_assets / "shared" / category
+            for file in source_folder.rglob("*"):
+                if not file.is_file():
+                    continue
+                target = target_folder / file.relative_to(source_folder)
+                if target.is_file():
+                    if target.read_bytes() != file.read_bytes():
+                        raise SystemExit(
+                            f"Conflicting {category} script '{file.name}' from pack '{pack}'."
+                        )
+                    continue
+                copy_file(file, target)
     return mapped_stage
 
 
