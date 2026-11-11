@@ -298,6 +298,10 @@ def copy_pack_runtime_data(source_root: Path, output_assets: Path, pack: str,
     for character in characters:
         char_file = source_root / "embedded_contents_file" / pack / "characters" / f"{character}.json"
         copy_file(char_file, char_out / char_file.name)
+        for branch in ("embedded_contents_file", "contents_file"):
+            for ext in (".lua", ".hx"):
+                char_script = source_root / branch / pack / "characters" / f"{character}{ext}"
+                copy_file(char_script, char_out / char_script.name)
 
     # Song-specific events/scripts are loaded from shared/data/<song>.
     for branch in ("embedded_contents_file", "contents_file"):

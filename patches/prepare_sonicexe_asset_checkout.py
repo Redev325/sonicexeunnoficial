@@ -57,6 +57,7 @@ def main() -> None:
     selected_packs = {pack for pack, _ in candidates}
     needed: set[str] = set()
     needed_sounds: set[str] = set()
+    character_script_files = []
 
     def add_sound(pack: str, key: str) -> None:
         key = str(key or "").replace("\\", "/").strip(" /")
@@ -132,6 +133,13 @@ def main() -> None:
             except Exception:
                 character = {}
             add_image(pack, character.get("image", ""))
+            for script_branch in ("embedded_contents_file", "contents_file"):
+                for ext in (".lua", ".hx"):
+                    character_script = root / script_branch / pack / "characters" / f"{char_id}{ext}"
+                    if character_script.is_file():
+                        relative = character_script.relative_to(root).as_posix()
+                        needed.add(relative)
+                        character_script_files.append((pack, character_script, relative))
             icon = str(character.get("healthicon", "")).strip()
             if icon:
                 add_image(pack, f"icons/icon-{icon}")
@@ -156,7 +164,7 @@ def main() -> None:
     # Song charts can rely on pack-defined note/event handlers, plus their
     # own note atlases, sounds and shaders. Add the script paths to sparse
     # checkout before scanning the source text for those asset references.
-    custom_script_files = []
+    custom_script_files = list(character_script_files)
     for pack in sorted(selected_packs):
         for branch in ("embedded_contents_file", "contents_file"):
             for category in ("custom_notetypes", "custom_events"):

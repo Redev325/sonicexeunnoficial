@@ -71,6 +71,79 @@ def main() -> None:
         "resolve HScript handlers from the active pack before shared scripts",
     )
 
+    source = replace_once(
+        source,
+        """\t\tvar replacePath:String = Paths.modFolders(luaFile);
+\t\tif(FileSystem.exists(replacePath))
+\t\t{
+\t\t\tluaFile = replacePath;
+\t\t\tdoPush = true;
+\t\t}
+\t\telse
+\t\t{
+\t\t\tluaFile = Paths.getSharedPath(luaFile);
+\t\t\tif(FileSystem.exists(luaFile))
+\t\t\t\tdoPush = true;
+\t\t}""",
+        """\t\tvar replacePath:String = Paths.modFolders(luaFile);
+\t\tif(FileSystem.exists(replacePath))
+\t\t{
+\t\t\tluaFile = replacePath;
+\t\t\tdoPush = true;
+\t\t}
+\t\telse
+\t\t{
+\t\t\tluaFile = Paths.getPath(luaFile);
+\t\t\tif(FileSystem.exists(luaFile) || OpenFlAssets.exists(luaFile))
+\t\t\t\tdoPush = true;
+\t\t}""",
+        "resolve Lua character scripts from the active song pack",
+    )
+
+    source = replace_once(
+        source,
+        """\t\t#else
+\t\tluaFile = Paths.getSharedPath(luaFile);
+\t\tif(Assets.exists(luaFile)) doPush = true;
+\t\t#end""",
+        """\t\t#else
+\t\tluaFile = Paths.getPath(luaFile);
+\t\tif(Assets.exists(luaFile)) doPush = true;
+\t\t#end""",
+        "resolve Lua character scripts in non-mod builds",
+    )
+
+    source = replace_once(
+        source,
+        """\t\tvar replacePath:String = Paths.modFolders(scriptFile);
+\t\tif(FileSystem.exists(replacePath))
+\t\t{
+\t\t\tscriptFile = replacePath;
+\t\t\tdoPush = true;
+\t\t}
+\t\telse
+\t\t#end
+\t\t{
+\t\t\tscriptFile = Paths.getSharedPath(scriptFile);
+\t\t\tif(FileSystem.exists(scriptFile))
+\t\t\t\tdoPush = true;
+\t\t}""",
+        """\t\tvar replacePath:String = Paths.modFolders(scriptFile);
+\t\tif(FileSystem.exists(replacePath))
+\t\t{
+\t\t\tscriptFile = replacePath;
+\t\t\tdoPush = true;
+\t\t}
+\t\telse
+\t\t#end
+\t\t{
+\t\t\tscriptFile = Paths.getPath(scriptFile);
+\t\t\tif(FileSystem.exists(scriptFile) || OpenFlAssets.exists(scriptFile))
+\t\t\t\tdoPush = true;
+\t\t}""",
+        "resolve HScript character scripts from the active song pack",
+    )
+
     path.write_text(source, encoding="utf-8")
     print("PlayState now resolves pack-scoped custom note/event scripts.")
 
