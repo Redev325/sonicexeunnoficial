@@ -43,7 +43,7 @@ permissions:
 
 jobs:
   build-html5:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
       - name: Check out this repository
@@ -62,10 +62,18 @@ jobs:
           node --version
           node -e "if (process.versions.node.split('.')[0] !== '26') process.exit(1)"
 
-      - name: Install system packages
+      - name: Verify HTML5 build tools and install FFmpeg if needed
         run: |
-          sudo apt-get update
-          sudo apt-get install -y git build-essential libvlc-dev libvlccore-dev ffmpeg
+          command -v git
+          command -v gcc
+          command -v g++
+          command -v make
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -o Acquire::Retries=5 -o Acquire::http::Timeout=30
+            sudo apt-get install -y --no-install-recommends -o Acquire::Retries=5 ffmpeg
+          fi
+          ffmpeg -version | head -n 2
+          echo "HTML5 runner tools are ready."
 
       - name: Install Haxe
         uses: krdlab/setup-haxe@master
