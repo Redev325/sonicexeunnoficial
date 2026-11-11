@@ -13,6 +13,10 @@ def fmt_song(value: str) -> str:
 def norm(value: str) -> str:
     return re.sub(r"[^a-z0-9]", "", str(value).casefold())
 
+
+def pack_key(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", value.casefold()).strip("-")
+
 def git(root: Path, *args: str) -> str:
     result = subprocess.run(["git", "-C", str(root), *args], check=True,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
