@@ -744,6 +744,12 @@ jobs:
             '/contents_file/*/songs/*/Voices*.ogg' \
             '/contents_file/*/songs/*/Voices*.mp3' \
             '/contents_file/*/songs/*/Voices*.wav' \
+            '/embedded_contents_file/*/songs/*/Inst.ogg' \
+            '/embedded_contents_file/*/songs/*/Inst.mp3' \
+            '/embedded_contents_file/*/songs/*/Inst.wav' \
+            '/embedded_contents_file/*/songs/*/Voices*.ogg' \
+            '/embedded_contents_file/*/songs/*/Voices*.mp3' \
+            '/embedded_contents_file/*/songs/*/Voices*.wav' \
             '/contents_file/images/exeSplashes/'
           python3 patches/prepare_sonicexe_asset_checkout.py sonicexe-expanded-source engine/assets
           python3 patches/import_sonicexe_expanded_content.py sonicexe-expanded-source engine/assets
