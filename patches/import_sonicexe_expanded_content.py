@@ -362,6 +362,9 @@ def main() -> None:
             continue
 
         display_name = DISPLAY_NAMES.get(slug, str(chart.get("song") or slug.replace("-", " ").title()))
+        output_slug = fmt_song(display_name)
+        if output_slug in existing_rows or output_slug in added_slugs:
+            continue
         chart["song"] = display_name
         # Preserve the actual EXE pack characters, stage, note events, BPM, speed,
         # and chart note lanes. Do not replace them with generic BF/Dad/stage data.
@@ -376,7 +379,7 @@ def main() -> None:
         mapped_stage = copy_pack_runtime_data(source_root, output_assets, pack, slug, chart)
         chart["stage"] = mapped_stage
 
-        chart_output = output_assets / "shared/data" / slug / f"{slug}-hard.json"
+        chart_output = output_assets / "shared/data" / output_slug / f"{output_slug}-hard.json"
         chart_output.parent.mkdir(parents=True, exist_ok=True)
         chart_output.write_text(
             json.dumps({"song": chart}, ensure_ascii=False, separators=(",", ":")) + "\n",
@@ -384,7 +387,7 @@ def main() -> None:
         )
         copied_charts += 1
 
-        song_output = output_assets / "songs" / slug
+        song_output = output_assets / "songs" / output_slug
         convert_audio(instrumental, song_output / "Inst.mp3")
         copied_audio += 1
         voice_names = []
@@ -394,14 +397,14 @@ def main() -> None:
             voice_names.append(name)
             copied_vocals += 1
         if voice_names:
-            audio_index[slug] = sorted(voice_names)
+            audio_index[output_slug] = sorted(voice_names)
 
         row_character = str(chart.get("player2") or chart.get("player1") or "dad")
         song_color = chart.get("freeplayColor", [146, 0, 0])
         if not isinstance(song_color, list) or len(song_color) < 3:
             song_color = [146, 0, 0]
         others_rows.append([display_name, row_character, song_color])
-        added_slugs.add(slug)
+        added_slugs.add(output_slug)
 
     # Keep an index for both expanded-pack vocals and the restored root game's
     # ordinary Voices.mp3 tracks so the HTML5 loader can fetch the correct stems.
