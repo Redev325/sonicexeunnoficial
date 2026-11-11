@@ -188,11 +188,14 @@ def copy_pack_assets(source_root: Path, output_assets: Path) -> dict[str, int]:
             src_root = source_root / "contents_file/images"
             out_root = output_assets / "shared/images"
         else:
-            src_root = source_root / "contents_file" / pack / "images"
+            src_root = None
             out_root = output_assets / "week_assets" / pack_key(pack) / "images"
         copied = 0
-        for relative in files:
-            relative = Path(relative)
+        for manifest_entry in files:
+            embedded = pack != "__shared__" and manifest_entry.startswith("@embedded/")
+            relative = Path(manifest_entry.removeprefix("@embedded/"))
+            if pack != "__shared__":
+                src_root = source_root / ("embedded_contents_file" if embedded else "contents_file") / pack / "images"
             src = src_root / relative
             if not src.is_file():
                 continue
