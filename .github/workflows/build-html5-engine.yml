@@ -15,6 +15,8 @@ on:
       - "patches/apply_loading_optimization.py"
       - "patches/apply_freeplay_virtualization.py"
       - "patches/apply_lazy_song_loading.py"
+      - "patches/apply_sonicexe_loading_screen.py"
+      - "Sonic.exeloadingscreen.png"
       - "patches/apply_menu_freeze_fixes.py"
       - "patches/apply_psych_engine_credits.py"
       - "patches/SonicEXEAssetLoader.hx"
@@ -868,7 +870,8 @@ jobs:
           python3 -m py_compile \
             patches/apply_loading_optimization.py \
             patches/apply_lazy_song_loading.py \
-            patches/apply_freeplay_virtualization.py
+            patches/apply_freeplay_virtualization.py \
+            patches/apply_sonicexe_loading_screen.py
 
       - name: Defer song audio until the title sequence
         run: |
@@ -876,6 +879,11 @@ jobs:
           cp patches/SonicEXEAssetLoader.hx engine/source/backend/SonicEXEAssetLoader.hx
           python3 patches/apply_loading_optimization.py engine/Project.xml engine/source/states/TitleState.hx engine/source/states/MainMenuState.hx
           python3 patches/apply_lazy_song_loading.py engine/source/states/LoadingState.hx engine/source/states/FreeplayState.hx
+
+      - name: Install Sonic.EXE loading screen and red progress bar
+        run: |
+          python3 patches/apply_sonicexe_loading_screen.py engine/source/states/LoadingState.hx Sonic.exeloadingscreen.png engine/assets/images/Sonic.exeloadingscreen.png
+          test -s engine/assets/images/Sonic.exeloadingscreen.png
 
       - name: Add HTML5 game runtime diagnostics checkpoints
         run: |
