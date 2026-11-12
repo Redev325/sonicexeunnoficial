@@ -62,6 +62,17 @@ def main() -> None:
 
     source = replace_once(
         source,
+        "\t\tSys.println(text);",
+        """#if sys
+\t\tSys.println(text);
+#else
+\t\ttrace(text);
+#end""",
+        "guard system-only debug output",
+    )
+
+    source = replace_once(
+        source,
         "\t\t\tvar newScript:HScript = new HScript(null, file);",
         """#if sys
 \t\t\tvar scriptContents:String = file;
