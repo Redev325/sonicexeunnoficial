@@ -631,8 +631,9 @@ def patch_note_splash(path: Path) -> None:
 
     source = replace_once(
         source,
-        """\t\tif(PlayState.SONG.splashSkin != null && PlayState.SONG.splashSkin.length > 0) skin = PlayState.SONG.splashSkin;
-\t\telse skin = defaultNoteSplash + getSplashSkinPostfix();""",
+        """\t\tif (ClientPrefs.data.splashSkin == 'Sonic.EXE') skin = getSplashSkinPath();
+\t\telse if(PlayState.SONG.splashSkin != null && PlayState.SONG.splashSkin.length > 0) skin = PlayState.SONG.splashSkin;
+\t\telse skin = getSplashSkinPath();""",
         """\t\tif (ClientPrefs.data.splashSkin == 'Sonic.EXE') skin = getSplashSkinPath();
 \t\telse if(PlayState.SONG.splashSkin != null && PlayState.SONG.splashSkin.length > 0) skin = PlayState.SONG.splashSkin;
 \t\telse skin = getSplashSkinPath();""",
@@ -644,9 +645,8 @@ def patch_note_splash(path: Path) -> None:
         """\t\tif(note != null && note.noteSplashData.texture != null) texture = note.noteSplashData.texture;
 \t\telse if(PlayState.SONG.splashSkin != null && PlayState.SONG.splashSkin.length > 0) texture = PlayState.SONG.splashSkin;
 \t\telse texture = defaultNoteSplash + getSplashSkinPostfix();""",
-        """\t\tif (ClientPrefs.data.splashSkin == 'Sonic.EXE' &&
-\t\t\t(note == null || note.noteSplashData.texture == null || note.noteSplashData.texture == PlayState.SONG.splashSkin))
-\t\t\ttexture = getSplashSkinPath();
+        """\t\t// Sonic.EXE uses the red BloodSplash atlas for every note hit.
+\t\tif (ClientPrefs.data.splashSkin == 'Sonic.EXE') texture = getSplashSkinPath();
 \t\telse if(note != null && note.noteSplashData.texture != null) texture = note.noteSplashData.texture;
 \t\telse if(PlayState.SONG.splashSkin != null && PlayState.SONG.splashSkin.length > 0) texture = PlayState.SONG.splashSkin;
 \t\telse texture = getSplashSkinPath();""",

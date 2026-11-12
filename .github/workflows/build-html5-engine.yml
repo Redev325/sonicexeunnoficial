@@ -85,11 +85,12 @@ jobs:
           git clone --depth 1 https://github.com/star-studios-official/FNF-PsychEngine-HTML5.git engine
           du -sh engine
 
-      - name: Disable desktop-only Discord integration for web
+      - name: Enable browser-safe HScript and disable desktop-only Discord integration
         working-directory: engine
         run: |
           sed -i 's/<define name="DISCORD_ALLOWED" \/>/<define name="DISCORD_ALLOWED" if="desktop" \/>/' Project.xml
-          grep 'DISCORD_ALLOWED' Project.xml
+          sed -i 's#<define name="HSCRIPT_ALLOWED" if="desktop" />#<define name="HSCRIPT_ALLOWED" if="desktop" /><define name="HSCRIPT_ALLOWED" if="web" />#' Project.xml
+          grep 'DISCORD_ALLOWED\|HSCRIPT_ALLOWED' Project.xml
 
       - name: Install Haxe libraries
         working-directory: engine
@@ -112,7 +113,7 @@ jobs:
               "flixel-ui": "2.5.0",
           }
           html5_unused = {
-              "flixel-tools", "hxCodec", "SScript",
+              "flixel-tools", "hxCodec",
               "hxdiscord_rpc", "linc_luajit",
           }
 
@@ -709,6 +710,19 @@ jobs:
             '/assets/images/campaign_menu_UI_assets.xml' \
             '/assets/images/campaign_menu_UI_assets_alt.png' \
             '/assets/images/campaign_menu_UI_assets_alt.xml' \
+            '/assets/images/NOTE_assets.png' \\
+            '/assets/images/NOTE_assets.xml' \\
+            '/assets/images/HURTNOTE_assets.png' \\
+            '/assets/images/HURTNOTE_assets.xml' \\
+            '/assets/images/HURTnoteSplashes.png' \\
+            '/assets/images/HURTnoteSplashes.xml' \\
+            '/assets/images/Majin_Notes.png' \\
+            '/assets/images/Majin_Notes.xml' \\
+            '/assets/images/noteSplashes.png' \\
+            '/assets/images/noteSplashes.xml' \\
+            '/assets/images/sunky_splash.png' \\
+            '/assets/images/sunky_splash.xml' \\
+            '/assets/shared/images/' \\
             '/assets/shared/images/characters/' \
             '/assets/shared/images/icons/' \
             '/assets/stages/' \
@@ -754,6 +768,17 @@ jobs:
           python3 patches/prepare_sonicexe_asset_checkout.py sonicexe-expanded-source engine/assets
           python3 patches/import_sonicexe_expanded_content.py sonicexe-expanded-source engine/assets
           rm -rf sonicexe-expanded-source
+
+      - name: Install browser-safe Sonic.EXE song and event scripts
+        run: |
+          mkdir -p engine/assets/shared/custom_events
+          mkdir -p engine/assets/shared/data/too-slow engine/assets/shared/data/triple-trouble engine/assets/shared/data/final-escape
+          cp patches/assets/custom_events/TooSlowFlashinShit.hx engine/assets/shared/custom_events/TooSlowFlashinShit.hx
+          cp patches/assets/custom_events/sonicspook.hx engine/assets/shared/custom_events/sonicspook.hx
+          cp patches/assets/data/too-slow/modchart.hx engine/assets/shared/data/too-slow/modchart.hx
+          cp patches/assets/data/triple-trouble/triple-trouble.hx engine/assets/shared/data/triple-trouble/triple-trouble.hx
+          cp patches/assets/data/final-escape/run.hx engine/assets/shared/data/final-escape/run.hx
+          python3 patches/validate_sonicexe_story_assets.py engine/assets
 
       - name: Convert original game menu and Options music for HTML5
         run: |
@@ -903,6 +928,9 @@ jobs:
       - name: Resolve EXE pack-specific chart scripts
         run: python3 patches/apply_pack_song_script_resolution.py engine/source/states/PlayState.hx
 
+      - name: Load embedded song HScript files on HTML5
+        run: python3 patches/apply_html5_song_script_loading.py engine/source/states/PlayState.hx
+
       - name: Validate HTML5 performance patch scripts
         run: |
           python3 -m py_compile \
@@ -915,7 +943,9 @@ jobs:
             patches/apply_custom_options_ui.py \
             patches/import_sonicexe_expanded_content.py \
             patches/prepare_sonicexe_asset_checkout.py \
-            patches/apply_pack_song_script_resolution.py
+            patches/apply_pack_song_script_resolution.py \
+            patches/apply_html5_song_script_loading.py \
+            patches/validate_sonicexe_story_assets.py
 
       - name: Defer song audio until the title sequence
         run: |

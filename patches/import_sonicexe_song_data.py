@@ -48,6 +48,49 @@ def copy_folder(source: Path, destination: Path) -> int:
     return copied
 
 
+def merge_sidecar_events(chart_folder: Path) -> int:
+    """Merge events.json into each Hard chart because Psych Engine reads chart.events."""
+    sidecar = chart_folder / "events.json"
+    if not sidecar.is_file():
+        return 0
+    try:
+        sidecar_data = json.loads(sidecar.read_text(encoding="utf-8-sig"))
+    except Exception as exc:
+        raise SystemExit(f"Could not parse sidecar events file {sidecar}: {exc}")
+    sidecar_song = sidecar_data.get("song", sidecar_data) if isinstance(sidecar_data, dict) else {}
+    sidecar_events = sidecar_song.get("events", []) if isinstance(sidecar_song, dict) else []
+    if not isinstance(sidecar_events, list) or not sidecar_events:
+        return 0
+    merged_count = 0
+    for chart_path in sorted(chart_folder.glob("*-hard.json")):
+        try:
+            chart_data = json.loads(chart_path.read_text(encoding="utf-8-sig"))
+        except Exception as exc:
+            raise SystemExit(f"Could not parse chart {chart_path}: {exc}")
+        chart_song = chart_data.get("song", chart_data) if isinstance(chart_data, dict) else {}
+        if not isinstance(chart_song, dict):
+            raise SystemExit(f"Chart {chart_path} does not contain a song object.")
+        existing = chart_song.get("events", [])
+        if not isinstance(existing, list):
+            existing = []
+        seen = {json.dumps(event, ensure_ascii=False, sort_keys=True, separators=(",", ":")) for event in existing}
+        merged = list(existing)
+        for event in sidecar_events:
+            key = json.dumps(event, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            if key not in seen:
+                merged.append(event)
+                seen.add(key)
+                merged_count += 1
+        merged.sort(key=lambda event: float(event[0]) if isinstance(event, list) and event else 0.0)
+        chart_song["events"] = merged
+        if isinstance(chart_data, dict) and isinstance(chart_data.get("song"), dict):
+            chart_data["song"] = chart_song
+        else:
+            chart_data = chart_song
+        chart_path.write_text(json.dumps(chart_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return merged_count
+
+
 def find_song_folder(data_root: Path, songs_root: Path, title: str):
     target = format_song_path(title)
     candidates = []
@@ -333,8 +376,11 @@ def main() -> None:
 
     copied_charts = 0
     copied_audio = 0
+    merged_event_records = 0
     for slug in sorted(selected_song_slugs):
-        copied_charts += copy_folder(data_root / slug, output_assets / "shared" / "data" / slug)
+        chart_output_folder = output_assets / "shared" / "data" / slug
+        copied_charts += copy_folder(data_root / slug, chart_output_folder)
+        merged_event_records += merge_sidecar_events(chart_output_folder)
         copied_audio += copy_folder(songs_root / slug, output_assets / "songs" / slug)
 
     # Import only character definitions and sprites actually referenced by the
@@ -365,6 +411,15 @@ def main() -> None:
         source_assets / "sounds",
         output_assets / "shared" / "sounds",
     )
+
+    # Import the full shared image tree; EXE special note atlases live here.
+    copied_shared_images = copy_folder(
+        source_assets / "shared" / "images",
+        output_assets / "shared" / "images",
+    )
+    for note_stem in ("NOTE_assets", "HURTNOTE_assets", "HURTnoteSplashes", "Majin_Notes", "noteSplashes", "sunky_splash"):
+        for extension in (".png", ".xml"):
+            copy_file(image_root / (note_stem + extension), output_assets / "shared" / "images" / (note_stem + extension))
 
     for character in sorted(selected_characters):
         char_json = char_root / f"{character}.json"
