@@ -45,7 +45,7 @@ def main() -> None:
 \t\t\t\treturn true;
 \t\t\t}
 \t\t#else
-\t\t\tvar assetPath:String = Paths.getPath(scriptFile);
+\t\t\tvar assetPath:String = Paths.getPath(scriptFile + ".txt");
 \t\t\tif(OpenFlAssets.exists(assetPath, openfl.utils.AssetType.TEXT))
 \t\t\t{
 \t\t\t\tfor (loadedScript in hscriptArray)
@@ -66,7 +66,7 @@ def main() -> None:
         """#if sys
 \t\t\tvar scriptContents:String = file;
 #else
-\t\t\tvar scriptPath:String = Paths.getPath(file);
+\t\t\tvar scriptPath:String = Paths.getPath(file + ".txt");
 \t\t\tif(!OpenFlAssets.exists(scriptPath, openfl.utils.AssetType.TEXT)) return;
 \t\t\tvar scriptContents:String = OpenFlAssets.getText(scriptPath);
 #end

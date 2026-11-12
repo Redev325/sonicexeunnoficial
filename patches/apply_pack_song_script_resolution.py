@@ -142,11 +142,12 @@ def main() -> None:
 \t\telse
 #end
 \t\t{
-\t\t\tscriptFile = Paths.getPath(scriptFile);
 #if sys
-\t\t\tif(FileSystem.exists(scriptFile) || OpenFlAssets.exists(scriptFile))
+\t\t\tvar resolvedScript:String = Paths.getPath(scriptFile);
+\t\t\tif(FileSystem.exists(resolvedScript) || OpenFlAssets.exists(resolvedScript, openfl.utils.AssetType.TEXT))
 #else
-\t\t\tif(OpenFlAssets.exists(scriptFile))
+\t\t\tvar resolvedScript:String = Paths.getPath(scriptFile + '.txt');
+\t\t\tif(OpenFlAssets.exists(resolvedScript, openfl.utils.AssetType.TEXT))
 #end
 \t\t\t\tdoPush = true;
 \t\t}""",

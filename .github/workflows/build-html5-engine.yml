@@ -785,6 +785,20 @@ jobs:
           cp patches/assets/stages/*.hx engine/assets/shared/stages/
           python3 - <<'PY'
           from pathlib import Path
+          import shutil
+          roots = [Path("engine/assets/shared"), Path("engine/assets/week_assets")]
+          copied = 0
+          for root in roots:
+              if not root.exists():
+                  continue
+              for script in root.rglob("*.hx"):
+                  target = Path(str(script) + ".txt")
+                  shutil.copy2(script, target)
+                  copied += 1
+          print(f"Created {copied} explicit TEXT asset companions for embedded HScript.")
+          PY
+          python3 - <<'PY'
+          from pathlib import Path
           import json
           data_root = Path("engine/assets/shared/data")
           scripts = sorted(
