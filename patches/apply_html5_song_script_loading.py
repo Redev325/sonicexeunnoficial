@@ -89,8 +89,14 @@ def main() -> None:
         """\t\t#end
 
 \t\t#if (HSCRIPT_ALLOWED && !sys)
-\t\tfor (scriptName in ["modchart.hx", "intro.hx", "run.hx", songName + ".hx"])
-\t\t\tstartHScriptsNamed('data/' + songName + '/' + scriptName);
+\t\tvar scriptManifestPath:String = Paths.getPath('data/sonicexe-hscript-manifest.json');
+\t\tif (OpenFlAssets.exists(scriptManifestPath, openfl.utils.AssetType.TEXT))
+\t\t{
+\t\t\tvar songScripts:Array<String> = cast Json.parse(OpenFlAssets.getText(scriptManifestPath));
+\t\t\tfor (scriptPath in songScripts)
+\t\t\t\tif (StringTools.startsWith(scriptPath, 'data/' + songName + '/'))
+\t\t\t\t\tstartHScriptsNamed(scriptPath);
+\t\t}
 \t\tstartHScriptsNamed('custom_events/SonicEXEEvents.hx');
 \t\t#end
 

@@ -783,6 +783,20 @@ jobs:
           cp patches/assets/data/final-escape/intro.hx engine/assets/shared/data/final-escape/intro.hx
           cp patches/assets/data/final-escape/run.hx engine/assets/shared/data/final-escape/run.hx
           cp patches/assets/stages/*.hx engine/assets/shared/stages/
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          data_root = Path("engine/assets/shared/data")
+          scripts = sorted(
+              "data/" + path.relative_to(data_root).as_posix()
+              for path in data_root.rglob("*.hx")
+              if path.is_file()
+          )
+          manifest = data_root / "sonicexe-hscript-manifest.json"
+          manifest.parent.mkdir(parents=True, exist_ok=True)
+          manifest.write_text(json.dumps(scripts, ensure_ascii=False) + "\\n", encoding="utf-8")
+          print(f"Indexed {len(scripts)} embedded song HScript files in {manifest}.")
+          PY
           python3 patches/validate_sonicexe_story_assets.py engine/assets
 
       - name: Convert original game menu and Options music for HTML5
