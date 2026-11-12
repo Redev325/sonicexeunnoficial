@@ -2,7 +2,21 @@
 """Resolve song-pack event and note-type handlers from the active week_assets directory."""
 
 from pathlib import Path
+import re
 import sys
+
+
+def validate_conditionals(source: str, path: Path) -> None:
+    stack = []
+    for line_number, line in enumerate(source.splitlines(), 1):
+        if re.match(r"^\\s*#if\\b", line):
+            stack.append(line_number)
+        for _ in re.finditer(r"#end\\b", line):
+            if not stack:
+                raise SystemExit(f"Pack script resolution stopped: orphan #end at {path}:{line_number}")
+            stack.pop()
+    if stack:
+        raise SystemExit(f"Pack script resolution stopped: unclosed #if at {path}:{stack[-1]}")
 
 
 def replace_once(source: str, old: str, new: str, label: str) -> str:
@@ -119,7 +133,8 @@ def main() -> None:
 
     source = replace_once(
         source,
-        """\t\tvar replacePath:String = Paths.modFolders(scriptFile);
+        """\t\t#if MODS_ALLOWED
+\t\tvar replacePath:String = Paths.modFolders(scriptFile);
 \t\tif(FileSystem.exists(replacePath))
 \t\t{
 \t\t\tscriptFile = replacePath;
@@ -139,8 +154,8 @@ def main() -> None:
 \t\t\tscriptFile = replacePath;
 \t\t\tdoPush = true;
 \t\t}
-\t\telse
-#end
+\t\t#end
+\t\tif (!doPush)
 \t\t{
 #if sys
 \t\t\tvar resolvedScript:String = Paths.getPath(scriptFile);
@@ -154,8 +169,9 @@ def main() -> None:
         "resolve HScript character scripts from the active song pack",
     )
 
+    validate_conditionals(source, path)
     path.write_text(source, encoding="utf-8")
-    print("PlayState now resolves pack-scoped custom note/event scripts.")
+    print("PlayState now resolves pack-scoped custom note/event scripts with balanced conditionals.")
 
 
 if __name__ == "__main__":
