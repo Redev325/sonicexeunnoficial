@@ -9,9 +9,9 @@ import sys
 def validate_conditionals(source: str, path: Path) -> None:
     stack = []
     for line_number, line in enumerate(source.splitlines(), 1):
-        if re.match(r"^\\s*#if\\b", line):
+        if re.match(r"^\s*#if\b", line):
             stack.append(line_number)
-        for _ in re.finditer(r"#end\\b", line):
+        for _ in re.finditer(r"#end\b", line):
             if not stack:
                 raise SystemExit(f"Pack script resolution stopped: orphan #end at {path}:{line_number}")
             stack.pop()
