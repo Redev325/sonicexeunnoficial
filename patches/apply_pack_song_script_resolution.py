@@ -132,17 +132,22 @@ def main() -> None:
 \t\t\tif(FileSystem.exists(scriptFile))
 \t\t\t\tdoPush = true;
 \t\t}""",
-        """\t\tvar replacePath:String = Paths.modFolders(scriptFile);
+        """#if (MODS_ALLOWED && sys)
+\t\tvar replacePath:String = Paths.modFolders(scriptFile);
 \t\tif(FileSystem.exists(replacePath))
 \t\t{
 \t\t\tscriptFile = replacePath;
 \t\t\tdoPush = true;
 \t\t}
 \t\telse
-\t\t#end
+#end
 \t\t{
 \t\t\tscriptFile = Paths.getPath(scriptFile);
+#if sys
 \t\t\tif(FileSystem.exists(scriptFile) || OpenFlAssets.exists(scriptFile))
+#else
+\t\t\tif(OpenFlAssets.exists(scriptFile))
+#end
 \t\t\t\tdoPush = true;
 \t\t}""",
         "resolve HScript character scripts from the active song pack",
