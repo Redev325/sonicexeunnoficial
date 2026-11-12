@@ -6,7 +6,7 @@ function addTrioLayer(path:String,x:Float,y:Float,sx:Float,sy:Float,visible:Bool
     layer.loadGraphic(Paths.image(path));
     layer.scrollFactor.set(sx,sy);
     layer.visible = visible;
-    game.add(layer);
+    addBehindGF(layer);
     return layer;
 }
 function onCreate():Void {

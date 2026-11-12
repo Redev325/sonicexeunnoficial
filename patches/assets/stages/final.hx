@@ -5,7 +5,7 @@ function addFinalImage(name:String,x:Float,y:Float,scroll:Float=0.9,scaleX:Float
     sprite.scrollFactor.set(scroll,scroll);
     sprite.scale.set(scaleX,scaleY);
     sprite.updateHitbox();
-    game.add(sprite);
+    addBehindGF(sprite);
     return sprite;
 }
 function addFinalAtlas(name:String,x:Float,y:Float,prefix:String):FlxSprite {
@@ -13,7 +13,7 @@ function addFinalAtlas(name:String,x:Float,y:Float,prefix:String):FlxSprite {
     sprite.frames = Paths.getSparrowAtlas("final escape/"+name);
     sprite.animation.addByPrefix("idle",prefix,24,true);
     sprite.animation.play("idle");
-    game.add(sprite);
+    addBehindGF(sprite);
     return sprite;
 }
 function onCreate():Void {
@@ -32,5 +32,9 @@ function onCreate():Void {
     addFinalImage("N",765,175,1);
     addFinalImage("I",1000,175,1);
     addFinalImage("C",1075,200,1);
-    addFinalAtlas("ring",1185,625,"ring0");
+    var ringSprite = addFinalAtlas("ring",1185,625,"ring0");
+    ringSprite.cameras = [game.camHUD];
+    ringSprite.scrollFactor.set();
+    ringSprite.scale.set(1.5,1.5);
+    if (ClientPrefs.data.downScroll) ringSprite.y = 10;
 }

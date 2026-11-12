@@ -3,7 +3,7 @@ function addYCRLayer(path:String,x:Float,y:Float,sx:Float,sy:Float):FlxSprite {
     var layer = new FlxSprite(x,y);
     layer.loadGraphic(Paths.image(path));
     layer.scrollFactor.set(sx,sy);
-    game.add(layer);
+    addBehindGF(layer);
     return layer;
 }
 function onCreate():Void {

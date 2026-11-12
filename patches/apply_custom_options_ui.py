@@ -623,21 +623,10 @@ def patch_note_splash(path: Path) -> None:
 \tpublic static function getSplashSkinPath():String
 \t{
 \t\tif (ClientPrefs.data.splashSkin == 'Sonic.EXE')
-\t\t\treturn PlayState.isPixelStage ? 'noteSplashes/sonicexe-blood-pixel' : 'noteSplashes/sonicexe-blood';
+\t\t\treturn 'noteSplashes/sonicexe-blood';
 \t\treturn defaultNoteSplash + getSplashSkinPostfix();
 \t}""",
         "resolve Sonic.EXE selection to the animated BloodSplash atlas",
-    )
-
-    source = replace_once(
-        source,
-        """\t\tif (ClientPrefs.data.splashSkin == 'Sonic.EXE') skin = getSplashSkinPath();
-\t\telse if(PlayState.SONG.splashSkin != null && PlayState.SONG.splashSkin.length > 0) skin = PlayState.SONG.splashSkin;
-\t\telse skin = getSplashSkinPath();""",
-        """\t\tif (ClientPrefs.data.splashSkin == 'Sonic.EXE') skin = getSplashSkinPath();
-\t\telse if(PlayState.SONG.splashSkin != null && PlayState.SONG.splashSkin.length > 0) skin = PlayState.SONG.splashSkin;
-\t\telse skin = getSplashSkinPath();""",
-        "make the selected Sonic.EXE blood atlas override song-level splash defaults",
     )
 
     source = replace_once(

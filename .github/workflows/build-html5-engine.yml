@@ -777,6 +777,7 @@ jobs:
           cp patches/assets/custom_notetypes/*.txt engine/assets/shared/custom_notetypes/
           cp patches/assets/data/too-slow/modchart.hx engine/assets/shared/data/too-slow/modchart.hx
           cp patches/assets/data/triple-trouble/triple-trouble.hx engine/assets/shared/data/triple-trouble/triple-trouble.hx
+          cp patches/assets/data/final-escape/intro.hx engine/assets/shared/data/final-escape/intro.hx
           cp patches/assets/data/final-escape/run.hx engine/assets/shared/data/final-escape/run.hx
           cp patches/assets/stages/*.hx engine/assets/shared/stages/
           python3 patches/validate_sonicexe_story_assets.py engine/assets
