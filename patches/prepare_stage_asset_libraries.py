@@ -5,6 +5,7 @@ import json
 import re
 import shutil
 import sys
+import xml.etree.ElementTree as ET
 
 
 def library_slug(value: str) -> str:
@@ -30,8 +31,8 @@ def insert_project_entries(project: str, libraries: list[str]) -> str:
     asset_lines = []
     for library in libraries:
         asset_lines.extend([
-            f'\\t<assets path="assets/{library}" library="{library}" rename="assets" exclude="*.ogg" if="web"/>',
-            f'\\t<assets path="assets/{library}" library="{library}" rename="assets" exclude="*.mp3" unless="web"/>',
+            f'\t<assets path="assets/{library}" library="{library}" rename="assets" exclude="*.ogg" if="web"/>',
+            f'\t<assets path="assets/{library}" library="{library}" rename="assets" exclude="*.mp3" unless="web"/>',
         ])
     project = project[:match.end()] + "\n" + "\n".join(asset_lines) + project[match.end():]
 
@@ -41,7 +42,7 @@ def insert_project_entries(project: str, libraries: list[str]) -> str:
         raise SystemExit("Stage library setup stopped: week_assets library declarations were not found.")
     insert_at = matches[-1].end()
     declarations = "\n".join(
-        f'\\t<library name="{library}" preload="false" if="web"/>'
+        f'\t<library name="{library}" preload="false" if="web"/>'
         for library in libraries
     )
     project = project[:insert_at] + "\n" + declarations + project[insert_at:]
@@ -122,7 +123,12 @@ def main() -> None:
     print(f"Indexed actual audio filenames for {len(audio_index)} songs.")
 
     project = project_path.read_text(encoding="utf-8")
-    project_path.write_text(insert_project_entries(project, libraries), encoding="utf-8")
+    project = insert_project_entries(project, libraries)
+    try:
+        ET.fromstring(project)
+    except ET.ParseError as exc:
+        raise SystemExit(f"Generated Project.xml is invalid: {exc}")
+    project_path.write_text(project, encoding="utf-8")
 
     paths = paths_path.read_text(encoding="utf-8")
     old = (

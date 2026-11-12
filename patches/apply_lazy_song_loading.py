@@ -137,8 +137,11 @@ def patch_loading_state(path: Path) -> None:
 \t):Void
 \t{
 \t\tvar slug:String = Paths.formatToSongPath(song);
+\t\tvar audioInfo:Dynamic = getSongAudioInfo(song);
+\t\tvar instrumental:Dynamic = audioInfo == null ? null : Reflect.field(audioInfo, 'instrumental');
+\t\tvar instrumentFile:String = instrumental == null ? 'Inst.mp3' : Std.string(instrumental);
 \t\tvar requested:Array<String> = [
-\t\t\tPaths.getLibraryPath(slug + '/Inst.mp3', 'songs')
+\t\t\tPaths.getLibraryPath(slug + '/' + instrumentFile, 'songs')
 \t\t];
 \t\tif (needsVoices)
 \t\t\tfor (voicePath in getVocalPaths(song))
