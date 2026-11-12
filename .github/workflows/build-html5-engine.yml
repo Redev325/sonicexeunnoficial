@@ -771,10 +771,10 @@ jobs:
 
       - name: Install browser-safe Sonic.EXE song and event scripts
         run: |
-          mkdir -p engine/assets/shared/custom_events
+          mkdir -p engine/assets/shared/custom_events engine/assets/shared/custom_notetypes
           mkdir -p engine/assets/shared/data/too-slow engine/assets/shared/data/triple-trouble engine/assets/shared/data/final-escape
-          cp patches/assets/custom_events/TooSlowFlashinShit.hx engine/assets/shared/custom_events/TooSlowFlashinShit.hx
-          cp patches/assets/custom_events/sonicspook.hx engine/assets/shared/custom_events/sonicspook.hx
+          cp patches/assets/custom_events/*.hx engine/assets/shared/custom_events/
+          cp patches/assets/custom_notetypes/*.txt engine/assets/shared/custom_notetypes/
           cp patches/assets/data/too-slow/modchart.hx engine/assets/shared/data/too-slow/modchart.hx
           cp patches/assets/data/triple-trouble/triple-trouble.hx engine/assets/shared/data/triple-trouble/triple-trouble.hx
           cp patches/assets/data/final-escape/run.hx engine/assets/shared/data/final-escape/run.hx

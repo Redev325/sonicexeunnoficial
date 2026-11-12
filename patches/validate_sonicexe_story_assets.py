@@ -26,6 +26,11 @@ def names(s):
  for rec in s.get("events",[]) or []:
   if isinstance(rec,list) and len(rec)>1 and isinstance(rec[1],list):
    out += [str(x[0]) for x in rec[1] if isinstance(x,list) and x]
+ # Older Psych charts encode timed events as negative-lane note entries.
+ for section in s.get("notes",[]) or []:
+  for note in section.get("sectionNotes",[]) or []:
+   if isinstance(note,list) and len(note)>2 and isinstance(note[1],(int,float)) and note[1]<0:
+    out.append(str(note[2]))
  return out
 def types(s):
  out=set()
@@ -59,6 +64,19 @@ for char in ("ycr","TailsSoul","bf-run"):
 req(ROOT/"shared"/"stages"/"trioStage.lua","Triple Trouble stage script")
 req(ROOT/"shared"/"stages"/"final.lua","Final Escape stage script")
 if len(names(loaded["final-escape"]))<5: fail("Final Escape events.json was not merged into its loaded chart")
+required_events={
+ "you-cant-run":("TooSlowFlashinShit","RedVG","static","Genesis","Majin spin"),
+ "triple-trouble":("startstatic","tailsjump","bgSpec","knuxjump","strum swap1","eggjump","strum swap2"),
+ "final-escape":("Zaa","window_shake","runStage","exe attack"),
+}
+for slug, event_list in required_events.items():
+ for event_name in event_list:
+  if event_name not in names(loaded[slug]): fail(f"{slug} chart is missing timed event '{event_name}'")
+req(ROOT/"shared"/"custom_events"/"SonicEXEEvents.hx","shared HTML5 event dispatcher")
+req(ROOT/"shared"/"custom_events"/"TooSlowFlashinShit.hx","Too Slow flash handler")
+req(ROOT/"shared"/"custom_events"/"sonicspook.hx","Too Slow scare handler")
+for note_type in ("Static Note","Phantom Note"):
+ req(ROOT/"shared"/"custom_notetypes"/(note_type+".txt"),note_type+" note atlas mapping")
 print("Sonic.EXE story song assets validated:")
 for slug,s in loaded.items(): print(f"  {slug}: sections={len(s['notes'])} events={len(s.get('events',[]) or [])}")
 print("  Backgrounds, note atlases, character sprites, vocals and scripts are present.")

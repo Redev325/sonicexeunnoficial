@@ -1,0 +1,2 @@
+texture: "PHANTOMNOTE_assets"
+antialiasing: true

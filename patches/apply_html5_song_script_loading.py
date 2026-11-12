@@ -27,6 +27,7 @@ def main():
 \t\t// HTML5 cannot enumerate embedded asset folders with FileSystem.
 \t\tfor (scriptName in ["modchart.hx", "intro.hx", "run.hx", songName + ".hx"])
 \t\t\tstartHScriptsNamed('data/' + songName + '/' + scriptName);
+\t\tstartHScriptsNamed('custom_events/SonicEXEEvents.hx');
 \t\t#end"""
  src=src[:a]+replacement+src[b:]; p.write_text(src,encoding="utf-8")
  print("PlayState now loads embedded per-song HScript files on HTML5.")
