@@ -9,12 +9,15 @@ import sys
 def validate_conditionals(source: str, path: Path) -> None:
     stack = []
     for line_number, line in enumerate(source.splitlines(), 1):
-        if re.match(r"^\s*#if\b", line):
-            stack.append(line_number)
-        for _ in re.finditer(r"#end\b", line):
-            if not stack:
+        # Haxe supports inline directives, so scan the uncommented part of every line.
+        code = line.split("//", 1)[0]
+        for directive in re.finditer(r"#(if|end)\\b", code):
+            if directive.group(1) == "if":
+                stack.append(line_number)
+            elif not stack:
                 raise SystemExit(f"Pack script resolution stopped: orphan #end at {path}:{line_number}")
-            stack.pop()
+            else:
+                stack.pop()
     if stack:
         raise SystemExit(f"Pack script resolution stopped: unclosed #if at {path}:{stack[-1]}")
 
