@@ -34,9 +34,9 @@ def main() -> None:
 \t\t\t#if MODS_ALLOWED
 \t\t\tvar scriptToLoad:String = Paths.modFolders(scriptFile);
 \t\t\tif(!FileSystem.exists(scriptToLoad))
-\t\t\t\tscriptToLoad = Paths.getSharedPath(scriptFile);
+\t\t\t\tscriptToLoad = Paths.getPath(scriptFile);
 \t\t\t#else
-\t\t\tvar scriptToLoad:String = Paths.getSharedPath(scriptFile);
+\t\t\tvar scriptToLoad:String = Paths.getPath(scriptFile);
 \t\t\t#end
 \t\t\tif(FileSystem.exists(scriptToLoad))
 \t\t\t{
@@ -45,7 +45,7 @@ def main() -> None:
 \t\t\t\treturn true;
 \t\t\t}
 \t\t#else
-\t\t\tvar assetPath:String = Paths.getSharedPath(scriptFile);
+\t\t\tvar assetPath:String = Paths.getPath(scriptFile);
 \t\t\tif(OpenFlAssets.exists(assetPath, openfl.utils.AssetType.TEXT))
 \t\t\t{
 \t\t\t\tfor (loadedScript in hscriptArray)
@@ -66,7 +66,7 @@ def main() -> None:
         """#if sys
 \t\t\tvar scriptContents:String = file;
 #else
-\t\t\tvar scriptPath:String = Paths.getSharedPath(file);
+\t\t\tvar scriptPath:String = Paths.getPath(file);
 \t\t\tif(!OpenFlAssets.exists(scriptPath, openfl.utils.AssetType.TEXT)) return;
 \t\t\tvar scriptContents:String = OpenFlAssets.getText(scriptPath);
 #end
