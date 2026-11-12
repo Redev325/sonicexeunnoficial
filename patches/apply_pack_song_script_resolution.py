@@ -11,7 +11,7 @@ def validate_conditionals(source: str, path: Path) -> None:
     for line_number, line in enumerate(source.splitlines(), 1):
         # Haxe supports inline directives, so scan the uncommented part of every line.
         code = line.split("//", 1)[0]
-        for directive in re.finditer(r"#(if|end)\\b", code):
+        for directive in re.finditer(r"#(if|end)\b", code):
             if directive.group(1) == "if":
                 stack.append(line_number)
             elif not stack:
