@@ -36,9 +36,24 @@ def patch_loading_state(path: Path) -> None:
 \t{
 \t\treturn Paths.inst(PlayState.SONG.song);
 \t}""",
-        """\tstatic function getSongPath():String
+        """\tstatic function getSongAudioInfo(song:String):Dynamic
 \t{
-\t\treturn Paths.getLibraryPath(Paths.formatToSongPath(PlayState.SONG.song) + '/Inst.mp3', 'songs');
+\t\ttry
+\t\t{
+\t\t\tvar index:Dynamic = Json.parse(Assets.getText(Paths.getSharedPath('data/sonicexe-audio-index.json')));
+\t\t\treturn Reflect.field(index, Paths.formatToSongPath(song));
+\t\t}
+\t\tcatch (e:Dynamic) {}
+\t\treturn null;
+\t}
+
+\tstatic function getSongPath():String
+\t{
+\t\tvar slug:String = Paths.formatToSongPath(PlayState.SONG.song);
+\t\tvar info:Dynamic = getSongAudioInfo(PlayState.SONG.song);
+\t\tvar instrumental:Dynamic = info == null ? null : Reflect.field(info, 'instrumental');
+\t\tvar fileName:String = instrumental == null ? 'Inst.mp3' : Std.string(instrumental);
+\t\treturn Paths.getLibraryPath(slug + '/' + fileName, 'songs');
 \t}""",
         "use a manifest key for the instrumental asset",
     )
@@ -60,15 +75,11 @@ def patch_loading_state(path: Path) -> None:
 \t{
 \t\tvar slug:String = Paths.formatToSongPath(song);
 \t\tvar result:Array<String> = [];
-\t\ttry
-\t\t{
-\t\t\tvar index:Dynamic = Json.parse(Assets.getText(Paths.getSharedPath('data/sonicexe-audio-index.json')));
-\t\t\tvar names:Array<String> = cast Reflect.field(index, slug);
-\t\t\tif (names != null)
-\t\t\t\tfor (name in names)
-\t\t\t\t\tresult.push(Paths.getLibraryPath(slug + '/' + name, 'songs'));
-\t\t}
-\t\tcatch (e:Dynamic) {}
+\t\tvar info:Dynamic = getSongAudioInfo(song);
+\t\tvar names:Array<String> = info == null ? null : cast Reflect.field(info, 'vocals');
+\t\tif (names != null)
+\t\t\tfor (name in names)
+\t\t\t\tresult.push(Paths.getLibraryPath(slug + '/' + name, 'songs'));
 \t\tif (result.length == 0)
 \t\t\tresult.push(Paths.getLibraryPath(slug + '/Voices.mp3', 'songs'));
 \t\treturn result;
@@ -80,10 +91,12 @@ def patch_loading_state(path: Path) -> None:
         """\t\t\tvar callback = callbacks.add("song:" + path);
 \t\t\tAssets.loadSound(path).onComplete(function (_) { callback(); });""",
         """\t\t\tvar callback = callbacks.add("song:" + path);
+\t\t\tMusicBeatState.sonicEXEDebug("LOADING STATE: requesting song asset " + path);
 \t\t\tAssets.loadSound(path).onComplete(function (_) {
+\t\t\t\tMusicBeatState.sonicEXEDebug("LOADING STATE: song asset ready " + path);
 \t\t\t\tcallback();
 \t\t\t}).onError(function (error) {
-\t\t\t\ttrace("Failed to load selected song asset " + path + ": " + error);
+\t\t\t\tMusicBeatState.sonicEXEDebug("ERROR: song asset failed " + path + ": " + Std.string(error));
 \t\t\t\tcallback();
 \t\t\t});""",
         "report individual audio-load failures",
@@ -103,7 +116,7 @@ def patch_loading_state(path: Path) -> None:
 
 \t\t\t// Stage sprites are large too; register their library only when a
 \t\t\t// selected song needs a non-shared stage directory.
-\t\t\tvar selectedStageLoaded:Bool = directory == 'shared' || Assets.getLibrary("week_assets") != null;
+\t\t\tvar selectedStageLoaded:Bool = directory == 'shared' || Assets.getLibrary(getStageAssetLibraryName(directory)) != null;
 \t\t\tif (!selectedAudioLoaded || !selectedStageLoaded)
 \t\t\t\treturn new LoadingState(target, stopMusic, directory);
 \t\t}
@@ -175,6 +188,91 @@ def patch_loading_state(path: Path) -> None:
         "\tstatic function initSongsManifest()",
         helper + "\tstatic function initSongsManifest()",
         "add the per-track Freeplay preview loader",
+    )
+
+
+    source = replace_once(
+        source,
+        """\t\t\t\tif(directory != null && directory.length > 0 && directory != 'shared') {
+\t\t\t\t\tcheckLibrary('week_assets');
+\t\t\t\t}""",
+        """\t\t\t\tif(directory != null && directory.length > 0 && directory != 'shared') {
+\t\t\t\t\tcheckLibrary(getStageAssetLibraryName(directory));
+\t\t\t\t}""",
+        "load only the selected stage directory library",
+    )
+    source = replace_once(
+        source,
+        """\tfunction checkLibrary(library:String) {
+\t\ttrace(Assets.hasLibrary(library));
+\t\tif (Assets.getLibrary(library) == null)
+\t\t{
+\t\t\t@:privateAccess
+\t\t\tif (!LimeAssets.libraryPaths.exists(library))
+\t\t\t\tthrow new haxe.Exception("Missing library: " + library);
+
+\t\t\tvar callback = callbacks.add("library:" + library);
+\t\t\tAssets.loadLibrary(library).onComplete(function (_) { callback(); });
+\t\t}
+\t}""",
+        """\tfunction checkLibrary(library:String) {
+\t\tif (Assets.getLibrary(library) != null) return;
+\t\tvar callback = callbacks.add("library:" + library);
+\t\tvar finished:Bool = false;
+\t\tfunction finish():Void {
+\t\t\tif (!finished) { finished = true; callback(); }
+\t\t}
+\t\tMusicBeatState.sonicEXEDebug("LOADING STATE: requesting stage library " + library);
+\t\tAssets.loadLibrary(library).onComplete(function (_) {
+\t\t\tMusicBeatState.sonicEXEDebug("LOADING STATE: stage library ready " + library);
+\t\t\tfinish();
+\t\t}).onError(function (error) {
+\t\t\tMusicBeatState.sonicEXEDebug("ERROR: stage library failed " + library + ": " + Std.string(error));
+\t\t\tif (library != 'week_assets') {
+\t\t\t\tMusicBeatState.sonicEXEDebug("WARN: retrying legacy week_assets library as fallback");
+\t\t\t\tAssets.loadLibrary('week_assets').onComplete(function (_) {
+\t\t\t\t\tMusicBeatState.sonicEXEDebug("LOADING STATE: legacy week_assets fallback ready");
+\t\t\t\t\tfinish();
+\t\t\t\t}).onError(function (fallbackError) {
+\t\t\t\t\tMusicBeatState.sonicEXEDebug("ERROR: legacy week_assets fallback failed: " + Std.string(fallbackError));
+\t\t\t\t\tfinish();
+\t\t\t\t});
+\t\t\t} else finish();
+\t\t});
+\t}""",
+        "handle stage library errors and fallback",
+    )
+    source = replace_once(
+        source,
+        """\t\tvar weekDir:String = StageData.forceNextDirectory;
+\t\tStageData.forceNextDirectory = null;""",
+        """\t\tif (PlayState.SONG != null)
+\t\t\tStageData.loadDirectory(PlayState.SONG);
+\t\tvar weekDir:String = StageData.forceNextDirectory;
+\t\tStageData.forceNextDirectory = null;""",
+        "derive the stage directory from selected chart metadata",
+    )
+    source = replace_once(
+        source,
+        "\tstatic function getNextState(target:FlxState, stopMusic = false):FlxState",
+        """\tstatic function getStageAssetLibraryName(directory:String):String
+\t{
+\t\tvar invalidCharacters:EReg = ~/[^a-z0-9_]/g;
+\t\treturn "stage_assets_" + invalidCharacters.replace(directory.toLowerCase(), "_");
+\t}
+
+\tstatic function getNextState(target:FlxState, stopMusic = false):FlxState""",
+        "add per-stage library name helper",
+    )
+    source = replace_once(
+        source,
+        "\t\t\tnew FlxTimer().start(fadeTime + MIN_TIME, function(_) introComplete());",
+        """\t\t\tnew FlxTimer().start(fadeTime + MIN_TIME, function(_) introComplete());
+\t\t\tnew FlxTimer().start(25, function(_) {
+\t\t\t\tif (callbacks != null && callbacks.numRemaining > 0)
+\t\t\t\t\tMusicBeatState.sonicEXEDebug("ERROR: loading callbacks still pending after 25 seconds: " + callbacks.getUnfired().join(", "));
+\t\t\t});""",
+        "add loading callback watchdog",
     )
 
     path.write_text(source, encoding="utf-8")

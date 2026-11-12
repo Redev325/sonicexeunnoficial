@@ -16,6 +16,7 @@ on:
       - "patches/apply_loading_optimization.py"
       - "patches/apply_freeplay_virtualization.py"
       - "patches/apply_lazy_song_loading.py"
+      - "patches/prepare_stage_asset_libraries.py"
       - "patches/apply_sonicexe_loading_screen.py"
       - "Sonic.exeloadingscreen.png"
       - "patches/apply_menu_freeze_fixes.py"
@@ -969,6 +970,7 @@ jobs:
           python3 -m py_compile \
             patches/apply_loading_optimization.py \
             patches/apply_lazy_song_loading.py \
+            patches/prepare_stage_asset_libraries.py \
             patches/apply_freeplay_virtualization.py \
             patches/apply_sonicexe_loading_screen.py \
             patches/apply_runtime_diagnostics.py \
@@ -986,6 +988,7 @@ jobs:
           cp patches/SonicEXEAssetLoader.hx engine/source/backend/SonicEXEAssetLoader.hx
           python3 patches/apply_loading_optimization.py engine/Project.xml engine/source/states/TitleState.hx engine/source/states/MainMenuState.hx
           python3 patches/apply_lazy_song_loading.py engine/source/states/LoadingState.hx engine/source/states/FreeplayState.hx
+          python3 patches/prepare_stage_asset_libraries.py engine/assets engine/Project.xml engine/source/backend/Paths.hx
 
       - name: Install Sonic.EXE loading screen and red progress bar
         run: |
