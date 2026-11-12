@@ -67,7 +67,11 @@ def main() -> None:
 \t\tvar scriptToLoad:String = Paths.getPath(scriptFile);
 \t\t#end
 
-\t\tif(FileSystem.exists(scriptToLoad) || OpenFlAssets.exists(scriptToLoad))""",
+\t\t#if sys
+\t\tif(FileSystem.exists(scriptToLoad) || OpenFlAssets.exists(scriptToLoad))
+\t\t#else
+\t\tif(OpenFlAssets.exists(scriptToLoad))
+\t\t#end""",
         "resolve HScript handlers from the active pack before shared scripts",
     )
 

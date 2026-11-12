@@ -61,8 +61,16 @@ for char in ("ycr","TailsSoul","bf-run"):
  p=ROOT/"shared"/"characters"/(char+".json"); req(p,char+" character definition")
  c=json.loads(p.read_text(encoding="utf-8-sig"))
  if c.get("image"): req(ROOT/"shared"/"images"/(c["image"]+".png"),char+" sprite")
-req(ROOT/"shared"/"stages"/"trioStage.lua","Triple Trouble stage script")
-req(ROOT/"shared"/"stages"/"final.lua","Final Escape stage script")
+req(ROOT/"shared"/"stages"/"trioStage.lua","Triple Trouble source stage script")
+req(ROOT/"shared"/"stages"/"final.lua","Final Escape source stage script")
+for stage_script in ("too-slow.hx","cant-run-xd.hx","trioStage.hx","final.hx"):
+ req(ROOT/"shared"/"stages"/stage_script,"HTML5 stage implementation "+stage_script)
+for image in (
+ "PolishedP1/bgEncore.png","PolishedP1/BGSky.png","PolishedP1/Grass.png",
+ "Phase3/bgNormal.png","Phase3/bgXeno.png","Phase3/normal/TTTrees.png",
+ "Phase3/normal/BackBush.png","Phase3/xeno/Grass.png","Phase3/xeno/BackTrees.png",
+):
+ req(ROOT/"week_assets"/"encore"/"images"/image,"Encore background layer "+image)
 if len(names(loaded["final-escape"]))<5: fail("Final Escape events.json was not merged into its loaded chart")
 required_events={
  "you-cant-run":("TooSlowFlashinShit","RedVG","static","Genesis","Majin spin"),

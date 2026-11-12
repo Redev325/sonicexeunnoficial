@@ -778,6 +778,7 @@ jobs:
           cp patches/assets/data/too-slow/modchart.hx engine/assets/shared/data/too-slow/modchart.hx
           cp patches/assets/data/triple-trouble/triple-trouble.hx engine/assets/shared/data/triple-trouble/triple-trouble.hx
           cp patches/assets/data/final-escape/run.hx engine/assets/shared/data/final-escape/run.hx
+          cp patches/assets/stages/*.hx engine/assets/shared/stages/
           python3 patches/validate_sonicexe_story_assets.py engine/assets
 
       - name: Convert original game menu and Options music for HTML5
