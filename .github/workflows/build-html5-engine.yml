@@ -710,19 +710,19 @@ jobs:
             '/assets/images/campaign_menu_UI_assets.xml' \
             '/assets/images/campaign_menu_UI_assets_alt.png' \
             '/assets/images/campaign_menu_UI_assets_alt.xml' \
-            '/assets/images/NOTE_assets.png' \\
-            '/assets/images/NOTE_assets.xml' \\
-            '/assets/images/HURTNOTE_assets.png' \\
-            '/assets/images/HURTNOTE_assets.xml' \\
-            '/assets/images/HURTnoteSplashes.png' \\
-            '/assets/images/HURTnoteSplashes.xml' \\
-            '/assets/images/Majin_Notes.png' \\
-            '/assets/images/Majin_Notes.xml' \\
-            '/assets/images/noteSplashes.png' \\
-            '/assets/images/noteSplashes.xml' \\
-            '/assets/images/sunky_splash.png' \\
-            '/assets/images/sunky_splash.xml' \\
-            '/assets/shared/images/' \\
+            '/assets/images/NOTE_assets.png' \
+            '/assets/images/NOTE_assets.xml' \
+            '/assets/images/HURTNOTE_assets.png' \
+            '/assets/images/HURTNOTE_assets.xml' \
+            '/assets/images/HURTnoteSplashes.png' \
+            '/assets/images/HURTnoteSplashes.xml' \
+            '/assets/images/Majin_Notes.png' \
+            '/assets/images/Majin_Notes.xml' \
+            '/assets/images/noteSplashes.png' \
+            '/assets/images/noteSplashes.xml' \
+            '/assets/images/sunky_splash.png' \
+            '/assets/images/sunky_splash.xml' \
+            '/assets/shared/images/' \
             '/assets/shared/images/characters/' \
             '/assets/shared/images/icons/' \
             '/assets/stages/' \
