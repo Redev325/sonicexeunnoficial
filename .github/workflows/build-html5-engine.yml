@@ -28,6 +28,7 @@ on:
       - "patches/prepare_sonicexe_asset_checkout.py"
       - "patches/apply_pack_song_script_resolution.py"
       - "patches/apply_html5_song_script_loading.py"
+      - "patches/optimize_media_lossless.py"
       - "patches/validate_sonicexe_story_assets.py"
       - "patches/assets/**"
       - "patches/apply_sonicexe_freeplay_ui.py"
@@ -852,75 +853,44 @@ jobs:
             echo "Installed HTML5 Sonic.EXE sound: $output"
           done
 
-      - name: Optimize menu and title videos for faster browser streaming
+      - name: Losslessly optimize menu and title videos
         run: |
-          convert_video() {
-            source="$1"
-            output="$2"
-            optimized="${output%.mp4}.optimized.mp4"
-            test -s "$source"
-            ffmpeg -y -i "$source" -map 0:v:0 \
-              -vf "scale=w='min(1280,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=30" \
-              -an -c:v libx264 -preset veryfast -crf 25 -pix_fmt yuv420p \
-              -movflags +faststart "$optimized"
-            test -s "$optimized"
-            source_bytes="$(stat -c%s "$source")"
-            optimized_bytes="$(stat -c%s "$optimized")"
-            # Keep the browser-friendly encode if it is no more than 5% larger;
-            # otherwise preserve the original rather than increasing download size.
-            if [ "$optimized_bytes" -le "$((source_bytes + source_bytes / 20))" ]; then
-              mv "$optimized" "$output"
-              echo "Optimized $output: $source_bytes -> $optimized_bytes bytes"
-            else
-              cp "$source" "$output"
-              rm -f "$optimized"
-              echo "Kept original $source (optimized version was larger)."
-            fi
-          }
-          convert_video engine/sonicexe-menu-source.mp4 engine/sonicexe-menu.mp4
-          convert_video engine/sonicexe-title-bg-source.mp4 engine/sonicexe-title-bg.mp4
+          python3 patches/optimize_media_lossless.py --video engine/sonicexe-menu-source.mp4 engine/sonicexe-menu.mp4 --audio none
+          python3 patches/optimize_media_lossless.py --video engine/sonicexe-title-bg-source.mp4 engine/sonicexe-title-bg.mp4 --audio none
           rm -f engine/sonicexe-menu-source.mp4 engine/sonicexe-title-bg-source.mp4
           test -s engine/sonicexe-menu.mp4
           test -s engine/sonicexe-title-bg.mp4
 
-      - name: Convert introexe video for HTML5 playback
+      - name: Losslessly optimize introexe video for HTML5 playback
         run: |
           source="$(find engine -maxdepth 1 -type f -name 'introexe-source.*' -print -quit)"
           test -n "$source"
-          ffmpeg -y -i "$source" -map 0:v:0 -map '0:a?' \
-            -vf "scale=w='min(1280,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=30" \
-            -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p \
-            -c:a aac -b:a 128k -movflags +faststart engine/introexe.mp4
+          python3 patches/optimize_media_lossless.py --video "$source" engine/introexe.mp4 --audio copy
           rm -f "$source"
           test -s engine/introexe.mp4
           ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height -of default=noprint_wrappers=1 engine/introexe.mp4
           ffprobe -v error -show_entries format=duration -of csv=p=0 engine/introexe.mp4
 
-      - name: Convert original postIntro video for HTML5 playback
+      - name: Losslessly optimize original postIntro video
         run: |
-          ffmpeg -y -i engine/postIntro-source.mp4 -map 0:v:0 -map '0:a?' \
-            -vf "scale=w='min(1280,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=30" \
-            -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p \
-            -c:a aac -b:a 128k -movflags +faststart engine/postIntro.mp4
+          python3 patches/optimize_media_lossless.py --video engine/postIntro-source.mp4 engine/postIntro.mp4 --audio copy
           rm -f engine/postIntro-source.mp4
           test -s engine/postIntro.mp4
-          echo "Checking that the converted postIntro video contains audio:"
+          echo "Checking that postIntro contains its original audio:"
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,channels,sample_rate -of default=noprint_wrappers=1 engine/postIntro.mp4
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 engine/postIntro.mp4 | grep -q .
           ffprobe -v error -show_entries format=duration -of csv=p=0 engine/postIntro.mp4
 
-      - name: Convert original custom-song preview videos for HTML5
+      - name: Losslessly optimize original custom-song preview videos
         run: |
           mkdir -p engine/sonicexe-soundtest-videos
           for source in engine/sonicexe-soundtest-source/*.mp4; do
             [ -f "$source" ] || continue
             name="$(basename "$source")"
-            ffmpeg -y -i "$source" -map 0:v:0 -an \
-              -vf "scale=w='min(1280,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps=30" \
-              -c:v libx264 -preset veryfast -crf 25 -pix_fmt yuv420p -movflags +faststart "engine/sonicexe-soundtest-videos/$name"
+            python3 patches/optimize_media_lossless.py --video "$source" "engine/sonicexe-soundtest-videos/$name" --audio none
           done
           test -s engine/sonicexe-soundtest-videos/tripletrouble.mp4
-          echo "Prepared original custom-song preview videos for HTML5."
+          echo "Prepared original custom-song preview videos without quality-reducing scaling or frame-rate changes."
 
       - name: Apply original Sonic.EXE title and intro artwork
         run: |
@@ -991,6 +961,7 @@ jobs:
             patches/prepare_sonicexe_asset_checkout.py \
             patches/apply_pack_song_script_resolution.py \
             patches/apply_html5_song_script_loading.py \
+            patches/optimize_media_lossless.py \
             patches/validate_sonicexe_story_assets.py
 
       - name: Defer song audio until the title sequence
@@ -1046,6 +1017,10 @@ jobs:
           print(f"Validated {len(files)} built-in achievement PNGs; ur_good.png is a valid image.")
           PY
 
+      - name: Losslessly recompress PNG and WebP game assets
+        run: |
+          python3 patches/optimize_media_lossless.py --images engine/assets
+
       - name: Compile browser target
         working-directory: engine
         run: |
@@ -1085,6 +1060,14 @@ jobs:
           output_count="$(find "$output" -maxdepth 1 -type f -name '*.png' | wc -l)"
           test "$output_count" -ge "$source_count"
           echo "Included $output_count default achievement images in the HTML5 output."
+
+      - name: Losslessly recompress exported PNG and WebP assets
+        run: |
+          if [ -d engine/export/release/html5/bin/assets ]; then
+            python3 patches/optimize_media_lossless.py --images engine/export/release/html5/bin/assets
+          else
+            echo "No loose exported asset directory found; source assets were already optimized before compilation."
+          fi
 
       - name: Add original animated menu video to the HTML5 page
         run: |
