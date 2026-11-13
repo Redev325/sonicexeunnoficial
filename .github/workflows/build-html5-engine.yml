@@ -771,6 +771,17 @@ jobs:
             '/contents_file/images/exeSplashes/'
           python3 patches/prepare_sonicexe_asset_checkout.py sonicexe-expanded-source engine/assets
           python3 patches/import_sonicexe_expanded_content.py sonicexe-expanded-source engine/assets
+
+          # Preserve the exact PARALLAX/Expulsion Lua shader file at the shared
+          # path requested by Psych Engine's HTML5 runtime preloader.
+          expulsion_shader_source="sonicexe-expanded-source/embedded_contents_file/PARALLAX/data/expulsion/shaders.lua"
+          expulsion_shader_target="engine/assets/shared/data/expulsion/shaders.lua"
+          test -s "$expulsion_shader_source"
+          mkdir -p "$(dirname "$expulsion_shader_target")"
+          cp -f "$expulsion_shader_source" "$expulsion_shader_target"
+          cmp -s "$expulsion_shader_source" "$expulsion_shader_target"
+          echo "Verified source Expulsion shader asset: $expulsion_shader_target ($(stat -c%s "$expulsion_shader_target") bytes)."
+
           rm -rf sonicexe-expanded-source
 
       - name: Install browser-safe Sonic.EXE song and event scripts
@@ -1045,6 +1056,17 @@ jobs:
           test -f engine/export/release/html5/bin/index.html
           find engine/export/release/html5/bin -maxdepth 2 -type f | head -80
           du -sh engine/export/release/html5/bin
+
+      - name: Ensure Expulsion shader is directly available to the browser
+        run: |
+          source="engine/assets/shared/data/expulsion/shaders.lua"
+          target="engine/export/release/html5/bin/assets/shared/data/expulsion/shaders.lua"
+          test -s "$source"
+          mkdir -p "$(dirname "$target")"
+          cp -f "$source" "$target"
+          cmp -s "$source" "$target"
+          echo "Verified browser URL asset: $target ($(stat -c%s "$target") bytes)."
+          sha256sum "$target"
 
       - name: Verify obsolete port-credit image is absent from HTML5 output
         run: |
